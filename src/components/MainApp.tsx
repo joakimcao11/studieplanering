@@ -4,7 +4,8 @@ import { BasicInfoTab } from '@/components/BasicInfoTab';
 import { PlanningTab } from '@/components/PlanningTab';
 import { OverviewTab } from '@/components/OverviewTab';
 import { usePlanningState } from '@/hooks/usePlanningState';
-import { exportToWord, exportToText } from '@/utils/export';
+import { Button } from '@/components/ui/button';
+import { RotateCcw } from 'lucide-react';
 import lthLogo from '@/assets/lth-logo.png';
 
 interface MainAppProps {
@@ -20,39 +21,43 @@ export const MainApp = ({ onLogout }: MainAppProps) => {
     agenda,
     setAgenda,
     terms,
+    setTerms,
     addTerm,
     removeTerm,
+    updateTerm,
     addCourseToTerm,
     removeCourseFromTerm,
-    setRetakeExam,
     notes,
     setNotes,
+    resetPlan,
   } = usePlanningState();
 
-  const handleExportWord = () => {
-    exportToWord({
-      studentInfo,
-      agenda,
-      terms,
-      notes,
-    });
-  };
-
-  const handleExportText = () => {
-    exportToText({
-      studentInfo,
-      agenda,
-      terms,
-      notes,
-    });
+  const handleCounselorChange = (counselorId: string) => {
+    updateStudentInfo({ counselorId });
   };
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <Header onLogout={onLogout} />
+      <Header 
+        onLogout={onLogout} 
+        counselorId={studentInfo.counselorId}
+        onCounselorChange={handleCounselorChange}
+      />
       <TabNavigation currentTab={currentTab} onTabChange={setCurrentTab} />
       
       <main className="flex-1 container mx-auto px-4 py-6">
+        <div className="flex justify-end mb-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={resetPlan}
+            className="text-muted-foreground"
+          >
+            <RotateCcw className="w-4 h-4 mr-1" />
+            Ny plan
+          </Button>
+        </div>
+
         {currentTab === 0 && (
           <BasicInfoTab
             studentInfo={studentInfo}
@@ -71,7 +76,7 @@ export const MainApp = ({ onLogout }: MainAppProps) => {
             onRemoveTerm={removeTerm}
             onAddCourse={addCourseToTerm}
             onRemoveCourse={removeCourseFromTerm}
-            onSetRetakeExam={setRetakeExam}
+            onUpdateTerm={updateTerm}
             onNotesChange={setNotes}
           />
         )}
@@ -82,8 +87,10 @@ export const MainApp = ({ onLogout }: MainAppProps) => {
             agenda={agenda}
             terms={terms}
             notes={notes}
-            onExportWord={handleExportWord}
-            onExportText={handleExportText}
+            onAgendaChange={setAgenda}
+            onNotesChange={setNotes}
+            onTermsChange={setTerms}
+            onStudentInfoChange={updateStudentInfo}
           />
         )}
       </main>

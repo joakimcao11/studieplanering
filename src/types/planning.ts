@@ -2,11 +2,33 @@
 
 export type Program = 'D' | 'C';
 
+export interface Counselor {
+  id: string;
+  name: string;
+  email: string;
+  displayName: string;
+}
+
+export const COUNSELORS: Counselor[] = [
+  { 
+    id: 'joakim', 
+    name: 'Joakim Cao', 
+    email: 'joakim.cao@lth.lu.se',
+    displayName: 'STVL Joakim Cao'
+  },
+  { 
+    id: 'tobias', 
+    name: 'Tobias Björklund', 
+    email: 'tobias.bjorklund@lth.lu.se',
+    displayName: 'STVL Tobias Björklund'
+  },
+];
+
 export interface StudentInfo {
   name: string;
   program: Program;
   yearGroup: string; // e.g., D20, C21
-  counselor: string;
+  counselorId: string;
 }
 
 export interface PlannedCourse {
@@ -20,15 +42,15 @@ export interface PlannedCourse {
 
 export type Period = 'LP1' | 'LP2' | 'LP3' | 'LP4';
 export type Semester = 'HT' | 'VT';
-export type RetakeExamPeriod = 'april' | 'augusti' | null;
 
 export interface TermPlan {
   id: string;
   semester: Semester;
   year: string; // e.g., "2024"
+  customYearLabel?: string; // Optional custom label for the year
   lp1: PlannedCourse[];
   lp2: PlannedCourse[];
-  retakeExam: RetakeExamPeriod;
+  retakeExamNotes: string; // Free text for retake exam notes
 }
 
 export interface StudyPlan {
@@ -65,4 +87,8 @@ export const getHPStatus = (hp: number, target: number): 'optimal' | 'warning' |
   if (ratio >= 0.9 && ratio <= 1.1) return 'optimal';
   if (ratio >= 0.7 && ratio <= 1.3) return 'warning';
   return 'danger';
+};
+
+export const getCounselorById = (id: string): Counselor | undefined => {
+  return COUNSELORS.find(c => c.id === id);
 };

@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, FileText } from 'lucide-react';
-import { TermPlan, PlannedCourse, RetakeExamPeriod, Program } from '@/types/planning';
+import { TermPlan, PlannedCourse, Program } from '@/types/planning';
 import { TermCard } from './TermCard';
 import { CourseSelector } from './CourseSelector';
 
@@ -17,7 +17,7 @@ interface PlanningTabProps {
   onRemoveTerm: (termId: string) => void;
   onAddCourse: (termId: string, period: 'lp1' | 'lp2', course: PlannedCourse) => void;
   onRemoveCourse: (termId: string, period: 'lp1' | 'lp2', courseId: string) => void;
-  onSetRetakeExam: (termId: string, period: RetakeExamPeriod) => void;
+  onUpdateTerm: (termId: string, updates: Partial<TermPlan>) => void;
   onNotesChange: (notes: string) => void;
 }
 
@@ -29,11 +29,18 @@ export const PlanningTab = ({
   onRemoveTerm,
   onAddCourse,
   onRemoveCourse,
-  onSetRetakeExam,
+  onUpdateTerm,
   onNotesChange,
 }: PlanningTabProps) => {
   const [selectedTermId, setSelectedTermId] = useState<string>(terms[0]?.id || '');
   const [selectedPeriod, setSelectedPeriod] = useState<'lp1' | 'lp2'>('lp1');
+
+  // Update selected term if it no longer exists
+  useEffect(() => {
+    if (!terms.find(t => t.id === selectedTermId) && terms.length > 0) {
+      setSelectedTermId(terms[0].id);
+    }
+  }, [terms, selectedTermId]);
 
   const handleAddCourse = (course: PlannedCourse) => {
     if (!selectedTermId) return;
@@ -71,7 +78,7 @@ export const PlanningTab = ({
                 <SelectContent className="bg-popover border border-border shadow-lg z-50">
                   {terms.map((term) => (
                     <SelectItem key={term.id} value={term.id}>
-                      {term.semester === 'HT' ? 'Hösttermin' : 'Vårtermin'} {term.year}
+                      {term.semester === 'HT' ? 'Hösttermin' : 'Vårtermin'} {term.customYearLabel || term.year}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -111,8 +118,9 @@ export const PlanningTab = ({
             term={term}
             onRemoveTerm={() => onRemoveTerm(term.id)}
             onRemoveCourse={(period, courseId) => onRemoveCourse(term.id, period, courseId)}
-            onSetRetakeExam={(period) => onSetRetakeExam(term.id, period)}
+            onUpdateTerm={(updates) => onUpdateTerm(term.id, updates)}
             canRemove={terms.length > 1}
+            isEditable={true}
           />
         ))}
 

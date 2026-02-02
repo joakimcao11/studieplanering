@@ -6,7 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Search, Plus, BookOpen, PenLine } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Search, Plus, BookOpen, PenLine, GraduationCap } from 'lucide-react';
 import { Course, getAllCourses } from '@/data/courses';
 import { Program, PlannedCourse } from '@/types/planning';
 
@@ -15,11 +16,17 @@ interface CourseSelectorProps {
   onAddCourse: (course: PlannedCourse) => void;
 }
 
+type FilterType = 'all' | 'obligatory';
+type PeriodFilter = 'all' | '1' | '2' | '3' | '4';
+
 export const CourseSelector = ({ program, onAddCourse }: CourseSelectorProps) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterType, setFilterType] = useState<'all' | 'obligatory'>('all');
+  const [filterType, setFilterType] = useState<FilterType>('all');
+  const [periodFilter, setPeriodFilter] = useState<PeriodFilter>('all');
   const [customCourseName, setCustomCourseName] = useState('');
-  const [customCourseHP, setCustomCourseHP] = useState<number | ''>('');
+  const [customCourseCode, setCustomCourseCode] = useState('');
+  const [customCourseHpType, setCustomCourseHpType] = useState<string>('7.5');
+  const [customCourseHP, setCustomCourseHP] = useState<string>('');
 
   const courses = getAllCourses(program);
   
@@ -28,7 +35,9 @@ export const CourseSelector = ({ program, onAddCourse }: CourseSelectorProps) =>
       course.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       course.code.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesFilter = filterType === 'all' || course.isObligatory;
-    return matchesSearch && matchesFilter;
+    const matchesPeriod = periodFilter === 'all' || 
+      (course.periods && course.periods.includes(periodFilter));
+    return matchesSearch && matchesFilter && matchesPeriod;
   });
 
   const handleAddProgramCourse = (course: Course) => {
@@ -43,23 +52,25 @@ export const CourseSelector = ({ program, onAddCourse }: CourseSelectorProps) =>
   };
 
   const handleAddCustomCourse = () => {
-    if (!customCourseName.trim() || !customCourseHP) return;
+    if (!customCourseName.trim()) return;
+    
+    const hp = customCourseHpType === 'custom' 
+      ? parseFloat(customCourseHP) || 7.5
+      : parseFloat(customCourseHpType);
     
     onAddCourse({
       id: '',
       courseId: `custom-${Date.now()}`,
-      code: 'EGEN',
+      code: customCourseCode.trim() || 'EGEN',
       name: customCourseName.trim(),
-      hp: Number(customCourseHP),
+      hp: hp,
       isCustom: true,
     });
     
     setCustomCourseName('');
+    setCustomCourseCode('');
+    setCustomCourseHpType('7.5');
     setCustomCourseHP('');
-  };
-
-  const handleQuickHP = (hp: number) => {
-    setCustomCourseHP(hp);
   };
 
   return (
@@ -89,7 +100,7 @@ export const CourseSelector = ({ program, onAddCourse }: CourseSelectorProps) =>
               />
             </div>
 
-            {/* Filter */}
+            {/* Filter Type */}
             <div className="flex gap-2">
               <Button
                 variant={filterType === 'all' ? 'default' : 'outline'}
@@ -107,8 +118,32 @@ export const CourseSelector = ({ program, onAddCourse }: CourseSelectorProps) =>
               </Button>
             </div>
 
+            {/* Period Filter */}
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">Läsperiod</Label>
+              <div className="flex flex-wrap gap-2">
+                <Badge 
+                  variant={periodFilter === 'all' ? 'default' : 'outline'}
+                  className="cursor-pointer"
+                  onClick={() => setPeriodFilter('all')}
+                >
+                  Alla
+                </Badge>
+                {['1', '2', '3', '4'].map((period) => (
+                  <Badge 
+                    key={period}
+                    variant={periodFilter === period ? 'default' : 'outline'}
+                    className="cursor-pointer"
+                    onClick={() => setPeriodFilter(period as PeriodFilter)}
+                  >
+                    LP{period}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+
             {/* Course List */}
-            <ScrollArea className="h-64 rounded-md border">
+            <ScrollArea className="h-48 rounded-md border">
               <div className="p-2 space-y-1">
                 {filteredCourses.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-4">
@@ -118,7 +153,8 @@ export const CourseSelector = ({ program, onAddCourse }: CourseSelectorProps) =>
                   filteredCourses.map((course) => (
                     <div
                       key={course.id}
-                      className="flex items-center justify-between p-2 rounded-md hover:bg-muted/50 group"
+                      className="flex items-center justify-between p-2 rounded-md hover:bg-muted/50 group cursor-pointer"
+                      onClick={() => handleAddProgramCourse(course)}
                     >
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
@@ -130,6 +166,11 @@ export const CourseSelector = ({ program, onAddCourse }: CourseSelectorProps) =>
                               Obl.
                             </Badge>
                           )}
+                          {course.periods && course.periods.length > 0 && (
+                            <span className="text-xs text-muted-foreground">
+                              LP{course.periods.join(',')}
+                            </span>
+                          )}
                         </div>
                         <p className="text-sm truncate">{course.name}</p>
                       </div>
@@ -140,7 +181,10 @@ export const CourseSelector = ({ program, onAddCourse }: CourseSelectorProps) =>
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => handleAddProgramCourse(course)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAddProgramCourse(course);
+                          }}
                           className="opacity-0 group-hover:opacity-100 transition-opacity"
                         >
                           <Plus className="w-4 h-4" />
@@ -156,6 +200,16 @@ export const CourseSelector = ({ program, onAddCourse }: CourseSelectorProps) =>
           <TabsContent value="custom" className="space-y-4 mt-3">
             <div className="space-y-3">
               <div className="space-y-2">
+                <Label htmlFor="customCode">Kurskod (valfritt)</Label>
+                <Input
+                  id="customCode"
+                  placeholder="T.ex. EDAA01"
+                  value={customCourseCode}
+                  onChange={(e) => setCustomCourseCode(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="customName">Kursnamn</Label>
                 <div className="relative">
                   <PenLine className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -170,44 +224,52 @@ export const CourseSelector = ({ program, onAddCourse }: CourseSelectorProps) =>
               </div>
 
               <div className="space-y-2">
-                <Label>Antal hp</Label>
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant={customCourseHP === 7.5 ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => handleQuickHP(7.5)}
-                  >
-                    7,5 hp
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={customCourseHP === 15 ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => handleQuickHP(15)}
-                  >
-                    15 hp
-                  </Button>
+                <Label>Högskolepoäng (hp)</Label>
+                <Select value={customCourseHpType} onValueChange={setCustomCourseHpType}>
+                  <SelectTrigger className="bg-background">
+                    <SelectValue placeholder="Välj hp" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover border border-border shadow-lg z-50">
+                    <SelectItem value="7.5">7,5 hp</SelectItem>
+                    <SelectItem value="15">15 hp</SelectItem>
+                    <SelectItem value="custom">Eget värde</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {customCourseHpType === 'custom' && (
+                <div className="space-y-2">
+                  <Label htmlFor="customHpValue">Ange hp</Label>
                   <Input
+                    id="customHpValue"
                     type="number"
-                    placeholder="Annat"
+                    step="0.5"
+                    min="0.5"
+                    placeholder="T.ex. 4.5"
                     value={customCourseHP}
-                    onChange={(e) => setCustomCourseHP(e.target.value ? Number(e.target.value) : '')}
-                    className="w-24"
-                    min={0}
-                    step={0.5}
+                    onChange={(e) => setCustomCourseHP(e.target.value)}
                   />
                 </div>
-              </div>
+              )}
 
               <Button
                 onClick={handleAddCustomCourse}
-                disabled={!customCourseName.trim() || !customCourseHP}
+                disabled={!customCourseName.trim()}
                 className="w-full"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Lägg till egen kurs
               </Button>
+
+              <div className="p-3 bg-secondary/30 rounded-md">
+                <div className="flex items-start gap-2">
+                  <GraduationCap className="w-4 h-4 text-primary mt-0.5" />
+                  <p className="text-xs text-muted-foreground">
+                    Egna kurser kan användas för kurser från andra program, 
+                    utbytesstudier eller specialkurser som inte finns i listan.
+                  </p>
+                </div>
+              </div>
             </div>
           </TabsContent>
         </Tabs>

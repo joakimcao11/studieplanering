@@ -1,6 +1,6 @@
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType, BorderStyle, HeadingLevel, Footer, Header as DocxHeader, ImageRun } from 'docx';
 import { saveAs } from 'file-saver';
-import { StudentInfo, TermPlan, calculatePeriodHP, calculateTermHP } from '@/types/planning';
+import { StudentInfo, TermPlan, calculatePeriodHP, calculateTermHP, getCounselorById } from '@/types/planning';
 
 const EXAM_INFO_TEXT = `Utbildningens upplägg och examenskrav
 
@@ -30,9 +30,10 @@ interface ExportData {
 const generateTextContent = (data: ExportData): string => {
   const currentDate = new Date().toLocaleDateString('sv-SE');
   const programName = data.studentInfo.program === 'D' ? 'Datateknik' : 'Infocom';
+  const counselor = getCounselorById(data.studentInfo.counselorId);
 
-  let content = `STVL Joakim Cao
-joakim.cao@lth.lu.se
+  let content = `${counselor?.displayName || 'STVL'}
+${counselor?.email || ''}
 
 ================================================================================
 
@@ -67,8 +68,9 @@ ${'-'.repeat(40)}
     const lp1HP = calculatePeriodHP(term.lp1);
     const lp2HP = calculatePeriodHP(term.lp2);
     const termHP = calculateTermHP(term);
+    const displayYear = term.customYearLabel || term.year;
 
-    content += `${semesterLabel} ${term.year}
+    content += `${semesterLabel} ${displayYear}
 `;
     
     content += `  ${period1Label} (${lp1HP} hp):
@@ -93,8 +95,8 @@ ${'-'.repeat(40)}
 
     content += `  Totalt hp denna termin: ${termHP} hp\n`;
     
-    if (term.retakeExam) {
-      content += `  Omtentamensperiod: ${term.retakeExam.charAt(0).toUpperCase() + term.retakeExam.slice(1)}\n`;
+    if (term.retakeExamNotes) {
+      content += `  Omtentamensperiod: ${term.retakeExamNotes}\n`;
     }
     
     content += `\n`;
@@ -130,16 +132,17 @@ export const exportToText = (data: ExportData) => {
 export const exportToWord = async (data: ExportData) => {
   const currentDate = new Date().toLocaleDateString('sv-SE');
   const programName = data.studentInfo.program === 'D' ? 'Datateknik' : 'Infocom';
+  const counselor = getCounselorById(data.studentInfo.counselorId);
 
   const sections: Paragraph[] = [];
 
   // Header info
   sections.push(
     new Paragraph({
-      children: [new TextRun({ text: 'STVL Joakim Cao', bold: true })],
+      children: [new TextRun({ text: counselor?.displayName || 'STVL', bold: true })],
     }),
     new Paragraph({
-      children: [new TextRun({ text: 'joakim.cao@lth.lu.se', color: '666666' })],
+      children: [new TextRun({ text: counselor?.email || '', color: '666666' })],
     }),
     new Paragraph({ children: [] }), // Empty line
   );
@@ -211,10 +214,11 @@ export const exportToWord = async (data: ExportData) => {
     const lp1HP = calculatePeriodHP(term.lp1);
     const lp2HP = calculatePeriodHP(term.lp2);
     const termHP = calculateTermHP(term);
+    const displayYear = term.customYearLabel || term.year;
 
     sections.push(
       new Paragraph({
-        children: [new TextRun({ text: `${semesterLabel} ${term.year}`, bold: true })],
+        children: [new TextRun({ text: `${semesterLabel} ${displayYear}`, bold: true })],
         spacing: { before: 200 },
       }),
     );
@@ -284,10 +288,10 @@ export const exportToWord = async (data: ExportData) => {
       }),
     );
 
-    if (term.retakeExam) {
+    if (term.retakeExamNotes) {
       sections.push(
         new Paragraph({
-          children: [new TextRun({ text: `Omtentamensperiod: ${term.retakeExam.charAt(0).toUpperCase() + term.retakeExam.slice(1)}` })],
+          children: [new TextRun({ text: `Omtentamensperiod: ${term.retakeExamNotes}` })],
           indent: { left: 360 },
         }),
       );
