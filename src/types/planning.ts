@@ -47,7 +47,8 @@ export interface TermPlan {
   id: string;
   semester: Semester;
   year: string; // e.g., "2024"
-  customYearLabel?: string; // Optional custom label for the year
+  customYearLabel: string; // Custom label for the year
+  customSemesterLabel: string; // Custom label for the semester (e.g., "Sommar")
   lp1: PlannedCourse[];
   lp2: PlannedCourse[];
   retakeExamNotes: string; // Free text for retake exam notes

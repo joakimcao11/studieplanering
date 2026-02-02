@@ -4,9 +4,11 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Trash2, X, Calendar, Edit2 } from 'lucide-react';
-import { TermPlan, PlannedCourse, calculatePeriodHP, HP_PER_PERIOD, HP_PER_TERM } from '@/types/planning';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Trash2, Calendar, Edit2 } from 'lucide-react';
+import { TermPlan, PlannedCourse, HP_PER_TERM, calculatePeriodHP, calculateTermHP } from '@/types/planning';
 import { HPProgressBar } from './HPProgressBar';
+import { DroppablePeriod } from './DroppablePeriod';
 import { useState } from 'react';
 
 interface TermCardProps {
@@ -18,79 +20,6 @@ interface TermCardProps {
   isEditable?: boolean;
 }
 
-const PeriodSection = ({ 
-  title, 
-  courses, 
-  onRemoveCourse,
-  isEditable = true,
-}: { 
-  title: string;
-  courses: PlannedCourse[];
-  onRemoveCourse: (courseId: string) => void;
-  isEditable?: boolean;
-}) => {
-  const totalHP = calculatePeriodHP(courses);
-  
-  return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <h4 className="text-sm font-medium text-muted-foreground">{title}</h4>
-        <span className="text-sm font-medium">{totalHP} hp</span>
-      </div>
-      
-      <HPProgressBar 
-        current={totalHP} 
-        target={HP_PER_PERIOD} 
-        showDetails={false}
-      />
-      
-      <div className="min-h-[60px] border border-dashed border-border rounded-md p-2 space-y-1">
-        {courses.length === 0 ? (
-          <p className="text-xs text-muted-foreground text-center py-2">
-            Lägg till kurser från listan till vänster
-          </p>
-        ) : (
-          courses.map((course) => (
-            <div
-              key={course.id}
-              className="flex items-center justify-between p-2 bg-secondary/50 rounded text-sm group"
-            >
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1">
-                  <span className="text-xs text-muted-foreground font-mono">
-                    {course.code}
-                  </span>
-                  {course.isCustom && (
-                    <Badge variant="outline" className="text-xs py-0">
-                      Egen
-                    </Badge>
-                  )}
-                </div>
-                <p className="text-sm truncate">{course.name}</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-primary">
-                  {course.hp} hp
-                </span>
-                {isEditable && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => onRemoveCourse(course.id)}
-                    className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10"
-                  >
-                    <X className="w-3 h-3" />
-                  </Button>
-                )}
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-    </div>
-  );
-};
-
 export const TermCard = ({ 
   term, 
   onRemoveTerm, 
@@ -100,14 +29,15 @@ export const TermCard = ({
   isEditable = true,
 }: TermCardProps) => {
   const [isEditingYear, setIsEditingYear] = useState(false);
+  const [isEditingSemester, setIsEditingSemester] = useState(false);
   const [yearInput, setYearInput] = useState(term.customYearLabel || term.year);
   
-  const semesterLabel = term.semester === 'HT' ? 'Hösttermin' : 'Vårtermin';
+  const defaultSemesterLabel = term.semester === 'HT' ? 'Hösttermin' : 'Vårtermin';
+  const semesterLabel = term.customSemesterLabel || defaultSemesterLabel;
   const period1Label = term.semester === 'HT' ? 'LP1' : 'LP3';
   const period2Label = term.semester === 'HT' ? 'LP2' : 'LP4';
   
-  const totalTermHP = calculatePeriodHP(term.lp1) + calculatePeriodHP(term.lp2);
-
+  const totalTermHP = calculateTermHP(term);
   const displayYear = term.customYearLabel || term.year;
 
   const handleYearSave = () => {
@@ -115,34 +45,76 @@ export const TermCard = ({
     setIsEditingYear(false);
   };
 
+  const handleSemesterTypeChange = (value: 'HT' | 'VT') => {
+    onUpdateTerm({ semester: value, customSemesterLabel: '' });
+  };
+
   return (
     <Card className="relative">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <CardTitle className="text-base">
-              {semesterLabel}{' '}
-            </CardTitle>
-            {isEditingYear ? (
-              <div className="flex items-center gap-1">
+            {isEditingSemester ? (
+              <div className="flex items-center gap-2">
+                <Select 
+                  value={term.semester} 
+                  onValueChange={(v) => handleSemesterTypeChange(v as 'HT' | 'VT')}
+                >
+                  <SelectTrigger className="w-32 h-8 text-sm bg-background">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover border border-border shadow-lg z-50">
+                    <SelectItem value="HT">Hösttermin</SelectItem>
+                    <SelectItem value="VT">Vårtermin</SelectItem>
+                  </SelectContent>
+                </Select>
                 <Input
-                  value={yearInput}
-                  onChange={(e) => setYearInput(e.target.value)}
-                  className="w-24 h-7 text-sm"
-                  placeholder="År"
-                  onBlur={handleYearSave}
-                  onKeyDown={(e) => e.key === 'Enter' && handleYearSave()}
-                  autoFocus
+                  value={term.customSemesterLabel}
+                  onChange={(e) => onUpdateTerm({ customSemesterLabel: e.target.value })}
+                  className="w-28 h-8 text-sm"
+                  placeholder="Egen text..."
                 />
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setIsEditingSemester(false)}
+                  className="h-8 px-2"
+                >
+                  Klar
+                </Button>
               </div>
             ) : (
               <button
-                onClick={() => isEditable && setIsEditingYear(true)}
+                onClick={() => isEditable && setIsEditingSemester(true)}
                 className="flex items-center gap-1 text-base font-semibold hover:text-primary transition-colors"
               >
-                {displayYear}
+                {semesterLabel}
                 {isEditable && <Edit2 className="w-3 h-3 text-muted-foreground" />}
               </button>
+            )}
+            
+            {!isEditingSemester && (
+              isEditingYear ? (
+                <div className="flex items-center gap-1">
+                  <Input
+                    value={yearInput}
+                    onChange={(e) => setYearInput(e.target.value)}
+                    className="w-24 h-7 text-sm"
+                    placeholder="År"
+                    onBlur={handleYearSave}
+                    onKeyDown={(e) => e.key === 'Enter' && handleYearSave()}
+                    autoFocus
+                  />
+                </div>
+              ) : (
+                <button
+                  onClick={() => isEditable && setIsEditingYear(true)}
+                  className="flex items-center gap-1 text-base font-semibold hover:text-primary transition-colors"
+                >
+                  {displayYear}
+                  {isEditable && <Edit2 className="w-3 h-3 text-muted-foreground" />}
+                </button>
+              )
             )}
           </div>
           <div className="flex items-center gap-2">
@@ -173,13 +145,15 @@ export const TermCard = ({
       
       <CardContent className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
-          <PeriodSection
+          <DroppablePeriod
+            id={`${term.id}-lp1`}
             title={period1Label}
             courses={term.lp1}
             onRemoveCourse={(id) => onRemoveCourse('lp1', id)}
             isEditable={isEditable}
           />
-          <PeriodSection
+          <DroppablePeriod
+            id={`${term.id}-lp2`}
             title={period2Label}
             courses={term.lp2}
             onRemoveCourse={(id) => onRemoveCourse('lp2', id)}
