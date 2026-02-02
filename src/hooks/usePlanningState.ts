@@ -2,8 +2,7 @@ import { useState, useCallback } from 'react';
 import { 
   StudentInfo, 
   TermPlan, 
-  PlannedCourse, 
-  RetakeExamPeriod,
+  PlannedCourse,
   Program 
 } from '@/types/planning';
 
@@ -13,16 +12,17 @@ const createEmptyTerm = (semester: 'HT' | 'VT', year: string): TermPlan => ({
   id: generateId(),
   semester,
   year,
+  customYearLabel: '',
   lp1: [],
   lp2: [],
-  retakeExam: null,
+  retakeExamNotes: '',
 });
 
 const initialStudentInfo: StudentInfo = {
   name: '',
   program: 'D',
   yearGroup: '',
-  counselor: 'Joakim Cao',
+  counselorId: 'joakim',
 };
 
 export const usePlanningState = () => {
@@ -53,6 +53,13 @@ export const usePlanningState = () => {
     setTerms(prev => prev.filter(t => t.id !== termId));
   }, []);
 
+  const updateTerm = useCallback((termId: string, updates: Partial<TermPlan>) => {
+    setTerms(prev => prev.map(term => {
+      if (term.id !== termId) return term;
+      return { ...term, ...updates };
+    }));
+  }, []);
+
   const addCourseToTerm = useCallback((
     termId: string, 
     period: 'lp1' | 'lp2', 
@@ -81,10 +88,27 @@ export const usePlanningState = () => {
     }));
   }, []);
 
-  const setRetakeExam = useCallback((termId: string, period: RetakeExamPeriod) => {
+  const updateCourseInTerm = useCallback((
+    termId: string,
+    period: 'lp1' | 'lp2',
+    courseId: string,
+    updates: Partial<PlannedCourse>
+  ) => {
     setTerms(prev => prev.map(term => {
       if (term.id !== termId) return term;
-      return { ...term, retakeExam: period };
+      return {
+        ...term,
+        [period]: term[period].map(c => 
+          c.id === courseId ? { ...c, ...updates } : c
+        ),
+      };
+    }));
+  }, []);
+
+  const setRetakeExamNotes = useCallback((termId: string, notes: string) => {
+    setTerms(prev => prev.map(term => {
+      if (term.id !== termId) return term;
+      return { ...term, retakeExamNotes: notes };
     }));
   }, []);
 
@@ -104,11 +128,14 @@ export const usePlanningState = () => {
     agenda,
     setAgenda,
     terms,
+    setTerms,
     addTerm,
     removeTerm,
+    updateTerm,
     addCourseToTerm,
     removeCourseFromTerm,
-    setRetakeExam,
+    updateCourseInTerm,
+    setRetakeExamNotes,
     notes,
     setNotes,
     resetPlan,

@@ -1,12 +1,18 @@
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { LogOut, User } from 'lucide-react';
 import lthLogo from '@/assets/lth-logo.png';
+import { COUNSELORS, getCounselorById } from '@/types/planning';
 
 interface HeaderProps {
   onLogout: () => void;
+  counselorId: string;
+  onCounselorChange: (counselorId: string) => void;
 }
 
-export const Header = ({ onLogout }: HeaderProps) => {
+export const Header = ({ onLogout, counselorId, onCounselorChange }: HeaderProps) => {
+  const currentCounselor = getCounselorById(counselorId);
+
   return (
     <header className="bg-primary text-primary-foreground shadow-md">
       <div className="container mx-auto px-4 py-3 flex items-center justify-between">
@@ -24,10 +30,21 @@ export const Header = ({ onLogout }: HeaderProps) => {
           </div>
         </div>
         
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 text-sm text-primary-foreground/90">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
             <User className="w-4 h-4" />
-            <span>STVL Joakim Cao</span>
+            <Select value={counselorId} onValueChange={onCounselorChange}>
+              <SelectTrigger className="w-48 h-8 bg-primary-foreground/10 border-primary-foreground/20 text-primary-foreground text-sm">
+                <SelectValue placeholder="Välj studievägledare" />
+              </SelectTrigger>
+              <SelectContent className="bg-popover border border-border shadow-lg z-50">
+                {COUNSELORS.map((counselor) => (
+                  <SelectItem key={counselor.id} value={counselor.id}>
+                    {counselor.displayName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <Button
             variant="ghost"

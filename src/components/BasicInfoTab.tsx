@@ -4,7 +4,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar, User, GraduationCap, FileText } from 'lucide-react';
-import { StudentInfo, Program } from '@/types/planning';
+import { StudentInfo, Program, COUNSELORS, getCounselorById } from '@/types/planning';
 
 interface BasicInfoTabProps {
   studentInfo: StudentInfo;
@@ -43,6 +43,8 @@ export const BasicInfoTab = ({
     month: 'long',
     day: 'numeric',
   });
+
+  const currentCounselor = getCounselorById(studentInfo.counselorId);
 
   return (
     <div className="space-y-6">
@@ -118,12 +120,12 @@ export const BasicInfoTab = ({
               </Select>
             </div>
 
-            {/* Counselor - Pre-filled */}
+            {/* Counselor - Displayed from header selection */}
             <div className="space-y-2">
               <Label htmlFor="counselor">Studievägledare</Label>
               <div className="flex items-center gap-2 p-2 border border-input rounded-md bg-muted/30">
                 <GraduationCap className="w-4 h-4 text-primary" />
-                <span className="text-sm">{studentInfo.counselor}</span>
+                <span className="text-sm">{currentCounselor?.name || 'Välj studievägledare'}</span>
               </div>
             </div>
           </div>
