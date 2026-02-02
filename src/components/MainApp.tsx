@@ -78,6 +78,7 @@ export const MainApp = ({ onLogout }: MainAppProps) => {
             onRemoveCourse={removeCourseFromTerm}
             onUpdateTerm={updateTerm}
             onNotesChange={setNotes}
+            onTermsChange={setTerms}
           />
         )}
         

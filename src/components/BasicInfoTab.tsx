@@ -18,12 +18,10 @@ const programs = [
   { value: 'C', label: 'Civilingenjör i Infocom (C)' },
 ];
 
-// Generate year groups for last 6 years
+// Generate year groups from kull 15 to kull 30
 const generateYearGroups = () => {
-  const currentYear = new Date().getFullYear();
   const groups: string[] = [];
-  for (let i = 0; i < 6; i++) {
-    const year = (currentYear - i) % 100;
+  for (let year = 15; year <= 30; year++) {
     groups.push(`D${year}`, `C${year}`);
   }
   return groups.sort();

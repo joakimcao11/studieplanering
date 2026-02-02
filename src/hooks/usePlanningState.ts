@@ -13,6 +13,7 @@ const createEmptyTerm = (semester: 'HT' | 'VT', year: string): TermPlan => ({
   semester,
   year,
   customYearLabel: '',
+  customSemesterLabel: '',
   lp1: [],
   lp2: [],
   retakeExamNotes: '',
