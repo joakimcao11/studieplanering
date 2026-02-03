@@ -2,8 +2,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar, User, GraduationCap, FileText } from 'lucide-react';
+import { Calendar, User, GraduationCap, FileText, ArrowRight } from 'lucide-react';
 import { StudentInfo, Program, COUNSELORS, getCounselorById } from '@/types/planning';
 
 interface BasicInfoTabProps {
@@ -11,6 +12,7 @@ interface BasicInfoTabProps {
   agenda: string;
   onStudentInfoChange: (updates: Partial<StudentInfo>) => void;
   onAgendaChange: (agenda: string) => void;
+  onNextTab?: () => void;
 }
 
 const programs = [
@@ -33,7 +35,8 @@ export const BasicInfoTab = ({
   studentInfo, 
   agenda, 
   onStudentInfoChange, 
-  onAgendaChange 
+  onAgendaChange,
+  onNextTab,
 }: BasicInfoTabProps) => {
   const currentDate = new Date().toLocaleDateString('sv-SE', {
     weekday: 'long',
@@ -49,7 +52,7 @@ export const BasicInfoTab = ({
       {/* Basic Information Card */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 text-foreground font-bold">
             <User className="w-5 h-5 text-primary" />
             Grundinformation
           </CardTitle>
@@ -60,14 +63,14 @@ export const BasicInfoTab = ({
             <Calendar className="w-5 h-5 text-primary" />
             <div>
               <span className="text-sm text-muted-foreground">Datum: </span>
-              <span className="font-medium capitalize">{currentDate}</span>
+              <span className="font-medium capitalize text-foreground">{currentDate}</span>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Student Name */}
             <div className="space-y-2">
-              <Label htmlFor="studentName">Studentens namn</Label>
+              <Label htmlFor="studentName" className="text-foreground font-medium">Studentens namn</Label>
               <Input
                 id="studentName"
                 placeholder="Förnamn Efternamn"
@@ -78,7 +81,7 @@ export const BasicInfoTab = ({
 
             {/* Program Selection */}
             <div className="space-y-2">
-              <Label htmlFor="program">Program</Label>
+              <Label htmlFor="program" className="text-foreground font-medium">Program</Label>
               <Select
                 value={studentInfo.program}
                 onValueChange={(value: Program) => onStudentInfoChange({ program: value })}
@@ -98,7 +101,7 @@ export const BasicInfoTab = ({
 
             {/* Year Group */}
             <div className="space-y-2">
-              <Label htmlFor="yearGroup">Årskull</Label>
+              <Label htmlFor="yearGroup" className="text-foreground font-medium">Årskull</Label>
               <Select
                 value={studentInfo.yearGroup}
                 onValueChange={(value) => onStudentInfoChange({ yearGroup: value })}
@@ -120,10 +123,10 @@ export const BasicInfoTab = ({
 
             {/* Counselor - Displayed from header selection */}
             <div className="space-y-2">
-              <Label htmlFor="counselor">Studievägledare</Label>
+              <Label htmlFor="counselor" className="text-foreground font-medium">Studievägledare</Label>
               <div className="flex items-center gap-2 p-2 border border-input rounded-md bg-muted/30">
                 <GraduationCap className="w-4 h-4 text-primary" />
-                <span className="text-sm">{currentCounselor?.name || 'Välj studievägledare'}</span>
+                <span className="text-sm text-foreground">{currentCounselor?.name || 'Välj studievägledare'}</span>
               </div>
             </div>
           </div>
@@ -133,14 +136,14 @@ export const BasicInfoTab = ({
       {/* Agenda Card */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 text-foreground font-bold">
             <FileText className="w-5 h-5 text-primary" />
             Agenda
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            <Label htmlFor="agenda">Syftet med samtalet / agenda</Label>
+            <Label htmlFor="agenda" className="text-foreground font-medium">Syftet med samtalet / agenda</Label>
             <Textarea
               id="agenda"
               placeholder="Beskriv syftet med samtalet och vad ni ska gå igenom..."
@@ -156,7 +159,7 @@ export const BasicInfoTab = ({
       {/* Info box about HP */}
       <Card className="bg-secondary/30 border-primary/20">
         <CardContent className="pt-4">
-          <h4 className="font-medium text-sm text-primary mb-2">
+          <h4 className="font-bold text-sm text-foreground mb-2">
             📚 Grundlogik för studieplanering
           </h4>
           <ul className="text-sm text-muted-foreground space-y-1">
@@ -167,6 +170,16 @@ export const BasicInfoTab = ({
           </ul>
         </CardContent>
       </Card>
+
+      {/* Navigation Button */}
+      {onNextTab && (
+        <div className="flex justify-end pt-4">
+          <Button onClick={onNextTab} size="lg">
+            Fortsätt till Studieplanering
+            <ArrowRight className="w-4 h-4 ml-2" />
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

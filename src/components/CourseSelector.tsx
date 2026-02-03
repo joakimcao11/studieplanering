@@ -7,9 +7,9 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Plus, BookOpen, PenLine, GraduationCap } from 'lucide-react';
+import { Search, Plus, BookOpen, PenLine, GraduationCap, ExternalLink } from 'lucide-react';
 import { Course, getAllCourses } from '@/data/courses';
-import { Program, PlannedCourse } from '@/types/planning';
+import { Program, PlannedCourse, StudyPace } from '@/types/planning';
 
 interface CourseSelectorProps {
   program: Program;
@@ -27,6 +27,7 @@ export const CourseSelector = ({ program, onAddCourse }: CourseSelectorProps) =>
   const [customCourseCode, setCustomCourseCode] = useState('');
   const [customCourseHpType, setCustomCourseHpType] = useState<string>('7.5');
   const [customCourseHP, setCustomCourseHP] = useState<string>('');
+  const [customStudyPace, setCustomStudyPace] = useState<StudyPace>(100);
 
   const courses = getAllCourses(program);
   
@@ -41,6 +42,7 @@ export const CourseSelector = ({ program, onAddCourse }: CourseSelectorProps) =>
   });
 
   const handleAddProgramCourse = (course: Course) => {
+    const studyPace = course.isMultiPeriod ? (course.defaultStudyPace as StudyPace || 50) : 100;
     onAddCourse({
       id: '',
       courseId: course.id,
@@ -48,6 +50,8 @@ export const CourseSelector = ({ program, onAddCourse }: CourseSelectorProps) =>
       name: course.name,
       hp: course.hp,
       isCustom: false,
+      studyPace,
+      isMultiPeriod: course.isMultiPeriod,
     });
   };
 
@@ -65,13 +69,21 @@ export const CourseSelector = ({ program, onAddCourse }: CourseSelectorProps) =>
       name: customCourseName.trim(),
       hp: hp,
       isCustom: true,
+      studyPace: customStudyPace,
     });
     
     setCustomCourseName('');
     setCustomCourseCode('');
     setCustomCourseHpType('7.5');
     setCustomCourseHP('');
+    setCustomStudyPace(100);
   };
+
+  const programLink = program === 'D' 
+    ? 'https://kurser.lth.se/lot/programme?ay=25_26&programme=D'
+    : 'https://kurser.lth.se/lot/programme?ay=25_26&programme=C';
+  
+  const programLinkLabel = program === 'D' ? 'Program läsår D' : 'Program läsår C';
 
   return (
     <Card className="h-full">
@@ -82,6 +94,16 @@ export const CourseSelector = ({ program, onAddCourse }: CourseSelectorProps) =>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Program Link Button */}
+        <Button 
+          variant="outline" 
+          className="w-full justify-between text-foreground"
+          onClick={() => window.open(programLink, '_blank')}
+        >
+          <span className="font-medium">{programLinkLabel}</span>
+          <ExternalLink className="w-4 h-4" />
+        </Button>
+
         <Tabs defaultValue="program" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="program">Programkurser</TabsTrigger>
@@ -143,7 +165,7 @@ export const CourseSelector = ({ program, onAddCourse }: CourseSelectorProps) =>
             </div>
 
             {/* Course List */}
-            <ScrollArea className="h-48 rounded-md border">
+            <ScrollArea className="h-64 rounded-md border">
               <div className="p-2 space-y-1">
                 {filteredCourses.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-4">
@@ -157,7 +179,7 @@ export const CourseSelector = ({ program, onAddCourse }: CourseSelectorProps) =>
                       onClick={() => handleAddProgramCourse(course)}
                     >
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-xs text-muted-foreground font-mono">
                             {course.code}
                           </span>
@@ -171,8 +193,16 @@ export const CourseSelector = ({ program, onAddCourse }: CourseSelectorProps) =>
                               LP{course.periods.join(',')}
                             </span>
                           )}
+                          {course.isMultiPeriod && (
+                            <Badge variant="outline" className="text-xs bg-warning/20 text-warning-foreground border-warning">
+                              *Flerperiod
+                            </Badge>
+                          )}
                         </div>
-                        <p className="text-sm truncate">{course.name}</p>
+                        <p className="text-sm truncate text-foreground">
+                          {course.isMultiPeriod && <span className="font-bold">*</span>}
+                          {course.name}
+                        </p>
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium text-primary">
@@ -200,7 +230,7 @@ export const CourseSelector = ({ program, onAddCourse }: CourseSelectorProps) =>
           <TabsContent value="custom" className="space-y-4 mt-3">
             <div className="space-y-3">
               <div className="space-y-2">
-                <Label htmlFor="customCode">Kurskod (valfritt)</Label>
+                <Label htmlFor="customCode" className="text-foreground">Kurskod (valfritt)</Label>
                 <Input
                   id="customCode"
                   placeholder="T.ex. EDAA01"
@@ -210,7 +240,7 @@ export const CourseSelector = ({ program, onAddCourse }: CourseSelectorProps) =>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="customName">Kursnamn</Label>
+                <Label htmlFor="customName" className="text-foreground">Kursnamn</Label>
                 <div className="relative">
                   <PenLine className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
@@ -224,7 +254,7 @@ export const CourseSelector = ({ program, onAddCourse }: CourseSelectorProps) =>
               </div>
 
               <div className="space-y-2">
-                <Label>Högskolepoäng (hp)</Label>
+                <Label className="text-foreground">Högskolepoäng (hp)</Label>
                 <Select value={customCourseHpType} onValueChange={setCustomCourseHpType}>
                   <SelectTrigger className="bg-background">
                     <SelectValue placeholder="Välj hp" />
@@ -239,7 +269,7 @@ export const CourseSelector = ({ program, onAddCourse }: CourseSelectorProps) =>
 
               {customCourseHpType === 'custom' && (
                 <div className="space-y-2">
-                  <Label htmlFor="customHpValue">Ange hp</Label>
+                  <Label htmlFor="customHpValue" className="text-foreground">Ange hp</Label>
                   <Input
                     id="customHpValue"
                     type="number"
@@ -251,6 +281,25 @@ export const CourseSelector = ({ program, onAddCourse }: CourseSelectorProps) =>
                   />
                 </div>
               )}
+
+              {/* Study Pace Selector */}
+              <div className="space-y-2">
+                <Label className="text-foreground">Studietakt</Label>
+                <Select 
+                  value={customStudyPace.toString()} 
+                  onValueChange={(v) => setCustomStudyPace(parseInt(v) as StudyPace)}
+                >
+                  <SelectTrigger className="bg-background">
+                    <SelectValue placeholder="Välj studietakt" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover border border-border shadow-lg z-50">
+                    <SelectItem value="100">100% (heltid)</SelectItem>
+                    <SelectItem value="75">75%</SelectItem>
+                    <SelectItem value="50">50%</SelectItem>
+                    <SelectItem value="25">25%</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
               <Button
                 onClick={handleAddCustomCourse}
@@ -267,6 +316,7 @@ export const CourseSelector = ({ program, onAddCourse }: CourseSelectorProps) =>
                   <p className="text-xs text-muted-foreground">
                     Egna kurser kan användas för kurser från andra program, 
                     utbytesstudier eller specialkurser som inte finns i listan.
+                    Ange studietakt om kursen inte läses på heltid.
                   </p>
                 </div>
               </div>

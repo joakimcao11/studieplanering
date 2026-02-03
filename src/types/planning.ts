@@ -31,6 +31,8 @@ export interface StudentInfo {
   counselorId: string;
 }
 
+export type StudyPace = 25 | 50 | 75 | 100;
+
 export interface PlannedCourse {
   id: string;
   courseId: string;
@@ -38,6 +40,8 @@ export interface PlannedCourse {
   name: string;
   hp: number;
   isCustom: boolean;
+  studyPace?: StudyPace; // 25%, 50%, 75%, or 100% (default)
+  isMultiPeriod?: boolean; // Course spans multiple periods (marked with *)
 }
 
 export type Period = 'LP1' | 'LP2' | 'LP3' | 'LP4';

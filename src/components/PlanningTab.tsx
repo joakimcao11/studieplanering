@@ -5,14 +5,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, FileText, ArrowDown } from 'lucide-react';
+import { Plus, FileText, ArrowRight } from 'lucide-react';
 import { TermPlan, PlannedCourse, Program } from '@/types/planning';
 import { TermCard } from './TermCard';
 import { CourseSelector } from './CourseSelector';
 import {
   DndContext,
   DragEndEvent,
-  DragOverEvent,
   DragStartEvent,
   PointerSensor,
   useSensor,
@@ -33,6 +32,7 @@ interface PlanningTabProps {
   onUpdateTerm: (termId: string, updates: Partial<TermPlan>) => void;
   onNotesChange: (notes: string) => void;
   onTermsChange: (terms: TermPlan[]) => void;
+  onNextTab?: () => void;
 }
 
 export const PlanningTab = ({
@@ -46,6 +46,7 @@ export const PlanningTab = ({
   onUpdateTerm,
   onNotesChange,
   onTermsChange,
+  onNextTab,
 }: PlanningTabProps) => {
   const [selectedTermId, setSelectedTermId] = useState<string>(terms[0]?.id || '');
   const [selectedPeriod, setSelectedPeriod] = useState<'lp1' | 'lp2'>('lp1');
@@ -193,64 +194,59 @@ export const PlanningTab = ({
       onDragEnd={handleDragEnd}
     >
       <div className="space-y-6">
-        {/* Target Selection - Moved to top and made more prominent */}
-        <Card className="border-primary/30 bg-primary/5">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2">
-              <ArrowDown className="w-4 h-4 text-primary" />
-              Lägg till kurser i studieplan
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Välj termin</Label>
-                <Select value={selectedTermId} onValueChange={setSelectedTermId}>
-                  <SelectTrigger className="bg-background">
-                    <SelectValue placeholder="Välj termin" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover border border-border shadow-lg z-50">
-                    {terms.map((term) => {
-                      const label = term.customSemesterLabel || (term.semester === 'HT' ? 'Hösttermin' : 'Vårtermin');
-                      return (
-                        <SelectItem key={term.id} value={term.id}>
-                          {label} {term.customYearLabel || term.year}
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Välj läsperiod</Label>
-                <Select value={selectedPeriod} onValueChange={(v) => setSelectedPeriod(v as 'lp1' | 'lp2')}>
-                  <SelectTrigger className="bg-background">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover border border-border shadow-lg z-50">
-                    <SelectItem value="lp1">
-                      {selectedTerm?.semester === 'HT' ? 'LP1' : 'LP3'}
-                    </SelectItem>
-                    <SelectItem value="lp2">
-                      {selectedTerm?.semester === 'HT' ? 'LP2' : 'LP4'}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Column - Course Selector with integrated target selection */}
+          <div className="lg:col-span-1 space-y-4">
+            {/* Target Selection Card - Integrated with Course Selector */}
+            <Card className="border-primary/30 bg-primary/5">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base text-foreground font-bold">
+                  Välj var kursen ska placeras
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-foreground">Välj termin</Label>
+                  <Select value={selectedTermId} onValueChange={setSelectedTermId}>
+                    <SelectTrigger className="bg-background">
+                      <SelectValue placeholder="Välj termin" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover border border-border shadow-lg z-50">
+                      {terms.map((term) => {
+                        const label = term.customSemesterLabel || (term.semester === 'HT' ? 'Hösttermin' : 'Vårtermin');
+                        return (
+                          <SelectItem key={term.id} value={term.id}>
+                            {label} {term.customYearLabel || term.year}
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-foreground">Välj läsperiod</Label>
+                  <Select value={selectedPeriod} onValueChange={(v) => setSelectedPeriod(v as 'lp1' | 'lp2')}>
+                    <SelectTrigger className="bg-background">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover border border-border shadow-lg z-50">
+                      <SelectItem value="lp1">
+                        {selectedTerm?.semester === 'HT' ? 'LP1' : 'LP3'}
+                      </SelectItem>
+                      <SelectItem value="lp2">
+                        {selectedTerm?.semester === 'HT' ? 'LP2' : 'LP4'}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <div className="flex items-center gap-2">
-                <Badge variant="secondary" className="text-sm py-2 px-4">
+                <Badge variant="secondary" className="text-sm py-2 px-4 w-full justify-center">
                   Kurser läggs till i <span className="font-bold text-primary ml-1">{periodLabel}</span>
                 </Badge>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - Course Selector */}
-          <div className="lg:col-span-1">
             <CourseSelector 
               program={program} 
               onAddCourse={handleAddCourse}
@@ -314,7 +310,7 @@ export const PlanningTab = ({
             {/* Notes */}
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-base flex items-center gap-2">
+                <CardTitle className="text-base flex items-center gap-2 text-foreground font-bold">
                   <FileText className="w-4 h-4 text-primary" />
                   Övriga anteckningar
                 </CardTitle>
@@ -329,6 +325,16 @@ export const PlanningTab = ({
                 />
               </CardContent>
             </Card>
+
+            {/* Navigation Button */}
+            {onNextTab && (
+              <div className="flex justify-end pt-4">
+                <Button onClick={onNextTab} size="lg">
+                  Fortsätt till Överblick & Export
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -337,7 +343,7 @@ export const PlanningTab = ({
         {activeCourse ? (
           <div className="p-2 bg-background border border-primary rounded shadow-lg text-sm">
             <span className="font-mono text-xs text-muted-foreground">{activeCourse.code}</span>
-            <span className="ml-2">{activeCourse.name}</span>
+            <span className="ml-2 text-foreground">{activeCourse.name}</span>
             <span className="ml-2 text-primary font-medium">{activeCourse.hp} hp</span>
           </div>
         ) : null}
