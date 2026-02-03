@@ -38,12 +38,15 @@ export const BasicInfoTab = ({
   onAgendaChange,
   onNextTab,
 }: BasicInfoTabProps) => {
-  const currentDate = new Date().toLocaleDateString('sv-SE', {
+  const todayFormatted = new Date().toLocaleDateString('sv-SE', {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
     day: 'numeric',
   });
+  
+  const todayISO = new Date().toISOString().split('T')[0];
+  const displayDate = studentInfo.customDate || todayISO;
 
   const currentCounselor = getCounselorById(studentInfo.counselorId);
 
@@ -58,13 +61,16 @@ export const BasicInfoTab = ({
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Date - Auto-generated */}
-          <div className="flex items-center gap-3 p-3 bg-secondary/50 rounded-lg">
-            <Calendar className="w-5 h-5 text-primary" />
-            <div>
-              <span className="text-sm text-muted-foreground">Datum: </span>
-              <span className="font-medium capitalize text-foreground">{currentDate}</span>
-            </div>
+          {/* Date - Editable */}
+          <div className="space-y-2">
+            <Label htmlFor="meetingDate" className="text-foreground font-medium">Datum</Label>
+            <Input
+              id="meetingDate"
+              type="date"
+              value={displayDate}
+              onChange={(e) => onStudentInfoChange({ customDate: e.target.value })}
+              className="max-w-xs"
+            />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

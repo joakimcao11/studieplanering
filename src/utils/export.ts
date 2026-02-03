@@ -39,7 +39,9 @@ const FONT_NAME = 'Times New Roman';
 const LINE_SPACING_SINGLE = 240;
 
 const generateTextContent = (data: ExportData): string => {
-  const currentDate = new Date().toLocaleDateString('sv-SE');
+  const currentDate = data.studentInfo.customDate 
+    ? new Date(data.studentInfo.customDate).toLocaleDateString('sv-SE')
+    : new Date().toLocaleDateString('sv-SE');
   const programName = data.studentInfo.program === 'D' ? 'Datateknik' : 'Infocom';
   const counselor = getCounselorById(data.studentInfo.counselorId);
 
@@ -84,27 +86,35 @@ ${'-'.repeat(40)}
     content += `${semesterLabel} ${displayYear}
 `;
     
-    content += `  ${period1Label} (${lp1HP} hp):
+    content += `  ${period1Label} (${lp1HP.toFixed(2).replace(/\.?0+$/, '')} hp):
 `;
     if (term.lp1.length === 0) {
       content += `    - Inga kurser planerade\n`;
     } else {
       term.lp1.forEach(course => {
-        content += `    - ${course.code}: ${course.name} (${course.hp} hp)${course.isCustom ? ' [Egen kurs]' : ''}\n`;
+        const effectiveHP = course.studyPace && course.studyPace !== 100 
+          ? (course.hp * course.studyPace / 100).toFixed(2).replace(/\.?0+$/, '')
+          : course.hp.toString();
+        const paceInfo = course.studyPace && course.studyPace !== 100 ? ` [${course.studyPace}%]` : '';
+        content += `    - ${course.code}: ${course.isMultiPeriod ? '*' : ''}${course.name} (${effectiveHP} hp)${paceInfo}${course.isCustom ? ' [Egen kurs]' : ''}\n`;
       });
     }
 
-    content += `  ${period2Label} (${lp2HP} hp):
+    content += `  ${period2Label} (${lp2HP.toFixed(2).replace(/\.?0+$/, '')} hp):
 `;
     if (term.lp2.length === 0) {
       content += `    - Inga kurser planerade\n`;
     } else {
       term.lp2.forEach(course => {
-        content += `    - ${course.code}: ${course.name} (${course.hp} hp)${course.isCustom ? ' [Egen kurs]' : ''}\n`;
+        const effectiveHP = course.studyPace && course.studyPace !== 100 
+          ? (course.hp * course.studyPace / 100).toFixed(2).replace(/\.?0+$/, '')
+          : course.hp.toString();
+        const paceInfo = course.studyPace && course.studyPace !== 100 ? ` [${course.studyPace}%]` : '';
+        content += `    - ${course.code}: ${course.isMultiPeriod ? '*' : ''}${course.name} (${effectiveHP} hp)${paceInfo}${course.isCustom ? ' [Egen kurs]' : ''}\n`;
       });
     }
 
-    content += `  Totalt hp denna termin: ${termHP} hp\n`;
+    content += `  Totalt hp denna termin: ${termHP.toFixed(2).replace(/\.?0+$/, '')} hp\n`;
     
     if (term.retakeExamNotes) {
       content += `  Omtentamensperiod: ${term.retakeExamNotes}\n`;
@@ -141,7 +151,9 @@ export const exportToText = (data: ExportData) => {
 };
 
 export const exportToWord = async (data: ExportData) => {
-  const currentDate = new Date().toLocaleDateString('sv-SE');
+  const currentDate = data.studentInfo.customDate 
+    ? new Date(data.studentInfo.customDate).toLocaleDateString('sv-SE')
+    : new Date().toLocaleDateString('sv-SE');
   const programName = data.studentInfo.program === 'D' ? 'Datateknik' : 'Infocom';
   const counselor = getCounselorById(data.studentInfo.counselorId);
 
@@ -275,7 +287,7 @@ export const exportToWord = async (data: ExportData) => {
     // LP1/LP3 header
     sections.push(
       new Paragraph({
-        children: [new TextRun({ text: `${period1Label} (${lp1HP} hp):`, italics: true, size: FONT_SIZE_NORMAL, font: FONT_NAME })],
+        children: [new TextRun({ text: `${period1Label} (${lp1HP.toFixed(2).replace(/\.?0+$/, '')} hp):`, italics: true, size: FONT_SIZE_NORMAL, font: FONT_NAME })],
         indent: { left: convertInchesToTwip(0.25) },
         spacing: defaultSpacing,
       }),
@@ -291,10 +303,15 @@ export const exportToWord = async (data: ExportData) => {
       );
     } else {
       term.lp1.forEach(course => {
+        const effectiveHP = course.studyPace && course.studyPace !== 100 
+          ? (course.hp * course.studyPace / 100).toFixed(2).replace(/\.?0+$/, '')
+          : course.hp.toString();
+        const paceInfo = course.studyPace && course.studyPace !== 100 ? ` [${course.studyPace}%]` : '';
+        const multiPeriodPrefix = course.isMultiPeriod ? '*' : '';
         sections.push(
           new Paragraph({
             children: [
-              new TextRun({ text: `– ${course.code}: ${course.name} (${course.hp} hp)`, size: FONT_SIZE_NORMAL, font: FONT_NAME }),
+              new TextRun({ text: `– ${course.code}: ${multiPeriodPrefix}${course.name} (${effectiveHP} hp)${paceInfo}`, size: FONT_SIZE_NORMAL, font: FONT_NAME, bold: !!paceInfo }),
               course.isCustom ? new TextRun({ text: ' [Egen kurs]', italics: true, size: FONT_SIZE_NORMAL, font: FONT_NAME }) : new TextRun({ text: '' }),
             ],
             indent: { left: convertInchesToTwip(0.5) },
@@ -307,7 +324,7 @@ export const exportToWord = async (data: ExportData) => {
     // LP2/LP4 header
     sections.push(
       new Paragraph({
-        children: [new TextRun({ text: `${period2Label} (${lp2HP} hp):`, italics: true, size: FONT_SIZE_NORMAL, font: FONT_NAME })],
+        children: [new TextRun({ text: `${period2Label} (${lp2HP.toFixed(2).replace(/\.?0+$/, '')} hp):`, italics: true, size: FONT_SIZE_NORMAL, font: FONT_NAME })],
         indent: { left: convertInchesToTwip(0.25) },
         spacing: defaultSpacing,
       }),
@@ -323,10 +340,15 @@ export const exportToWord = async (data: ExportData) => {
       );
     } else {
       term.lp2.forEach(course => {
+        const effectiveHP = course.studyPace && course.studyPace !== 100 
+          ? (course.hp * course.studyPace / 100).toFixed(2).replace(/\.?0+$/, '')
+          : course.hp.toString();
+        const paceInfo = course.studyPace && course.studyPace !== 100 ? ` [${course.studyPace}%]` : '';
+        const multiPeriodPrefix = course.isMultiPeriod ? '*' : '';
         sections.push(
           new Paragraph({
             children: [
-              new TextRun({ text: `– ${course.code}: ${course.name} (${course.hp} hp)`, size: FONT_SIZE_NORMAL, font: FONT_NAME }),
+              new TextRun({ text: `– ${course.code}: ${multiPeriodPrefix}${course.name} (${effectiveHP} hp)${paceInfo}`, size: FONT_SIZE_NORMAL, font: FONT_NAME, bold: !!paceInfo }),
               course.isCustom ? new TextRun({ text: ' [Egen kurs]', italics: true, size: FONT_SIZE_NORMAL, font: FONT_NAME }) : new TextRun({ text: '' }),
             ],
             indent: { left: convertInchesToTwip(0.5) },
@@ -339,7 +361,7 @@ export const exportToWord = async (data: ExportData) => {
     // Term total
     sections.push(
       new Paragraph({
-        children: [new TextRun({ text: `Totalt denna termin: ${termHP} hp`, bold: true, size: FONT_SIZE_NORMAL, font: FONT_NAME })],
+        children: [new TextRun({ text: `Totalt denna termin: ${termHP.toFixed(2).replace(/\.?0+$/, '')} hp`, bold: true, size: FONT_SIZE_NORMAL, font: FONT_NAME })],
         indent: { left: convertInchesToTwip(0.25) },
         spacing: { ...defaultSpacing, before: 100 },
       }),

@@ -79,7 +79,9 @@ export const DraggableCourse = ({ course, onRemove, isEditable = true }: Draggab
       </div>
       <div className="flex items-center gap-2">
         <span className="text-sm font-medium text-primary">
-          {course.hp} hp
+          {course.studyPace && course.studyPace !== 100 
+            ? (course.hp * course.studyPace / 100).toFixed(2).replace(/\.?0+$/, '')
+            : course.hp} hp
         </span>
         {isEditable && (
           <Button
