@@ -119,10 +119,10 @@ export const TermCard = ({
           </div>
           <div className="flex items-center gap-2">
             <Badge 
-              variant={totalTermHP === HP_PER_TERM ? 'default' : 'secondary'}
+              variant={Math.abs(totalTermHP - HP_PER_TERM) < 0.1 ? 'default' : 'secondary'}
               className="text-xs"
             >
-              {totalTermHP} / {HP_PER_TERM} hp
+              {totalTermHP.toFixed(1).replace(/\.0$/, '')} / {HP_PER_TERM} hp
             </Badge>
             {canRemove && isEditable && (
               <Button

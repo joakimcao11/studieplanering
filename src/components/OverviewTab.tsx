@@ -45,7 +45,9 @@ export const OverviewTab = ({
   const [newCourseHp, setNewCourseHp] = useState('7.5');
   const [newCourseStudyPace, setNewCourseStudyPace] = useState<StudyPace>(100);
 
-  const currentDate = new Date().toLocaleDateString('sv-SE');
+  const currentDate = studentInfo.customDate 
+    ? new Date(studentInfo.customDate).toLocaleDateString('sv-SE')
+    : new Date().toLocaleDateString('sv-SE');
   const totalHP = terms.reduce((sum, term) => sum + calculateTermHP(term), 0);
   const totalTerms = terms.length;
   const counselor = getCounselorById(studentInfo.counselorId);
@@ -117,6 +119,33 @@ export const OverviewTab = ({
     setAddingCourseToTerm(null);
   };
 
+  const generateId = () => Math.random().toString(36).substring(2, 9);
+
+  const createEmptyTerm = (semester: 'HT' | 'VT', year: string): TermPlan => ({
+    id: generateId(),
+    semester,
+    year,
+    customYearLabel: '',
+    customSemesterLabel: '',
+    lp1: [],
+    lp2: [],
+    retakeExamNotes: '',
+  });
+
+  const addTerm = () => {
+    const lastTerm = terms[terms.length - 1];
+    const nextSemester = lastTerm ? (lastTerm.semester === 'HT' ? 'VT' : 'HT') : 'HT';
+    const nextYear = lastTerm 
+      ? (lastTerm.semester === 'VT' ? (parseInt(lastTerm.year) + 1).toString() : lastTerm.year)
+      : new Date().getFullYear().toString();
+    onTermsChange([...terms, createEmptyTerm(nextSemester, nextYear)]);
+  };
+
+  const removeTerm = (termId: string) => {
+    if (terms.length <= 1) return; // Keep at least one term
+    onTermsChange(terms.filter(t => t.id !== termId));
+  };
+
   const renderCourseRow = (course: PlannedCourse, termId: string, period: 'lp1' | 'lp2') => {
     const isEditing = editingCourseId === course.id;
     const isNonStandardPace = course.studyPace && course.studyPace !== 100;
@@ -180,7 +209,9 @@ export const OverviewTab = ({
                 {course.isMultiPeriod && <span className="font-bold">*</span>}
                 {course.name}
               </span>
-              {' '}({course.hp} hp)
+              {' '}({isNonStandardPace 
+                ? `${(course.hp * (course.studyPace || 100) / 100).toFixed(2).replace(/\.?0+$/, '')} hp` 
+                : `${course.hp} hp`})
               {course.isCustom && <Badge variant="outline" className="ml-1 text-xs">Egen</Badge>}
               {course.isMultiPeriod && <Badge variant="outline" className="ml-1 text-xs bg-warning/20">*Flerperiod</Badge>}
               {isNonStandardPace && <Badge variant="secondary" className="ml-1 text-xs">{course.studyPace}%</Badge>}
@@ -289,34 +320,6 @@ export const OverviewTab = ({
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-primary/10 rounded-lg">
-                <BarChart3 className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Totalt planerat</p>
-                <p className="text-2xl font-bold text-foreground">{totalHP} hp</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="pt-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <Calendar className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Antal terminer</p>
-                <p className="text-2xl font-bold text-foreground">{totalTerms}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="pt-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary/10 rounded-lg">
                 <User className="w-5 h-5 text-primary" />
               </div>
               <div>
@@ -340,6 +343,34 @@ export const OverviewTab = ({
                 <p className="text-lg font-medium text-foreground">
                   {studentInfo.yearGroup || studentInfo.program}
                 </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="pt-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <Calendar className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Antal terminer</p>
+                <p className="text-2xl font-bold text-foreground">{totalTerms}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="pt-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <BarChart3 className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Totalt planerat</p>
+                <p className="text-2xl font-bold text-foreground">{totalHP.toFixed(1).replace(/\.0$/, '')} hp</p>
               </div>
             </div>
           </CardContent>
@@ -438,7 +469,13 @@ export const OverviewTab = ({
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h4 className="font-bold text-foreground">Studieplanering</h4>
-              <Badge variant="outline">Totalt: {totalHP} hp</Badge>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline">Totalt: {totalHP.toFixed(1).replace(/\.0$/, '')} hp</Badge>
+                <Button variant="outline" size="sm" onClick={addTerm}>
+                  <Plus className="w-3 h-3 mr-1" />
+                  Lägg till termin
+                </Button>
+              </div>
             </div>
 
             {terms.map((term) => {
@@ -483,6 +520,16 @@ export const OverviewTab = ({
                         >
                           {isEditing ? <Save className="w-3 h-3" /> : <Edit2 className="w-3 h-3" />}
                         </Button>
+                        {terms.length > 1 && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeTerm(term.id)}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        )}
                       </div>
                       <Badge 
                         className={cn(
@@ -519,7 +566,7 @@ export const OverviewTab = ({
                               {renderAddCourseForm(term.id, 'lp1')}
                             </div>
                           </TableCell>
-                          <TableCell className="text-right text-foreground">{calculatePeriodHP(term.lp1)}</TableCell>
+                          <TableCell className="text-right text-foreground">{calculatePeriodHP(term.lp1).toFixed(2).replace(/\.?0+$/, '')}</TableCell>
                         </TableRow>
                         <TableRow>
                           <TableCell className="font-medium text-foreground">{period2Label}</TableCell>
@@ -533,7 +580,7 @@ export const OverviewTab = ({
                               {renderAddCourseForm(term.id, 'lp2')}
                             </div>
                           </TableCell>
-                          <TableCell className="text-right text-foreground">{calculatePeriodHP(term.lp2)}</TableCell>
+                          <TableCell className="text-right text-foreground">{calculatePeriodHP(term.lp2).toFixed(2).replace(/\.?0+$/, '')}</TableCell>
                         </TableRow>
                       </TableBody>
                     </Table>

@@ -29,6 +29,7 @@ export interface StudentInfo {
   program: Program;
   yearGroup: string; // e.g., D20, C21
   counselorId: string;
+  customDate?: string; // Custom date for the meeting
 }
 
 export type StudyPace = 25 | 50 | 75 | 100;
@@ -80,7 +81,12 @@ export const HP_PER_TERM = 30;
 export const HP_PER_YEAR = 60;
 
 export const calculatePeriodHP = (courses: PlannedCourse[]): number => {
-  return courses.reduce((sum, course) => sum + course.hp, 0);
+  return courses.reduce((sum, course) => {
+    // Apply study pace to HP calculation
+    const pace = course.studyPace || 100;
+    const effectiveHP = (course.hp * pace) / 100;
+    return sum + effectiveHP;
+  }, 0);
 };
 
 export const calculateTermHP = (term: TermPlan): number => {
