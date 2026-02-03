@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { X, GripVertical } from 'lucide-react';
 import { PlannedCourse } from '@/types/planning';
+import { cn } from '@/lib/utils';
 
 interface DraggableCourseProps {
   course: PlannedCourse;
@@ -27,11 +28,16 @@ export const DraggableCourse = ({ course, onRemove, isEditable = true }: Draggab
     opacity: isDragging ? 0.5 : 1,
   };
 
+  const isNonStandardPace = course.studyPace && course.studyPace !== 100;
+
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center justify-between p-2 bg-secondary/50 rounded text-sm group"
+      className={cn(
+        "flex items-center justify-between p-2 bg-secondary/50 rounded text-sm group",
+        isNonStandardPace && "border-l-4 border-warning"
+      )}
     >
       {isEditable && (
         <button
@@ -43,7 +49,7 @@ export const DraggableCourse = ({ course, onRemove, isEditable = true }: Draggab
         </button>
       )}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 flex-wrap">
           <span className="text-xs text-muted-foreground font-mono">
             {course.code}
           </span>
@@ -52,8 +58,24 @@ export const DraggableCourse = ({ course, onRemove, isEditable = true }: Draggab
               Egen
             </Badge>
           )}
+          {course.isMultiPeriod && (
+            <Badge variant="outline" className="text-xs py-0 bg-warning/20 text-warning-foreground border-warning">
+              *Flerperiod
+            </Badge>
+          )}
+          {isNonStandardPace && (
+            <Badge variant="secondary" className="text-xs py-0 bg-primary/20">
+              {course.studyPace}%
+            </Badge>
+          )}
         </div>
-        <p className="text-sm truncate">{course.name}</p>
+        <p className={cn(
+          "text-sm truncate text-foreground",
+          isNonStandardPace && "font-bold"
+        )}>
+          {course.isMultiPeriod && <span className="font-bold">*</span>}
+          {course.name}
+        </p>
       </div>
       <div className="flex items-center gap-2">
         <span className="text-sm font-medium text-primary">

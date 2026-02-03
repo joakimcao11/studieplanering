@@ -36,6 +36,12 @@ export const MainApp = ({ onLogout }: MainAppProps) => {
     updateStudentInfo({ counselorId });
   };
 
+  const goToNextTab = () => {
+    if (currentTab < 2) {
+      setCurrentTab(currentTab + 1);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Header 
@@ -64,6 +70,7 @@ export const MainApp = ({ onLogout }: MainAppProps) => {
             agenda={agenda}
             onStudentInfoChange={updateStudentInfo}
             onAgendaChange={setAgenda}
+            onNextTab={goToNextTab}
           />
         )}
         
@@ -79,6 +86,7 @@ export const MainApp = ({ onLogout }: MainAppProps) => {
             onUpdateTerm={updateTerm}
             onNotesChange={setNotes}
             onTermsChange={setTerms}
+            onNextTab={goToNextTab}
           />
         )}
         
