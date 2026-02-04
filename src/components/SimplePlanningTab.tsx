@@ -14,6 +14,7 @@ export interface SimpleStudentInfo {
   fornamn: string;
   program: string;
   antagningsar: string;
+  termin: 'vt' | 'ht';
 }
 
 export interface SimpleRestkurs {
@@ -21,6 +22,8 @@ export interface SimpleRestkurs {
   kurskod: string;
   kursnamn: string;
   restpoang: number;
+  lp1: boolean;
+  lp2: boolean;
   lp3: boolean;
   lp4: boolean;
   tentadatum: string;
@@ -32,6 +35,8 @@ export interface SimpleNyKurs {
   kurskod: string;
   kursnamn: string;
   hp: number;
+  lp1: boolean;
+  lp2: boolean;
   lp3: boolean;
   lp4: boolean;
 }
@@ -50,6 +55,7 @@ export const SimplePlanningTab = () => {
     fornamn: '',
     program: '',
     antagningsar: '',
+    termin: 'vt',
   });
   const [restkurser, setRestkurser] = useState<SimpleRestkurs[]>([]);
   const [nyaKurser, setNyaKurser] = useState<SimpleNyKurs[]>([]);
@@ -95,6 +101,8 @@ export const SimplePlanningTab = () => {
       kurskod: '',
       kursnamn: '',
       restpoang: 0,
+      lp1: false,
+      lp2: false,
       lp3: false,
       lp4: false,
       tentadatum: '',
@@ -117,6 +125,8 @@ export const SimplePlanningTab = () => {
       kurskod: '',
       kursnamn: '',
       hp: 0,
+      lp1: false,
+      lp2: false,
       lp3: false,
       lp4: false,
     };
@@ -140,9 +150,6 @@ export const SimplePlanningTab = () => {
             <div className="flex justify-between items-center mb-2">
               <span className="text-sm font-medium text-foreground">
                 Steg {currentStep} av {steps.length} – {steps[currentStep - 1].title}
-              </span>
-              <span className="text-sm text-muted-foreground">
-                Sparas automatiskt
               </span>
             </div>
             <Progress value={progress} className="h-2" />
@@ -213,8 +220,12 @@ export const SimplePlanningTab = () => {
             studentInfo={studentInfo}
             restkurser={restkurser}
             nyaKurser={nyaKurser}
-            onEditRestkurs={(id) => { setCurrentStep(2); }}
-            onEditNyKurs={(id) => { setCurrentStep(3); }}
+            onUpdateRestkurs={updateRestkurs}
+            onRemoveRestkurs={removeRestkurs}
+            onAddRestkurs={addRestkurs}
+            onUpdateNyKurs={updateNyKurs}
+            onRemoveNyKurs={removeNyKurs}
+            onAddNyKurs={addNyKurs}
           />
         )}
       </div>

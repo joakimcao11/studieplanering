@@ -1,85 +1,212 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
-import { FileText, Download, Pencil, GraduationCap, BookOpen, User } from 'lucide-react';
+import { FileText, Download, Plus, Trash2, Edit2, Check, GraduationCap, BookOpen, User } from 'lucide-react';
 import { SimpleStudentInfo, SimpleRestkurs, SimpleNyKurs } from '../SimplePlanningTab';
+import { useState } from 'react';
+import { Document, Packer, Paragraph, TextRun, AlignmentType, ImageRun } from 'docx';
+import { saveAs } from 'file-saver';
 
 interface SimpleSummaryStepProps {
   studentInfo: SimpleStudentInfo;
   restkurser: SimpleRestkurs[];
   nyaKurser: SimpleNyKurs[];
-  onEditRestkurs: (id: string) => void;
-  onEditNyKurs: (id: string) => void;
+  onUpdateRestkurs: (id: string, updates: Partial<SimpleRestkurs>) => void;
+  onRemoveRestkurs: (id: string) => void;
+  onAddRestkurs: () => void;
+  onUpdateNyKurs: (id: string, updates: Partial<SimpleNyKurs>) => void;
+  onRemoveNyKurs: (id: string) => void;
+  onAddNyKurs: () => void;
 }
 
-export const SimpleSummaryStep = ({
-  studentInfo,
-  restkurser,
+export const SimpleSummaryStep = ({ 
+  studentInfo, 
+  restkurser, 
   nyaKurser,
-  onEditRestkurs,
-  onEditNyKurs,
+  onUpdateRestkurs,
+  onRemoveRestkurs,
+  onAddRestkurs,
+  onUpdateNyKurs,
+  onRemoveNyKurs,
+  onAddNyKurs
 }: SimpleSummaryStepProps) => {
-  // Calculate HP
-  const restHP = restkurser.reduce((sum, k) => sum + (k.restpoang || 0), 0);
-  const nyHP = nyaKurser.reduce((sum, k) => sum + (k.hp || 0), 0);
-  const totalHP = restHP + nyHP;
+  const [editingRestkurs, setEditingRestkurs] = useState<string | null>(null);
+  const [editingNyKurs, setEditingNyKurs] = useState<string | null>(null);
 
-  // Calculate per period
-  const lp3Rest = restkurser.filter(k => k.lp3).reduce((sum, k) => sum + (k.restpoang || 0), 0);
-  const lp4Rest = restkurser.filter(k => k.lp4).reduce((sum, k) => sum + (k.restpoang || 0), 0);
-  const lp3Nya = nyaKurser.filter(k => k.lp3).reduce((sum, k) => sum + (k.hp || 0), 0);
-  const lp4Nya = nyaKurser.filter(k => k.lp4).reduce((sum, k) => sum + (k.hp || 0), 0);
-  const lp3Total = lp3Rest + lp3Nya;
-  const lp4Total = lp4Rest + lp4Nya;
+  const terminLabel = studentInfo.termin === 'vt' ? 'VT' : 'HT';
+  
+  // Calculate HP per period
+  const calculatePeriodHP = (period: 'lp1' | 'lp2' | 'lp3' | 'lp4') => {
+    let total = 0;
+    
+    restkurser.forEach(k => {
+      if (k[period]) {
+        const periods = [k.lp1, k.lp2, k.lp3, k.lp4].filter(Boolean).length;
+        total += periods > 0 ? k.restpoang / periods : 0;
+      }
+    });
+    
+    nyaKurser.forEach(k => {
+      if (k[period]) {
+        const periods = [k.lp1, k.lp2, k.lp3, k.lp4].filter(Boolean).length;
+        total += periods > 0 ? k.hp / periods : 0;
+      }
+    });
+    
+    return total;
+  };
 
-  const handleExport = () => {
-    // Create a simple text export
-    let content = `STUDIEPLAN FÖR VT\n`;
-    content += `${'='.repeat(40)}\n\n`;
-    content += `PERSONUPPGIFTER\n`;
-    content += `-`.repeat(20) + `\n`;
-    content += `Namn: ${studentInfo.fornamn} ${studentInfo.efternamn}\n`;
-    content += `Program: ${studentInfo.program}\n`;
-    content += `Antagningsår: ${studentInfo.antagningsar}\n\n`;
+  const lp1HP = calculatePeriodHP('lp1');
+  const lp2HP = calculatePeriodHP('lp2');
+  const lp3HP = calculatePeriodHP('lp3');
+  const lp4HP = calculatePeriodHP('lp4');
+  const totalRestkurserHP = restkurser.reduce((sum, k) => sum + k.restpoang, 0);
+  const totalNyaKurserHP = nyaKurser.reduce((sum, k) => sum + k.hp, 0);
+  const totalHP = totalRestkurserHP + totalNyaKurserHP;
 
-    if (restkurser.length > 0) {
-      content += `RESTKURSER (omregistrering)\n`;
-      content += `-`.repeat(20) + `\n`;
-      restkurser.forEach(k => {
-        const perioder = [k.lp3 ? 'LP3' : '', k.lp4 ? 'LP4' : ''].filter(Boolean).join(', ');
-        content += `${k.kurskod} - ${k.kursnamn} (${k.restpoang} HP) - ${perioder}\n`;
-        if (k.tentadatum) content += `  Tenta: ${k.tentadatum}\n`;
-        if (k.omtentadatum) content += `  Omtenta: ${k.omtentadatum}\n`;
+  const formatPeriods = (kurs: { lp1: boolean; lp2: boolean; lp3: boolean; lp4: boolean }) => {
+    const periods = [];
+    if (kurs.lp1) periods.push('LP1');
+    if (kurs.lp2) periods.push('LP2');
+    if (kurs.lp3) periods.push('LP3');
+    if (kurs.lp4) periods.push('LP4');
+    return periods.join(' & ') || '-';
+  };
+
+  const exportToWord = async () => {
+    try {
+      // Load logo
+      let logoImageRun: ImageRun | null = null;
+      try {
+        const logoResponse = await fetch('/src/assets/lth-logo.png');
+        const logoBlob = await logoResponse.blob();
+        const logoArrayBuffer = await logoBlob.arrayBuffer();
+        logoImageRun = new ImageRun({
+          data: logoArrayBuffer,
+          transformation: { width: 150, height: 50 },
+          type: 'png',
+        });
+      } catch (e) {
+        console.log('Could not load logo');
+      }
+
+      const children: Paragraph[] = [];
+
+      // Header with logo
+      if (logoImageRun) {
+        children.push(new Paragraph({ children: [logoImageRun], alignment: AlignmentType.LEFT }));
+        children.push(new Paragraph({ text: '', spacing: { after: 200 } }));
+      }
+
+      // Title
+      children.push(new Paragraph({
+        children: [new TextRun({ text: `Studieplan för ${terminLabel}`, bold: true, size: 28, font: 'Times New Roman' })],
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 400 }
+      }));
+
+      // Student info
+      children.push(new Paragraph({
+        children: [new TextRun({ text: 'Student', bold: true, size: 24, font: 'Times New Roman' })],
+        spacing: { before: 200, after: 100 }
+      }));
+      children.push(new Paragraph({
+        children: [new TextRun({ text: `${studentInfo.fornamn} ${studentInfo.efternamn}`, size: 24, font: 'Times New Roman' })],
+        spacing: { after: 100 }
+      }));
+      children.push(new Paragraph({
+        children: [new TextRun({ text: `Program: ${studentInfo.program}`, size: 24, font: 'Times New Roman' })],
+        spacing: { after: 100 }
+      }));
+      children.push(new Paragraph({
+        children: [new TextRun({ text: `Antagningsår: ${studentInfo.antagningsar}`, size: 24, font: 'Times New Roman' })],
+        spacing: { after: 300 }
+      }));
+
+      // Summary
+      children.push(new Paragraph({
+        children: [new TextRun({ text: 'Sammanfattning', bold: true, size: 24, font: 'Times New Roman' })],
+        spacing: { before: 200, after: 100 }
+      }));
+      children.push(new Paragraph({
+        children: [new TextRun({ text: `Totalt antal HP: ${totalHP}`, size: 24, font: 'Times New Roman' })],
+        spacing: { after: 100 }
+      }));
+      if (lp1HP > 0) {
+        children.push(new Paragraph({
+          children: [new TextRun({ text: `Läsperiod 1: ${lp1HP.toFixed(1)} HP`, size: 24, font: 'Times New Roman' })],
+          spacing: { after: 50 }
+        }));
+      }
+      if (lp2HP > 0) {
+        children.push(new Paragraph({
+          children: [new TextRun({ text: `Läsperiod 2: ${lp2HP.toFixed(1)} HP`, size: 24, font: 'Times New Roman' })],
+          spacing: { after: 50 }
+        }));
+      }
+      if (lp3HP > 0) {
+        children.push(new Paragraph({
+          children: [new TextRun({ text: `Läsperiod 3: ${lp3HP.toFixed(1)} HP`, size: 24, font: 'Times New Roman' })],
+          spacing: { after: 50 }
+        }));
+      }
+      if (lp4HP > 0) {
+        children.push(new Paragraph({
+          children: [new TextRun({ text: `Läsperiod 4: ${lp4HP.toFixed(1)} HP`, size: 24, font: 'Times New Roman' })],
+          spacing: { after: 300 }
+        }));
+      }
+
+      // Restkurser
+      if (restkurser.length > 0) {
+        children.push(new Paragraph({
+          children: [new TextRun({ text: 'Restkurser (omregistrering)', bold: true, size: 24, font: 'Times New Roman' })],
+          spacing: { before: 200, after: 100 }
+        }));
+        restkurser.forEach(kurs => {
+          children.push(new Paragraph({
+            children: [new TextRun({ text: `${kurs.kurskod} - ${kurs.kursnamn} (${kurs.restpoang} HP) - ${formatPeriods(kurs)}`, size: 24, font: 'Times New Roman' })],
+            spacing: { after: 50 }
+          }));
+        });
+      }
+
+      // Nya kurser
+      if (nyaKurser.length > 0) {
+        children.push(new Paragraph({
+          children: [new TextRun({ text: 'Nya kurser', bold: true, size: 24, font: 'Times New Roman' })],
+          spacing: { before: 200, after: 100 }
+        }));
+        nyaKurser.forEach(kurs => {
+          children.push(new Paragraph({
+            children: [new TextRun({ text: `${kurs.kurskod} - ${kurs.kursnamn} (${kurs.hp} HP) - ${formatPeriods(kurs)}`, size: 24, font: 'Times New Roman' })],
+            spacing: { after: 50 }
+          }));
+        });
+      }
+
+      // Contact info
+      children.push(new Paragraph({
+        children: [new TextRun({ text: 'Kontakt', bold: true, size: 24, font: 'Times New Roman' })],
+        spacing: { before: 400, after: 100 }
+      }));
+      children.push(new Paragraph({
+        children: [new TextRun({ text: 'Vid frågor, kontakta din studievägledare.', size: 24, font: 'Times New Roman' })],
+        spacing: { after: 50 }
+      }));
+
+      const doc = new Document({
+        sections: [{ properties: {}, children }]
       });
-      content += `\n`;
+
+      const blob = await Packer.toBlob(doc);
+      saveAs(blob, `Studieplan_${terminLabel}_${studentInfo.efternamn}_${studentInfo.fornamn}.docx`);
+    } catch (error) {
+      console.error('Export error:', error);
     }
-
-    if (nyaKurser.length > 0) {
-      content += `NYA KURSER\n`;
-      content += `-`.repeat(20) + `\n`;
-      nyaKurser.forEach(k => {
-        const perioder = [k.lp3 ? 'LP3' : '', k.lp4 ? 'LP4' : ''].filter(Boolean).join(', ');
-        content += `${k.kurskod} - ${k.kursnamn} (${k.hp} HP) - ${perioder}\n`;
-      });
-      content += `\n`;
-    }
-
-    content += `SAMMANFATTNING\n`;
-    content += `-`.repeat(20) + `\n`;
-    content += `Totalt HP: ${totalHP}\n`;
-    content += `Läsperiod 3: ${lp3Total} HP\n`;
-    content += `Läsperiod 4: ${lp4Total} HP\n`;
-
-    // Download
-    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `studieplan-vt-${studentInfo.efternamn || 'student'}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
   };
 
   return (
@@ -89,24 +216,40 @@ export const SimpleSummaryStep = ({
         <CardHeader>
           <CardTitle className="text-2xl font-bold text-foreground flex items-center gap-3">
             <GraduationCap className="w-7 h-7 text-primary" />
-            Din studieplan för VT
+            Studentens studieplan för {terminLabel}
           </CardTitle>
         </CardHeader>
         <CardContent>
           {/* Summary Stats */}
-          <div className="grid grid-cols-3 gap-4 mb-4">
-            <div className="bg-background/80 rounded-lg p-4 text-center">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
+            <div className="bg-background/80 rounded-lg p-4 text-center col-span-2 md:col-span-1">
               <p className="text-3xl font-bold text-primary">{totalHP}</p>
               <p className="text-sm text-muted-foreground">Totalt HP</p>
             </div>
-            <div className="bg-background/80 rounded-lg p-4 text-center">
-              <p className="text-2xl font-bold text-foreground">{lp3Total}</p>
-              <p className="text-sm text-muted-foreground">Läsperiod 3</p>
-            </div>
-            <div className="bg-background/80 rounded-lg p-4 text-center">
-              <p className="text-2xl font-bold text-foreground">{lp4Total}</p>
-              <p className="text-sm text-muted-foreground">Läsperiod 4</p>
-            </div>
+            {lp1HP > 0 && (
+              <div className="bg-background/80 rounded-lg p-4 text-center">
+                <p className="text-2xl font-bold text-foreground">{lp1HP.toFixed(1)}</p>
+                <p className="text-sm text-muted-foreground">LP1</p>
+              </div>
+            )}
+            {lp2HP > 0 && (
+              <div className="bg-background/80 rounded-lg p-4 text-center">
+                <p className="text-2xl font-bold text-foreground">{lp2HP.toFixed(1)}</p>
+                <p className="text-sm text-muted-foreground">LP2</p>
+              </div>
+            )}
+            {lp3HP > 0 && (
+              <div className="bg-background/80 rounded-lg p-4 text-center">
+                <p className="text-2xl font-bold text-foreground">{lp3HP.toFixed(1)}</p>
+                <p className="text-sm text-muted-foreground">LP3</p>
+              </div>
+            )}
+            {lp4HP > 0 && (
+              <div className="bg-background/80 rounded-lg p-4 text-center">
+                <p className="text-2xl font-bold text-foreground">{lp4HP.toFixed(1)}</p>
+                <p className="text-sm text-muted-foreground">LP4</p>
+              </div>
+            )}
           </div>
 
           {/* Student Info */}
@@ -120,115 +263,197 @@ export const SimpleSummaryStep = ({
       </Card>
 
       {/* Restkurser Section */}
-      {restkurser.length > 0 && (
-        <Card>
-          <CardHeader className="pb-2">
+      <Card>
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
             <CardTitle className="text-lg font-bold text-foreground flex items-center gap-2">
               <BookOpen className="w-5 h-5 text-amber-600" />
               Restkurser (omregistrering)
             </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {restkurser.map((kurs) => (
-              <div
-                key={kurs.id}
-                className="flex items-start justify-between p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg"
-              >
-                <div className="space-y-1">
-                  <p className="font-medium text-foreground">
-                    {kurs.kurskod} – {kurs.kursnamn}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {kurs.restpoang} HP • {[kurs.lp3 ? 'LP3' : '', kurs.lp4 ? 'LP4' : ''].filter(Boolean).join(' & ')}
-                  </p>
-                  {(kurs.tentadatum || kurs.omtentadatum) && (
-                    <p className="text-xs text-muted-foreground">
-                      {kurs.tentadatum && `Tenta: ${kurs.tentadatum}`}
-                      {kurs.tentadatum && kurs.omtentadatum && ' • '}
-                      {kurs.omtentadatum && `Omtenta: ${kurs.omtentadatum}`}
-                    </p>
+            <Button variant="outline" size="sm" onClick={onAddRestkurs} className="gap-1">
+              <Plus className="w-4 h-4" />
+              Lägg till
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {restkurser.length === 0 ? (
+            <p className="text-muted-foreground text-sm">Inga restkurser tillagda</p>
+          ) : (
+            <div className="space-y-2">
+              {restkurser.map((kurs) => (
+                <div key={kurs.id} className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+                  {editingRestkurs === kurs.id ? (
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-2 gap-2">
+                        <Input
+                          placeholder="Kurskod"
+                          value={kurs.kurskod}
+                          onChange={(e) => onUpdateRestkurs(kurs.id, { kurskod: e.target.value })}
+                        />
+                        <Input
+                          type="number"
+                          step="0.5"
+                          placeholder="HP"
+                          value={kurs.restpoang || ''}
+                          onChange={(e) => onUpdateRestkurs(kurs.id, { restpoang: parseFloat(e.target.value) || 0 })}
+                        />
+                      </div>
+                      <Input
+                        placeholder="Kursnamn"
+                        value={kurs.kursnamn}
+                        onChange={(e) => onUpdateRestkurs(kurs.id, { kursnamn: e.target.value })}
+                      />
+                      <div className="flex flex-wrap gap-3">
+                        {(['lp1', 'lp2', 'lp3', 'lp4'] as const).map((lp) => (
+                          <div key={lp} className="flex items-center gap-1">
+                            <Checkbox
+                              id={`edit-rest-${lp}-${kurs.id}`}
+                              checked={kurs[lp]}
+                              onCheckedChange={(checked) => onUpdateRestkurs(kurs.id, { [lp]: checked === true })}
+                            />
+                            <Label htmlFor={`edit-rest-${lp}-${kurs.id}`} className="text-sm cursor-pointer">
+                              {lp.toUpperCase()}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                      <Button size="sm" onClick={() => setEditingRestkurs(null)} className="gap-1">
+                        <Check className="w-3 h-3" />
+                        Klar
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1">
+                        <p className="font-medium text-foreground">
+                          {kurs.kurskod} – {kurs.kursnamn}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {kurs.restpoang} HP • {formatPeriods(kurs)}
+                        </p>
+                      </div>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="icon" onClick={() => setEditingRestkurs(kurs.id)}>
+                          <Edit2 className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => onRemoveRestkurs(kurs.id)} className="text-destructive hover:text-destructive">
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
                   )}
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onEditRestkurs(kurs.id)}
-                  className="gap-1 text-muted-foreground hover:text-foreground"
-                >
-                  <Pencil className="w-3 h-3" />
-                  Ändra
-                </Button>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Nya kurser Section */}
-      {nyaKurser.length > 0 && (
-        <Card>
-          <CardHeader className="pb-2">
+      <Card>
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
             <CardTitle className="text-lg font-bold text-foreground flex items-center gap-2">
               <BookOpen className="w-5 h-5 text-primary" />
               Nya kurser
             </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {nyaKurser.map((kurs) => (
-              <div
-                key={kurs.id}
-                className="flex items-start justify-between p-3 bg-primary/5 border border-primary/20 rounded-lg"
-              >
-                <div className="space-y-1">
-                  <p className="font-medium text-foreground">
-                    {kurs.kurskod} – {kurs.kursnamn}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {kurs.hp} HP • {[kurs.lp3 ? 'LP3' : '', kurs.lp4 ? 'LP4' : ''].filter(Boolean).join(' & ')}
-                  </p>
+            <Button variant="outline" size="sm" onClick={onAddNyKurs} className="gap-1">
+              <Plus className="w-4 h-4" />
+              Lägg till
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {nyaKurser.length === 0 ? (
+            <p className="text-muted-foreground text-sm">Inga nya kurser tillagda</p>
+          ) : (
+            <div className="space-y-2">
+              {nyaKurser.map((kurs) => (
+                <div key={kurs.id} className="p-3 bg-primary/5 border border-primary/20 rounded-lg">
+                  {editingNyKurs === kurs.id ? (
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-2 gap-2">
+                        <Input
+                          placeholder="Kurskod"
+                          value={kurs.kurskod}
+                          onChange={(e) => onUpdateNyKurs(kurs.id, { kurskod: e.target.value })}
+                        />
+                        <Input
+                          type="number"
+                          step="0.5"
+                          placeholder="HP"
+                          value={kurs.hp || ''}
+                          onChange={(e) => onUpdateNyKurs(kurs.id, { hp: parseFloat(e.target.value) || 0 })}
+                        />
+                      </div>
+                      <Input
+                        placeholder="Kursnamn"
+                        value={kurs.kursnamn}
+                        onChange={(e) => onUpdateNyKurs(kurs.id, { kursnamn: e.target.value })}
+                      />
+                      <div className="flex flex-wrap gap-3">
+                        {(['lp1', 'lp2', 'lp3', 'lp4'] as const).map((lp) => (
+                          <div key={lp} className="flex items-center gap-1">
+                            <Checkbox
+                              id={`edit-ny-${lp}-${kurs.id}`}
+                              checked={kurs[lp]}
+                              onCheckedChange={(checked) => onUpdateNyKurs(kurs.id, { [lp]: checked === true })}
+                            />
+                            <Label htmlFor={`edit-ny-${lp}-${kurs.id}`} className="text-sm cursor-pointer">
+                              {lp.toUpperCase()}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                      <Button size="sm" onClick={() => setEditingNyKurs(null)} className="gap-1">
+                        <Check className="w-3 h-3" />
+                        Klar
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1">
+                        <p className="font-medium text-foreground">
+                          {kurs.kurskod} – {kurs.kursnamn}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {kurs.hp} HP • {formatPeriods(kurs)}
+                        </p>
+                      </div>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="icon" onClick={() => setEditingNyKurs(kurs.id)}>
+                          <Edit2 className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => onRemoveNyKurs(kurs.id)} className="text-destructive hover:text-destructive">
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onEditNyKurs(kurs.id)}
-                  className="gap-1 text-muted-foreground hover:text-foreground"
-                >
-                  <Pencil className="w-3 h-3" />
-                  Ändra
-                </Button>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Empty State */}
-      {restkurser.length === 0 && nyaKurser.length === 0 && (
-        <Card className="bg-muted/30">
-          <CardContent className="py-8 text-center">
-            <p className="text-muted-foreground">
-              Du har inte lagt till några kurser ännu. Gå tillbaka till steg 2 eller 3 för att lägga till kurser.
-            </p>
-          </CardContent>
-        </Card>
-      )}
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <Separator className="my-6" />
 
       {/* Export Button */}
       <div className="flex justify-center">
         <Button 
-          onClick={handleExport}
+          onClick={exportToWord}
           size="lg"
-          className="gap-2"
+          className="gap-2 bg-green-600 hover:bg-green-700"
         >
           <Download className="w-5 h-5" />
-          Exportera som textfil
+          Exportera som Word-dokument
         </Button>
       </div>
 
       <p className="text-center text-sm text-muted-foreground">
-        Vi räknar automatiskt ihop dina poäng. Du kan när som helst gå tillbaka och ändra.
+        HP-poängen räknas automatiskt ihop. Kurser kan redigeras direkt ovan.
       </p>
     </div>
   );
