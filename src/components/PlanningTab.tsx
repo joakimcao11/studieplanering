@@ -48,13 +48,19 @@ export const PlanningTab = ({
   onTermsChange,
   onNextTab,
 }: PlanningTabProps) => {
-  const [selectedTermId, setSelectedTermId] = useState<string>(terms[0]?.id || '');
-  const [selectedPeriod, setSelectedPeriod] = useState<'lp1' | 'lp2'>('lp1');
+  // Find spring term 2026, or fall back to first term
+  const getDefaultTermId = () => {
+    const springTerm2026 = terms.find(t => t.semester === 'VT' && (t.year === '2026' || t.customYearLabel === '2026'));
+    return springTerm2026?.id || terms[0]?.id || '';
+  };
+
+  const [selectedTermId, setSelectedTermId] = useState<string>(getDefaultTermId());
+  const [selectedPeriod, setSelectedPeriod] = useState<'lp1' | 'lp2'>('lp1'); // lp1 = LP3 for VT
   const [activeCourse, setActiveCourse] = useState<PlannedCourse | null>(null);
   
   // New term creation state
   const [newTermSemester, setNewTermSemester] = useState<'HT' | 'VT'>('VT');
-  const [newTermYear, setNewTermYear] = useState<string>('');
+  const [newTermYear, setNewTermYear] = useState<string>('2026');
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -263,6 +269,7 @@ export const PlanningTab = ({
                 onRemoveTerm={() => onRemoveTerm(term.id)}
                 onRemoveCourse={(period, courseId) => onRemoveCourse(term.id, period, courseId)}
                 onUpdateTerm={(updates) => onUpdateTerm(term.id, updates)}
+                onAddCourse={(period, course) => onAddCourse(term.id, period, course)}
                 canRemove={terms.length > 1}
                 isEditable={true}
               />

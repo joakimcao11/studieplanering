@@ -16,6 +16,7 @@ interface TermCardProps {
   onRemoveTerm: () => void;
   onRemoveCourse: (period: 'lp1' | 'lp2', courseId: string) => void;
   onUpdateTerm: (updates: Partial<TermPlan>) => void;
+  onAddCourse?: (period: 'lp1' | 'lp2', course: PlannedCourse) => void;
   canRemove: boolean;
   isEditable?: boolean;
 }
@@ -25,6 +26,7 @@ export const TermCard = ({
   onRemoveTerm, 
   onRemoveCourse, 
   onUpdateTerm,
+  onAddCourse,
   canRemove,
   isEditable = true,
 }: TermCardProps) => {
@@ -150,6 +152,7 @@ export const TermCard = ({
             title={period1Label}
             courses={term.lp1}
             onRemoveCourse={(id) => onRemoveCourse('lp1', id)}
+            onAddCustomCourse={onAddCourse ? (course) => onAddCourse('lp1', course) : undefined}
             isEditable={isEditable}
           />
           <DroppablePeriod
@@ -157,6 +160,7 @@ export const TermCard = ({
             title={period2Label}
             courses={term.lp2}
             onRemoveCourse={(id) => onRemoveCourse('lp2', id)}
+            onAddCustomCourse={onAddCourse ? (course) => onAddCourse('lp2', course) : undefined}
             isEditable={isEditable}
           />
         </div>
