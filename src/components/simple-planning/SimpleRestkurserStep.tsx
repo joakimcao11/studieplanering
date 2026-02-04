@@ -19,10 +19,10 @@ export const SimpleRestkurserStep = ({ restkurser, onAdd, onUpdate, onRemove }: 
       <Card>
         <CardHeader>
           <CardTitle className="text-xl font-bold text-foreground">
-            Har du några restkurser?
+            Har studenten några restkurser?
           </CardTitle>
           <CardDescription>
-            Restkurser är kurser du påbörjat men inte slutfört. Lägg till dem här så hjälper vi dig att hålla koll.
+            Restkurser är kurser studenten påbörjat men inte slutfört. Lägg till dem här för att hålla koll.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -31,7 +31,7 @@ export const SimpleRestkurserStep = ({ restkurser, onAdd, onUpdate, onRemove }: 
             <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
             <div className="text-sm text-blue-800 dark:text-blue-200">
               <p>
-                För att CSN ska godkänna studier med restkurser behöver du vara omregistrerad. 
+                För att CSN ska godkänna studier med restkurser behöver studenten vara omregistrerad. 
                 Kontakta kursansvarig eller utbildningsadministratör för omregistrering.
               </p>
             </div>
@@ -100,7 +100,27 @@ export const SimpleRestkurserStep = ({ restkurser, onAdd, onUpdate, onRemove }: 
 
             <div className="space-y-2">
               <Label className="font-medium text-foreground">När ges kursen?</Label>
-              <div className="flex gap-6">
+              <div className="flex flex-wrap gap-4">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id={`lp1-${kurs.id}`}
+                    checked={kurs.lp1}
+                    onCheckedChange={(checked) => onUpdate(kurs.id, { lp1: checked === true })}
+                  />
+                  <Label htmlFor={`lp1-${kurs.id}`} className="font-normal cursor-pointer">
+                    Läsperiod 1
+                  </Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id={`lp2-${kurs.id}`}
+                    checked={kurs.lp2}
+                    onCheckedChange={(checked) => onUpdate(kurs.id, { lp2: checked === true })}
+                  />
+                  <Label htmlFor={`lp2-${kurs.id}`} className="font-normal cursor-pointer">
+                    Läsperiod 2
+                  </Label>
+                </div>
                 <div className="flex items-center gap-2">
                   <Checkbox
                     id={`lp3-${kurs.id}`}
@@ -157,10 +177,10 @@ export const SimpleRestkurserStep = ({ restkurser, onAdd, onUpdate, onRemove }: 
         <Card className="bg-muted/30">
           <CardContent className="py-8 text-center">
             <p className="text-muted-foreground">
-              Du har inga restkurser tillagda ännu. Klicka på knappen ovan för att lägga till.
+              Inga restkurser tillagda ännu. Klicka på knappen ovan för att lägga till.
             </p>
             <p className="text-sm text-muted-foreground mt-2">
-              Om du inte har några restkurser kan du gå vidare till nästa steg.
+              Om studenten inte har några restkurser kan du gå vidare till nästa steg.
             </p>
           </CardContent>
         </Card>

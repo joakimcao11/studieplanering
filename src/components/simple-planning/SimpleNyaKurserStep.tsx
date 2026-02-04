@@ -21,10 +21,10 @@ export const SimpleNyaKurserStep = ({ nyaKurser, onAdd, onUpdate, onRemove }: Si
       <Card>
         <CardHeader>
           <CardTitle className="text-xl font-bold text-foreground">
-            Vilka nya kurser ska du läsa?
+            Vilka nya kurser ska studenten läsa?
           </CardTitle>
           <CardDescription>
-            Lägg till de kurser du planerar att läsa denna termin. Det här är kurser du registrerar dig på för första gången.
+            Lägg till de kurser studenten planerar att läsa denna termin. Det här är kurser studenten registrerar sig på för första gången.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -33,7 +33,7 @@ export const SimpleNyaKurserStep = ({ nyaKurser, onAdd, onUpdate, onRemove }: Si
             <div className="mb-4 p-3 bg-primary/10 rounded-lg flex items-center gap-3">
               <BookOpen className="w-5 h-5 text-primary" />
               <span className="text-sm font-medium text-foreground">
-                Du har lagt till {nyaKurser.length} kurs{nyaKurser.length !== 1 ? 'er' : ''} – totalt {totalHP} HP
+                {nyaKurser.length} kurs{nyaKurser.length !== 1 ? 'er' : ''} tillagda – totalt {totalHP} HP
               </span>
             </div>
           )}
@@ -100,8 +100,28 @@ export const SimpleNyaKurserStep = ({ nyaKurser, onAdd, onUpdate, onRemove }: Si
             </div>
 
             <div className="space-y-2">
-              <Label className="font-medium text-foreground">När ska du läsa kursen?</Label>
-              <div className="flex gap-6">
+              <Label className="font-medium text-foreground">När ska kursen läsas?</Label>
+              <div className="flex flex-wrap gap-4">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id={`ny-lp1-${kurs.id}`}
+                    checked={kurs.lp1}
+                    onCheckedChange={(checked) => onUpdate(kurs.id, { lp1: checked === true })}
+                  />
+                  <Label htmlFor={`ny-lp1-${kurs.id}`} className="font-normal cursor-pointer">
+                    Läsperiod 1
+                  </Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id={`ny-lp2-${kurs.id}`}
+                    checked={kurs.lp2}
+                    onCheckedChange={(checked) => onUpdate(kurs.id, { lp2: checked === true })}
+                  />
+                  <Label htmlFor={`ny-lp2-${kurs.id}`} className="font-normal cursor-pointer">
+                    Läsperiod 2
+                  </Label>
+                </div>
                 <div className="flex items-center gap-2">
                   <Checkbox
                     id={`ny-lp3-${kurs.id}`}
@@ -139,7 +159,7 @@ export const SimpleNyaKurserStep = ({ nyaKurser, onAdd, onUpdate, onRemove }: Si
         <Card className="bg-muted/30">
           <CardContent className="py-8 text-center">
             <p className="text-muted-foreground">
-              Du har inga nya kurser tillagda ännu. Klicka på knappen ovan för att lägga till.
+              Inga nya kurser tillagda ännu. Klicka på knappen ovan för att lägga till.
             </p>
           </CardContent>
         </Card>

@@ -1,6 +1,7 @@
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { SimpleStudentInfo } from '../SimplePlanningTab';
 
 interface SimplePersonalInfoStepProps {
@@ -17,11 +18,8 @@ export const SimplePersonalInfoStep = ({ studentInfo, onUpdate }: SimplePersonal
     <Card>
       <CardHeader>
         <CardTitle className="text-xl font-bold text-foreground">
-          Berätta lite om dig
+          Grundinformation
         </CardTitle>
-        <CardDescription>
-          Vi börjar med dina grunduppgifter. Det här går snabbt!
-        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
@@ -72,10 +70,26 @@ export const SimplePersonalInfoStep = ({ studentInfo, onUpdate }: SimplePersonal
           />
         </div>
 
-        <div className="mt-6 p-4 bg-muted/50 rounded-lg">
-          <p className="text-sm text-muted-foreground">
-            💡 <strong>Tips:</strong> Dina uppgifter sparas automatiskt medan du fyller i dem.
-          </p>
+        <div className="space-y-2">
+          <Label className="font-medium text-foreground">Termin</Label>
+          <RadioGroup
+            value={studentInfo.termin}
+            onValueChange={(value) => handleChange('termin', value)}
+            className="flex gap-6"
+          >
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="ht" id="ht" />
+              <Label htmlFor="ht" className="font-normal cursor-pointer">
+                Hösttermin
+              </Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="vt" id="vt" />
+              <Label htmlFor="vt" className="font-normal cursor-pointer">
+                Vårtermin
+              </Label>
+            </div>
+          </RadioGroup>
         </div>
       </CardContent>
     </Card>
