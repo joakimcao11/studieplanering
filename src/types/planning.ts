@@ -43,6 +43,7 @@ export interface PlannedCourse {
   isCustom: boolean;
   studyPace?: StudyPace; // 25%, 50%, 75%, or 100% (default)
   isMultiPeriod?: boolean; // Course spans multiple periods (marked with *)
+  completedHP?: number; // HP already completed (restkurs)
 }
 
 export type Period = 'LP1' | 'LP2' | 'LP3' | 'LP4';
@@ -85,7 +86,9 @@ export const calculatePeriodHP = (courses: PlannedCourse[]): number => {
     // Apply study pace to HP calculation
     const pace = course.studyPace || 100;
     const effectiveHP = (course.hp * pace) / 100;
-    return sum + effectiveHP;
+    // Subtract completed HP for restkurser
+    const remainingHP = course.completedHP ? Math.max(0, effectiveHP - course.completedHP) : effectiveHP;
+    return sum + remainingHP;
   }, 0);
 };
 

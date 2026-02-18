@@ -29,6 +29,8 @@ export const DraggableCourse = ({ course, onRemove, isEditable = true }: Draggab
   };
 
   const isNonStandardPace = course.studyPace && course.studyPace !== 100;
+  const isRestkurs = course.completedHP && course.completedHP > 0;
+  const remainingHP = isRestkurs ? Math.max(0, course.hp - course.completedHP!) : course.hp;
 
   return (
     <div
@@ -36,7 +38,8 @@ export const DraggableCourse = ({ course, onRemove, isEditable = true }: Draggab
       style={style}
       className={cn(
         "flex items-center justify-between p-2 bg-secondary/50 rounded text-sm group",
-        isNonStandardPace && "border-l-4 border-warning"
+        isNonStandardPace && "border-l-4 border-warning",
+        isRestkurs && "border-l-4 border-orange-500"
       )}
     >
       {isEditable && (
@@ -68,6 +71,11 @@ export const DraggableCourse = ({ course, onRemove, isEditable = true }: Draggab
               {course.studyPace}%
             </Badge>
           )}
+          {isRestkurs && (
+            <Badge variant="outline" className="text-xs py-0 bg-orange-100 text-orange-800 border-orange-400">
+              *Restkurs ({course.completedHP} hp avklarade)
+            </Badge>
+          )}
         </div>
         <p className={cn(
           "text-sm truncate text-foreground",
@@ -79,9 +87,11 @@ export const DraggableCourse = ({ course, onRemove, isEditable = true }: Draggab
       </div>
       <div className="flex items-center gap-2">
         <span className="text-sm font-medium text-primary">
-          {course.studyPace && course.studyPace !== 100 
-            ? (course.hp * course.studyPace / 100).toFixed(2).replace(/\.?0+$/, '')
-            : course.hp} hp
+          {isRestkurs 
+            ? `${remainingHP} hp kvar`
+            : course.studyPace && course.studyPace !== 100 
+              ? `${(course.hp * course.studyPace / 100).toFixed(2).replace(/\.?0+$/, '')} hp`
+              : `${course.hp} hp`}
         </span>
         {isEditable && (
           <Button

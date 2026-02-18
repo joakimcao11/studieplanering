@@ -215,6 +215,11 @@ export const OverviewTab = ({
               {course.isCustom && <Badge variant="outline" className="ml-1 text-xs">Egen</Badge>}
               {course.isMultiPeriod && <Badge variant="outline" className="ml-1 text-xs bg-warning/20">*Flerperiod</Badge>}
               {isNonStandardPace && <Badge variant="secondary" className="ml-1 text-xs">{course.studyPace}%</Badge>}
+              {course.completedHP && course.completedHP > 0 && (
+                <Badge variant="outline" className="ml-1 text-xs bg-orange-100 text-orange-800 border-orange-400">
+                  *Restkurs ({course.completedHP} hp avkl.)
+                </Badge>
+              )}
             </span>
             <div className="flex items-center gap-1">
               <Button
