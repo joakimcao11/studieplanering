@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils';
-import { ClipboardList, GraduationCap, BarChart3, Sparkles } from 'lucide-react';
+import { ClipboardList, GraduationCap, BarChart3, Sparkles, FileText } from 'lucide-react';
 
 interface TabNavigationProps {
   currentTab: number;
@@ -11,6 +11,7 @@ const tabs = [
   { id: 1, label: 'Studieplanering', icon: GraduationCap },
   { id: 2, label: 'Överblick & Export', icon: BarChart3 },
   { id: 3, label: 'Enkel planering', icon: Sparkles },
+  { id: 4, label: 'Text till text', icon: FileText },
 ];
 
 export const TabNavigation = ({ currentTab, onTabChange }: TabNavigationProps) => {

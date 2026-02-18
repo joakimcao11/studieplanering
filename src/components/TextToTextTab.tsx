@@ -1,0 +1,194 @@
+import { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Sparkles, Loader2, Download, Save, FileText } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { Document, Packer, Paragraph, TextRun, HeadingLevel } from 'docx';
+import { saveAs } from 'file-saver';
+
+export const TextToTextTab = () => {
+  const [inputText, setInputText] = useState('');
+  const [generatedText, setGeneratedText] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+  const { toast } = useToast();
+
+  const handleGenerate = async () => {
+    if (!inputText.trim()) {
+      toast({ title: 'Skriv in text först', description: 'Fyll i textrutan med information om studentens studiesituation.', variant: 'destructive' });
+      return;
+    }
+
+    setIsGenerating(true);
+    setIsSaved(false);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-study-notes', {
+        body: { text: inputText },
+      });
+
+      if (error) throw error;
+
+      if (data?.error) {
+        toast({ title: 'Fel', description: data.error, variant: 'destructive' });
+      } else {
+        setGeneratedText(data.result);
+        toast({ title: 'Klart!', description: 'Minnesanteckning genererad.' });
+      }
+    } catch (err) {
+      console.error('Error generating notes:', err);
+      toast({ title: 'Fel vid generering', description: 'Kunde inte generera minnesanteckning. Försök igen.', variant: 'destructive' });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleSave = () => {
+    setIsSaved(true);
+    toast({ title: 'Sparat!', description: 'Dina ändringar har sparats.' });
+  };
+
+  const handleExportWord = async () => {
+    if (!generatedText.trim()) {
+      toast({ title: 'Inget att exportera', description: 'Generera en minnesanteckning först.', variant: 'destructive' });
+      return;
+    }
+
+    const lines = generatedText.split('\n');
+    const paragraphs: Paragraph[] = [];
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed === '---') continue;
+
+      if (trimmed.startsWith('MINNESANTECKNING') || trimmed.startsWith('# ')) {
+        paragraphs.push(new Paragraph({
+          children: [new TextRun({ text: trimmed.replace(/^#+\s*/, ''), bold: true, size: 28, font: 'Calibri' })],
+          heading: HeadingLevel.HEADING_1,
+          spacing: { after: 200 },
+        }));
+      } else if (trimmed.startsWith('## ') || trimmed.match(/^(Datum|Student|Program|TERMIN|Läsperiod|Omtentor|Totalt|Planering|Studievägledare)/)) {
+        paragraphs.push(new Paragraph({
+          children: [new TextRun({ text: trimmed.replace(/^#+\s*/, ''), bold: true, size: 24, font: 'Calibri' })],
+          heading: HeadingLevel.HEADING_2,
+          spacing: { before: 200, after: 100 },
+        }));
+      } else if (trimmed.startsWith('- ')) {
+        paragraphs.push(new Paragraph({
+          children: [new TextRun({ text: trimmed.substring(2), size: 22, font: 'Calibri' })],
+          bullet: { level: 0 },
+          spacing: { after: 60 },
+        }));
+      } else if (trimmed) {
+        paragraphs.push(new Paragraph({
+          children: [new TextRun({ text: trimmed, size: 22, font: 'Calibri' })],
+          spacing: { after: 80 },
+        }));
+      }
+    }
+
+    const doc = new Document({
+      sections: [{
+        properties: {},
+        children: [
+          new Paragraph({
+            children: [new TextRun({ text: 'Studie- och karriärvägledningen LTH', bold: true, size: 20, font: 'Calibri', color: '666666' })],
+            spacing: { after: 300 },
+          }),
+          ...paragraphs,
+          new Paragraph({
+            children: [new TextRun({ text: `Genererat: ${new Date().toLocaleDateString('sv-SE')}`, size: 18, font: 'Calibri', color: '999999', italics: true })],
+            spacing: { before: 400 },
+          }),
+        ],
+      }],
+    });
+
+    const blob = await Packer.toBlob(doc);
+    saveAs(blob, `Minnesanteckning_${new Date().toISOString().slice(0, 10)}.docx`);
+    toast({ title: 'Nedladdad!', description: 'Word-dokumentet har sparats.' });
+  };
+
+  return (
+    <div className="space-y-6 max-w-4xl mx-auto">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="w-5 h-5 text-primary" />
+            Text till text – AI-stödd minnesanteckning
+          </CardTitle>
+          <CardDescription>
+            Skriv in anteckningar från ett vägledningssamtal. AI:n strukturerar informationen till en tydlig minnesanteckning med kurskoder, HP och läsperioder.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <label className="text-sm font-medium mb-2 block">Dina anteckningar</label>
+            <Textarea
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+              placeholder='Exempel: "Idag den 260216 har jag haft ett samtal med David, D23, vi har pratat om en studieplan för Våren 2025, studenten ska läsa fotonik och Programmeringsteknik - fördjupningskurs. I omtentamen i april kommer han att fokusera på kursen FMAB70 och ska göra omtentan i den. Vi planerar att studenten kommer tillbaka innan läsperiod 4"'
+              className="min-h-[200px] text-sm"
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Tips: Skriv kurskoder (t.ex. FAFA60) eller kursnamn – AI:n identifierar dem automatiskt från LTH:s kursdata.
+            </p>
+          </div>
+
+          <Button
+            onClick={handleGenerate}
+            disabled={isGenerating || !inputText.trim()}
+            className="w-full"
+            size="lg"
+          >
+            {isGenerating ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Genererar minnesanteckning...
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4 mr-2" />
+                Generera minnesanteckning
+              </>
+            )}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {generatedText && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Genererad minnesanteckning</CardTitle>
+            <CardDescription>
+              Redigera texten nedan vid behov, spara ändringar och ladda ner som Word-dokument.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Textarea
+              value={generatedText}
+              onChange={(e) => {
+                setGeneratedText(e.target.value);
+                setIsSaved(false);
+              }}
+              className="min-h-[400px] text-sm font-mono"
+            />
+
+            <div className="flex gap-3">
+              <Button onClick={handleSave} variant="outline" className="flex-1">
+                <Save className="w-4 h-4 mr-2" />
+                {isSaved ? '✓ Sparat' : 'Spara ändringar'}
+              </Button>
+              <Button onClick={handleExportWord} className="flex-1">
+                <Download className="w-4 h-4 mr-2" />
+                Exportera som Word-dokument
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+};
