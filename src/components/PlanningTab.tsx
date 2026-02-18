@@ -5,6 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Plus, FileText, ArrowRight } from 'lucide-react';
 import { TermPlan, PlannedCourse, Program } from '@/types/planning';
 import { TermCard } from './TermCard';
@@ -19,7 +20,6 @@ import {
   closestCenter,
   DragOverlay,
 } from '@dnd-kit/core';
-import { Badge } from '@/components/ui/badge';
 
 interface PlanningTabProps {
   program: Program;
@@ -48,17 +48,17 @@ export const PlanningTab = ({
   onTermsChange,
   onNextTab,
 }: PlanningTabProps) => {
-  // Find spring term 2026, or fall back to first term
   const getDefaultTermId = () => {
     const springTerm2026 = terms.find(t => t.semester === 'VT' && (t.year === '2026' || t.customYearLabel === '2026'));
     return springTerm2026?.id || terms[0]?.id || '';
   };
 
   const [selectedTermId, setSelectedTermId] = useState<string>(getDefaultTermId());
-  const [selectedPeriod, setSelectedPeriod] = useState<'lp1' | 'lp2'>('lp1'); // lp1 = LP3 for VT
+  const [selectedPeriod, setSelectedPeriod] = useState<'lp1' | 'lp2'>('lp1');
   const [activeCourse, setActiveCourse] = useState<PlannedCourse | null>(null);
+  const [pendingCourse, setPendingCourse] = useState<PlannedCourse | null>(null);
+  const [showPlacementDialog, setShowPlacementDialog] = useState(false);
   
-  // New term creation state
   const [newTermSemester, setNewTermSemester] = useState<'HT' | 'VT'>('VT');
   const [newTermYear, setNewTermYear] = useState<string>('2026');
 
@@ -70,12 +70,23 @@ export const PlanningTab = ({
     })
   );
 
-  // Update selected term if it no longer exists
   useEffect(() => {
     if (!terms.find(t => t.id === selectedTermId) && terms.length > 0) {
       setSelectedTermId(terms[0].id);
     }
   }, [terms, selectedTermId]);
+
+  const handleCourseClick = (course: PlannedCourse) => {
+    setPendingCourse(course);
+    setShowPlacementDialog(true);
+  };
+
+  const handleConfirmPlacement = () => {
+    if (!pendingCourse || !selectedTermId) return;
+    onAddCourse(selectedTermId, selectedPeriod, pendingCourse);
+    setShowPlacementDialog(false);
+    setPendingCourse(null);
+  };
 
   const handleAddCourse = (course: PlannedCourse) => {
     if (!selectedTermId) return;
@@ -193,6 +204,7 @@ export const PlanningTab = ({
     : '';
 
   return (
+    <>
     <DndContext
       sensors={sensors}
       collisionDetection={closestCenter}
@@ -201,61 +213,12 @@ export const PlanningTab = ({
     >
       <div className="space-y-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - Course Selector with integrated target selection */}
+          {/* Left Column - Course Selector */}
           <div className="lg:col-span-1 space-y-4">
-            {/* Target Selection Card - Integrated with Course Selector */}
-            <Card className="border-primary/30 bg-primary/5">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base text-foreground font-bold">
-                  Välj var kursen ska placeras
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-foreground">Välj termin</Label>
-                  <Select value={selectedTermId} onValueChange={setSelectedTermId}>
-                    <SelectTrigger className="bg-background">
-                      <SelectValue placeholder="Välj termin" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-popover border border-border shadow-lg z-50">
-                      {terms.map((term) => {
-                        const label = term.customSemesterLabel || (term.semester === 'HT' ? 'Hösttermin' : 'Vårtermin');
-                        return (
-                          <SelectItem key={term.id} value={term.id}>
-                            {label} {term.customYearLabel || term.year}
-                          </SelectItem>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-foreground">Välj läsperiod</Label>
-                  <Select value={selectedPeriod} onValueChange={(v) => setSelectedPeriod(v as 'lp1' | 'lp2')}>
-                    <SelectTrigger className="bg-background">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-popover border border-border shadow-lg z-50">
-                      <SelectItem value="lp1">
-                        {selectedTerm?.semester === 'HT' ? 'LP1' : 'LP3'}
-                      </SelectItem>
-                      <SelectItem value="lp2">
-                        {selectedTerm?.semester === 'HT' ? 'LP2' : 'LP4'}
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <Badge variant="secondary" className="text-sm py-2 px-4 w-full justify-center">
-                  Kurser läggs till i <span className="font-bold text-primary ml-1">{periodLabel}</span>
-                </Badge>
-              </CardContent>
-            </Card>
-
             <CourseSelector 
               program={program} 
               onAddCourse={handleAddCourse}
+              onCourseClick={handleCourseClick}
             />
           </div>
 
@@ -356,5 +319,64 @@ export const PlanningTab = ({
         ) : null}
       </DragOverlay>
     </DndContext>
+
+      {/* Placement Dialog */}
+      <Dialog open={showPlacementDialog} onOpenChange={setShowPlacementDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Välj var kursen ska placeras</DialogTitle>
+          </DialogHeader>
+          {pendingCourse && (
+            <div className="space-y-4">
+              <div className="p-3 bg-muted rounded-md">
+                <span className="font-mono text-xs text-muted-foreground">{pendingCourse.code}</span>
+                <span className="ml-2 text-foreground font-medium">{pendingCourse.name}</span>
+                <span className="ml-2 text-primary font-medium">{pendingCourse.hp} hp</span>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-foreground">Välj termin</Label>
+                <Select value={selectedTermId} onValueChange={setSelectedTermId}>
+                  <SelectTrigger className="bg-background">
+                    <SelectValue placeholder="Välj termin" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover border border-border shadow-lg z-50">
+                    {terms.map((term) => {
+                      const label = term.customSemesterLabel || (term.semester === 'HT' ? 'Hösttermin' : 'Vårtermin');
+                      return (
+                        <SelectItem key={term.id} value={term.id}>
+                          {label} {term.customYearLabel || term.year}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-foreground">Välj läsperiod</Label>
+                <Select value={selectedPeriod} onValueChange={(v) => setSelectedPeriod(v as 'lp1' | 'lp2')}>
+                  <SelectTrigger className="bg-background">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover border border-border shadow-lg z-50">
+                    <SelectItem value="lp1">
+                      {terms.find(t => t.id === selectedTermId)?.semester === 'HT' ? 'LP1' : 'LP3'}
+                    </SelectItem>
+                    <SelectItem value="lp2">
+                      {terms.find(t => t.id === selectedTermId)?.semester === 'HT' ? 'LP2' : 'LP4'}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowPlacementDialog(false)}>Avbryt</Button>
+            <Button onClick={handleConfirmPlacement}>Lägg till kurs</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };

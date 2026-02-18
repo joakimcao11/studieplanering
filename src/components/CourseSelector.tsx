@@ -14,12 +14,13 @@ import { Program, PlannedCourse, StudyPace } from '@/types/planning';
 interface CourseSelectorProps {
   program: Program;
   onAddCourse: (course: PlannedCourse) => void;
+  onCourseClick?: (course: PlannedCourse) => void;
 }
 
 type FilterType = 'all' | 'obligatory';
 type PeriodFilter = 'all' | '1' | '2' | '3' | '4';
 
-export const CourseSelector = ({ program, onAddCourse }: CourseSelectorProps) => {
+export const CourseSelector = ({ program, onAddCourse, onCourseClick }: CourseSelectorProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<FilterType>('all');
   const [periodFilter, setPeriodFilter] = useState<PeriodFilter>('all');
@@ -43,7 +44,7 @@ export const CourseSelector = ({ program, onAddCourse }: CourseSelectorProps) =>
 
   const handleAddProgramCourse = (course: Course) => {
     const studyPace = course.isMultiPeriod ? (course.defaultStudyPace as StudyPace || 50) : 100;
-    onAddCourse({
+    const planned: PlannedCourse = {
       id: '',
       courseId: course.id,
       code: course.code,
@@ -52,7 +53,12 @@ export const CourseSelector = ({ program, onAddCourse }: CourseSelectorProps) =>
       isCustom: false,
       studyPace,
       isMultiPeriod: course.isMultiPeriod,
-    });
+    };
+    if (onCourseClick) {
+      onCourseClick(planned);
+    } else {
+      onAddCourse(planned);
+    }
   };
 
   const handleAddCustomCourse = () => {
@@ -62,7 +68,7 @@ export const CourseSelector = ({ program, onAddCourse }: CourseSelectorProps) =>
       ? parseFloat(customCourseHP) || 7.5
       : parseFloat(customCourseHpType);
     
-    onAddCourse({
+    const planned: PlannedCourse = {
       id: '',
       courseId: `custom-${Date.now()}`,
       code: customCourseCode.trim() || 'EGEN',
@@ -70,7 +76,13 @@ export const CourseSelector = ({ program, onAddCourse }: CourseSelectorProps) =>
       hp: hp,
       isCustom: true,
       studyPace: customStudyPace,
-    });
+    };
+    
+    if (onCourseClick) {
+      onCourseClick(planned);
+    } else {
+      onAddCourse(planned);
+    }
     
     setCustomCourseName('');
     setCustomCourseCode('');

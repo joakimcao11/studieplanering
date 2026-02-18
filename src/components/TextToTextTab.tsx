@@ -2,11 +2,29 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Sparkles, Loader2, Download, Save, FileText } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Sparkles, Loader2, Download, Save, FileText, User } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Document, Packer, Paragraph, TextRun, HeadingLevel } from 'docx';
 import { saveAs } from 'file-saver';
+import { COUNSELORS } from '@/types/planning';
+
+const programs = [
+  { value: 'D', label: 'Datateknik (D)' },
+  { value: 'C', label: 'Infocom (C)' },
+];
+
+const generateYearGroups = () => {
+  const groups: string[] = [];
+  for (let year = 15; year <= 30; year++) {
+    groups.push(`D${year}`, `C${year}`);
+  }
+  return groups.sort();
+};
+const yearGroups = generateYearGroups();
 
 export const TextToTextTab = () => {
   const [inputText, setInputText] = useState('');
@@ -14,6 +32,13 @@ export const TextToTextTab = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const { toast } = useToast();
+
+  // Grundinformation state
+  const [datum, setDatum] = useState(new Date().toISOString().split('T')[0]);
+  const [studentName, setStudentName] = useState('');
+  const [program, setProgram] = useState('D');
+  const [yearGroup, setYearGroup] = useState('');
+  const [counselor, setCounselor] = useState('');
 
   const handleGenerate = async () => {
     if (!inputText.trim()) {
@@ -113,6 +138,55 @@ export const TextToTextTab = () => {
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
+      {/* Grundinformation Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <User className="w-5 h-5 text-primary" />
+            Grundinformation
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label className="text-foreground font-medium">Datum</Label>
+            <Input type="date" value={datum} onChange={(e) => setDatum(e.target.value)} className="max-w-xs" />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className="text-foreground font-medium">Studentens namn</Label>
+              <Input placeholder="Förnamn Efternamn" value={studentName} onChange={(e) => setStudentName(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-foreground font-medium">Program</Label>
+              <Select value={program} onValueChange={setProgram}>
+                <SelectTrigger className="bg-background"><SelectValue /></SelectTrigger>
+                <SelectContent className="bg-popover border border-border shadow-lg z-50">
+                  {programs.map((p) => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-foreground font-medium">Årskull</Label>
+              <Select value={yearGroup} onValueChange={setYearGroup}>
+                <SelectTrigger className="bg-background"><SelectValue placeholder="Välj årskull" /></SelectTrigger>
+                <SelectContent className="bg-popover border border-border shadow-lg z-50">
+                  {yearGroups.filter(g => g.startsWith(program)).map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-foreground font-medium">Studievägledare</Label>
+              <Select value={counselor} onValueChange={setCounselor}>
+                <SelectTrigger className="bg-background"><SelectValue placeholder="Välj studievägledare" /></SelectTrigger>
+                <SelectContent className="bg-popover border border-border shadow-lg z-50">
+                  {COUNSELORS.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
