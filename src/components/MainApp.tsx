@@ -4,6 +4,7 @@ import { BasicInfoTab } from '@/components/BasicInfoTab';
 import { PlanningTab } from '@/components/PlanningTab';
 import { OverviewTab } from '@/components/OverviewTab';
 import { SimplePlanningTab } from '@/components/SimplePlanningTab';
+import { TextToTextTab } from '@/components/TextToTextTab';
 import { usePlanningState } from '@/hooks/usePlanningState';
 import { Button } from '@/components/ui/button';
 import { RotateCcw } from 'lucide-react';
@@ -38,7 +39,7 @@ export const MainApp = ({ onLogout }: MainAppProps) => {
   };
 
   const goToNextTab = () => {
-    if (currentTab < 3) {
+    if (currentTab < 4) {
       setCurrentTab(currentTab + 1);
     }
   };
@@ -106,6 +107,10 @@ export const MainApp = ({ onLogout }: MainAppProps) => {
         
         {currentTab === 3 && (
           <SimplePlanningTab />
+        )}
+        
+        {currentTab === 4 && (
+          <TextToTextTab />
         )}
       </main>
 
