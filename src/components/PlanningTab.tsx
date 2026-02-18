@@ -58,6 +58,7 @@ export const PlanningTab = ({
   const [activeCourse, setActiveCourse] = useState<PlannedCourse | null>(null);
   const [pendingCourse, setPendingCourse] = useState<PlannedCourse | null>(null);
   const [showPlacementDialog, setShowPlacementDialog] = useState(false);
+  const [completedHP, setCompletedHP] = useState<string>('');
   
   const [newTermSemester, setNewTermSemester] = useState<'HT' | 'VT'>('VT');
   const [newTermYear, setNewTermYear] = useState<string>('2026');
@@ -78,14 +79,21 @@ export const PlanningTab = ({
 
   const handleCourseClick = (course: PlannedCourse) => {
     setPendingCourse(course);
+    setCompletedHP('');
     setShowPlacementDialog(true);
   };
 
   const handleConfirmPlacement = () => {
     if (!pendingCourse || !selectedTermId) return;
-    onAddCourse(selectedTermId, selectedPeriod, pendingCourse);
+    const completedHPValue = parseFloat(completedHP);
+    const courseToAdd = {
+      ...pendingCourse,
+      ...(completedHPValue > 0 ? { completedHP: completedHPValue } : {}),
+    };
+    onAddCourse(selectedTermId, selectedPeriod, courseToAdd);
     setShowPlacementDialog(false);
     setPendingCourse(null);
+    setCompletedHP('');
   };
 
   const handleAddCourse = (course: PlannedCourse) => {
@@ -368,6 +376,23 @@ export const PlanningTab = ({
                     </SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-foreground">Avklarade poäng (restkurs)</Label>
+                <Input
+                  type="number"
+                  value={completedHP}
+                  onChange={(e) => setCompletedHP(e.target.value)}
+                  placeholder="t.ex. 7.5"
+                  className="bg-background"
+                  step="0.5"
+                  min="0"
+                  max={pendingCourse?.hp || 100}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Ange antal hp som studenten redan klarat av. Lämna tomt om kursen inte är en restkurs.
+                </p>
               </div>
             </div>
           )}

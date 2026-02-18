@@ -96,7 +96,9 @@ ${'-'.repeat(40)}
           ? (course.hp * course.studyPace / 100).toFixed(2).replace(/\.?0+$/, '')
           : course.hp.toString();
         const paceInfo = course.studyPace && course.studyPace !== 100 ? ` [${course.studyPace}%]` : '';
-        content += `    - ${course.code}: ${course.isMultiPeriod ? '*' : ''}${course.name} (${effectiveHP} hp)${paceInfo}${course.isCustom ? ' [Egen kurs]' : ''}\n`;
+        const restkursInfo = course.completedHP && course.completedHP > 0 
+          ? ` *Restkurs (${course.completedHP} hp avklarade, ${Math.max(0, course.hp - course.completedHP)} hp kvar)` : '';
+        content += `    - ${course.code}: ${course.isMultiPeriod ? '*' : ''}${course.name} (${effectiveHP} hp)${paceInfo}${restkursInfo}${course.isCustom ? ' [Egen kurs]' : ''}\n`;
       });
     }
 
@@ -110,7 +112,9 @@ ${'-'.repeat(40)}
           ? (course.hp * course.studyPace / 100).toFixed(2).replace(/\.?0+$/, '')
           : course.hp.toString();
         const paceInfo = course.studyPace && course.studyPace !== 100 ? ` [${course.studyPace}%]` : '';
-        content += `    - ${course.code}: ${course.isMultiPeriod ? '*' : ''}${course.name} (${effectiveHP} hp)${paceInfo}${course.isCustom ? ' [Egen kurs]' : ''}\n`;
+        const restkursInfo = course.completedHP && course.completedHP > 0 
+          ? ` *Restkurs (${course.completedHP} hp avklarade, ${Math.max(0, course.hp - course.completedHP)} hp kvar)` : '';
+        content += `    - ${course.code}: ${course.isMultiPeriod ? '*' : ''}${course.name} (${effectiveHP} hp)${paceInfo}${restkursInfo}${course.isCustom ? ' [Egen kurs]' : ''}\n`;
       });
     }
 
@@ -308,10 +312,12 @@ export const exportToWord = async (data: ExportData) => {
           : course.hp.toString();
         const paceInfo = course.studyPace && course.studyPace !== 100 ? ` [${course.studyPace}%]` : '';
         const multiPeriodPrefix = course.isMultiPeriod ? '*' : '';
+        const restkursInfo = course.completedHP && course.completedHP > 0 
+          ? ` *Restkurs (${course.completedHP} hp avklarade, ${Math.max(0, course.hp - course.completedHP)} hp kvar)` : '';
         sections.push(
           new Paragraph({
             children: [
-              new TextRun({ text: `– ${course.code}: ${multiPeriodPrefix}${course.name} (${effectiveHP} hp)${paceInfo}`, size: FONT_SIZE_NORMAL, font: FONT_NAME, bold: !!paceInfo }),
+              new TextRun({ text: `– ${course.code}: ${multiPeriodPrefix}${course.name} (${effectiveHP} hp)${paceInfo}${restkursInfo}`, size: FONT_SIZE_NORMAL, font: FONT_NAME, bold: !!paceInfo }),
               course.isCustom ? new TextRun({ text: ' [Egen kurs]', italics: true, size: FONT_SIZE_NORMAL, font: FONT_NAME }) : new TextRun({ text: '' }),
             ],
             indent: { left: convertInchesToTwip(0.5) },
@@ -345,10 +351,12 @@ export const exportToWord = async (data: ExportData) => {
           : course.hp.toString();
         const paceInfo = course.studyPace && course.studyPace !== 100 ? ` [${course.studyPace}%]` : '';
         const multiPeriodPrefix = course.isMultiPeriod ? '*' : '';
+        const restkursInfo = course.completedHP && course.completedHP > 0 
+          ? ` *Restkurs (${course.completedHP} hp avklarade, ${Math.max(0, course.hp - course.completedHP)} hp kvar)` : '';
         sections.push(
           new Paragraph({
             children: [
-              new TextRun({ text: `– ${course.code}: ${multiPeriodPrefix}${course.name} (${effectiveHP} hp)${paceInfo}`, size: FONT_SIZE_NORMAL, font: FONT_NAME, bold: !!paceInfo }),
+              new TextRun({ text: `– ${course.code}: ${multiPeriodPrefix}${course.name} (${effectiveHP} hp)${paceInfo}${restkursInfo}`, size: FONT_SIZE_NORMAL, font: FONT_NAME, bold: !!paceInfo }),
               course.isCustom ? new TextRun({ text: ' [Egen kurs]', italics: true, size: FONT_SIZE_NORMAL, font: FONT_NAME }) : new TextRun({ text: '' }),
             ],
             indent: { left: convertInchesToTwip(0.5) },
