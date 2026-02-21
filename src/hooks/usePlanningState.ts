@@ -27,7 +27,7 @@ const initialStudentInfo: StudentInfo = {
 };
 
 export const usePlanningState = () => {
-  const [currentTab, setCurrentTab] = useState(0);
+  const [currentTab, setCurrentTab] = useState(1);
   const [studentInfo, setStudentInfo] = useState<StudentInfo>(initialStudentInfo);
   const [agenda, setAgenda] = useState('');
   const [terms, setTerms] = useState<TermPlan[]>([
@@ -118,7 +118,7 @@ export const usePlanningState = () => {
     setAgenda('');
     setTerms([createEmptyTerm('VT', '2026')]);
     setNotes('');
-    setCurrentTab(0);
+    setCurrentTab(1);
   }, []);
 
   return {

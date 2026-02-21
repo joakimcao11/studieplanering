@@ -41,7 +41,7 @@ export const dProgramCourses: Course[] = [
   { id: 'd-20', code: 'EDAF95', name: 'Grundläggande funktionsprogrammering', hp: 5.0, level: 'G2', year: 2, periods: ['4'], isObligatory: true, program: 'D' },
   
   // Årskurs 2 - Alternativobligatoriska kurser
-  { id: 'd-21', code: 'FMAF01', name: 'Matematik - Funktionsteori', hp: 7.0, level: 'G2', year: 2, periods: ['4'], isObligatory: false, program: 'D' },
+  { id: 'd-21', code: 'FMAF01', name: 'Matematik – Funktionsteori', hp: 7.0, level: 'G2', year: 2, periods: ['3'], isObligatory: false, program: 'D' },
   { id: 'd-22', code: 'EDAN40', name: 'Funktionsprogrammering', hp: 7.5, level: 'A', year: 2, periods: ['4'], isObligatory: false, program: 'D' },
   { id: 'd-23', code: 'FMAF05', name: 'Matematik - System och transformer', hp: 7.0, level: 'G2', year: 2, periods: ['4'], isObligatory: false, program: 'D' },
   

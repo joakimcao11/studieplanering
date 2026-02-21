@@ -17,13 +17,15 @@ interface CourseSelectorProps {
   onCourseClick?: (course: PlannedCourse) => void;
 }
 
-type FilterType = 'all' | 'obligatory';
+type FilterType = 'all' | 'obligatory' | 'alt_obligatory';
 type PeriodFilter = 'all' | '1' | '2' | '3' | '4';
+type YearFilter = 'all' | 1 | 2 | 3;
 
 export const CourseSelector = ({ program, onAddCourse, onCourseClick }: CourseSelectorProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<FilterType>('all');
   const [periodFilter, setPeriodFilter] = useState<PeriodFilter>('all');
+  const [yearFilter, setYearFilter] = useState<YearFilter>('all');
   const [customCourseName, setCustomCourseName] = useState('');
   const [customCourseCode, setCustomCourseCode] = useState('');
   const [customCourseHpType, setCustomCourseHpType] = useState<string>('7.5');
@@ -36,10 +38,17 @@ export const CourseSelector = ({ program, onAddCourse, onCourseClick }: CourseSe
     const matchesSearch = 
       course.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       course.code.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesFilter = filterType === 'all' || course.isObligatory;
+    
+    const matchesFilter = filterType === 'all' 
+      || (filterType === 'obligatory' && course.isObligatory)
+      || (filterType === 'alt_obligatory' && !course.isObligatory);
+    
     const matchesPeriod = periodFilter === 'all' || 
       (course.periods && course.periods.includes(periodFilter));
-    return matchesSearch && matchesFilter && matchesPeriod;
+    
+    const matchesYear = yearFilter === 'all' || course.year === yearFilter;
+    
+    return matchesSearch && matchesFilter && matchesPeriod && matchesYear;
   });
 
   const handleAddProgramCourse = (course: Course) => {
@@ -134,22 +143,56 @@ export const CourseSelector = ({ program, onAddCourse, onCourseClick }: CourseSe
               />
             </div>
 
+            {/* Year Filter */}
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">Årskurs</Label>
+              <div className="flex flex-wrap gap-2">
+                <Badge 
+                  variant={yearFilter === 'all' ? 'default' : 'outline'}
+                  className="cursor-pointer"
+                  onClick={() => setYearFilter('all')}
+                >
+                  Alla
+                </Badge>
+                {[1, 2, 3].map((year) => (
+                  <Badge 
+                    key={year}
+                    variant={yearFilter === year ? 'default' : 'outline'}
+                    className="cursor-pointer"
+                    onClick={() => setYearFilter(year as YearFilter)}
+                  >
+                    Åk {year}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+
             {/* Filter Type */}
-            <div className="flex gap-2">
-              <Button
-                variant={filterType === 'all' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setFilterType('all')}
-              >
-                Alla
-              </Button>
-              <Button
-                variant={filterType === 'obligatory' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setFilterType('obligatory')}
-              >
-                Obligatoriska
-              </Button>
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">Kurstyp</Label>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant={filterType === 'all' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setFilterType('all')}
+                >
+                  Alla
+                </Button>
+                <Button
+                  variant={filterType === 'obligatory' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setFilterType('obligatory')}
+                >
+                  Obligatoriska
+                </Button>
+                <Button
+                  variant={filterType === 'alt_obligatory' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setFilterType('alt_obligatory')}
+                >
+                  Alt.obl
+                </Button>
+              </div>
             </div>
 
             {/* Period Filter */}
@@ -195,9 +238,13 @@ export const CourseSelector = ({ program, onAddCourse, onCourseClick }: CourseSe
                           <span className="text-xs text-muted-foreground font-mono">
                             {course.code}
                           </span>
-                          {course.isObligatory && (
+                          {course.isObligatory ? (
                             <Badge variant="secondary" className="text-xs">
                               Obl.
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-xs border-amber-500 text-amber-600">
+                              Alt.obl
                             </Badge>
                           )}
                           {course.periods && course.periods.length > 0 && (
