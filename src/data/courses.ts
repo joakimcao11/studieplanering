@@ -91,6 +91,8 @@ export const cProgramCourses: Course[] = [
   { id: 'c-25', code: 'EDAG10', name: 'Vetenskapsteori för ingenjörer', hp: 5.0, level: 'G2', year: 3, periods: ['4'], isObligatory: true, program: 'C' },
 ];
 
-export const getAllCourses = (program: 'D' | 'C'): Course[] => {
-  return program === 'D' ? dProgramCourses : cProgramCourses;
+export const getAllCourses = (program: string): Course[] => {
+  if (program === 'D') return dProgramCourses;
+  if (program === 'C') return cProgramCourses;
+  return []; // Custom programs have no predefined courses
 };

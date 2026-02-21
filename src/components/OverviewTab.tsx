@@ -421,7 +421,12 @@ export const OverviewTab = ({
               <div className="flex items-center gap-2">
                 <Calendar className="w-4 h-4 text-muted-foreground" />
                 <span className="text-muted-foreground">Datum:</span>
-                <span className="text-foreground">{currentDate}</span>
+                <Input
+                  type="date"
+                  value={studentInfo.customDate || new Date().toISOString().split('T')[0]}
+                  onChange={(e) => onStudentInfoChange({ customDate: e.target.value })}
+                  className="h-7 text-sm max-w-40"
+                />
               </div>
               <div className="flex items-center gap-2">
                 <User className="w-4 h-4 text-muted-foreground" />
@@ -436,7 +441,10 @@ export const OverviewTab = ({
               <div className="flex items-center gap-2">
                 <GraduationCap className="w-4 h-4 text-muted-foreground" />
                 <span className="text-muted-foreground">Program och kull:</span>
-                <span className="text-foreground">{studentInfo.program === 'D' ? 'Datateknik' : 'Infocom'}{studentInfo.yearGroup ? ` (${studentInfo.yearGroup})` : ''}</span>
+                <span className="text-foreground">
+                  {studentInfo.program === 'D' ? 'Datateknik' : studentInfo.program === 'C' ? 'Infocom' : studentInfo.program}
+                  {studentInfo.yearGroup ? ` (${studentInfo.yearGroup})` : ''}
+                </span>
               </div>
             </div>
           </div>
@@ -634,6 +642,23 @@ export const OverviewTab = ({
                 <p className="text-sm text-muted-foreground italic">Inga anteckningar</p>
               )
             )}
+          </div>
+
+          {/* Grundlogik för studieplanering */}
+          <div className="border-t border-border pt-4 mt-6">
+            <Card className="bg-secondary/30 border-primary/20">
+              <CardContent className="pt-4">
+                <h4 className="font-bold text-sm text-foreground mb-2">
+                  📚 Grundlogik för studieplanering
+                </h4>
+                <ul className="text-sm text-muted-foreground space-y-1">
+                  <li>• 1 läsperiod = 15 hp</li>
+                  <li>• 1 termin = 30 hp (LP1 + LP2 eller LP3 + LP4)</li>
+                  <li>• 1 läsår = 60 hp</li>
+                  <li>• 100% studietakt = 30 hp/termin</li>
+                </ul>
+              </CardContent>
+            </Card>
           </div>
 
           {/* Exam Info Preview */}

@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Plus, FileText, ArrowRight } from 'lucide-react';
+import { Plus, FileText, ArrowRight, GraduationCap } from 'lucide-react';
 import { TermPlan, PlannedCourse, Program } from '@/types/planning';
 import { TermCard } from './TermCard';
 import { CourseSelector } from './CourseSelector';
@@ -33,6 +33,7 @@ interface PlanningTabProps {
   onNotesChange: (notes: string) => void;
   onTermsChange: (terms: TermPlan[]) => void;
   onNextTab?: () => void;
+  onProgramChange?: (program: Program) => void;
 }
 
 export const PlanningTab = ({
@@ -47,6 +48,7 @@ export const PlanningTab = ({
   onNotesChange,
   onTermsChange,
   onNextTab,
+  onProgramChange,
 }: PlanningTabProps) => {
   const getDefaultTermId = () => {
     const springTerm2026 = terms.find(t => t.semester === 'VT' && (t.year === '2026' || t.customYearLabel === '2026'));
@@ -62,6 +64,7 @@ export const PlanningTab = ({
   
   const [newTermSemester, setNewTermSemester] = useState<'HT' | 'VT'>('VT');
   const [newTermYear, setNewTermYear] = useState<string>('2026');
+  const [customProgramName, setCustomProgramName] = useState<string>('');
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -221,8 +224,53 @@ export const PlanningTab = ({
     >
       <div className="space-y-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - Course Selector */}
+          {/* Left Column - Program Selector + Course Selector */}
           <div className="lg:col-span-1 space-y-4">
+            {/* Program Selector */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <GraduationCap className="w-4 h-4 text-primary" />
+                  Välj program
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Select 
+                  value={program === 'D' || program === 'C' ? program : 'custom'} 
+                  onValueChange={(v) => {
+                    if (v === 'custom') {
+                      // Don't change yet, wait for custom name input
+                      setCustomProgramName('');
+                      onProgramChange?.('custom');
+                    } else {
+                      setCustomProgramName('');
+                      onProgramChange?.(v as Program);
+                    }
+                  }}
+                >
+                  <SelectTrigger className="bg-background">
+                    <SelectValue placeholder="Välj program" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover border border-border shadow-lg z-50">
+                    <SelectItem value="D">Datateknik (D)</SelectItem>
+                    <SelectItem value="C">Infocom (C)</SelectItem>
+                    <SelectItem value="custom">Annat program...</SelectItem>
+                  </SelectContent>
+                </Select>
+                {program !== 'D' && program !== 'C' && (
+                  <Input
+                    className="mt-2"
+                    placeholder="Ange programnamn..."
+                    value={customProgramName || (program !== 'custom' ? program : '')}
+                    onChange={(e) => {
+                      setCustomProgramName(e.target.value);
+                      onProgramChange?.(e.target.value || 'custom');
+                    }}
+                  />
+                )}
+              </CardContent>
+            </Card>
+
             <CourseSelector 
               program={program} 
               onAddCourse={handleAddCourse}
@@ -308,7 +356,7 @@ export const PlanningTab = ({
             {onNextTab && (
               <div className="flex justify-end pt-4">
                 <Button onClick={onNextTab} size="lg">
-                  Fortsätt till Överblick & Export
+                  Fortsätt till Grundinformation
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </div>
