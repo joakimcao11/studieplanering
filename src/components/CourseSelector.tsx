@@ -102,9 +102,11 @@ export const CourseSelector = ({ program, onAddCourse, onCourseClick }: CourseSe
 
   const programLink = program === 'D' 
     ? 'https://kurser.lth.se/lot/programme?ay=25_26&programme=D'
-    : 'https://kurser.lth.se/lot/programme?ay=25_26&programme=C';
+    : program === 'C'
+    ? 'https://kurser.lth.se/lot/programme?ay=25_26&programme=C'
+    : '';
   
-  const programLinkLabel = program === 'D' ? 'Program läsår D' : 'Program läsår C';
+  const programLinkLabel = program === 'D' ? 'Program läsår D' : program === 'C' ? 'Program läsår C' : `Program läsår ${program}`;
 
   return (
     <Card className="h-full">
@@ -116,14 +118,16 @@ export const CourseSelector = ({ program, onAddCourse, onCourseClick }: CourseSe
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Program Link Button */}
-        <Button 
-          variant="outline" 
-          className="w-full justify-between text-foreground"
-          onClick={() => window.open(programLink, '_blank')}
-        >
-          <span className="font-medium">{programLinkLabel}</span>
-          <ExternalLink className="w-4 h-4" />
-        </Button>
+        {programLink && (
+          <Button 
+            variant="outline" 
+            className="w-full justify-between text-foreground"
+            onClick={() => window.open(programLink, '_blank')}
+          >
+            <span className="font-medium">{programLinkLabel}</span>
+            <ExternalLink className="w-4 h-4" />
+          </Button>
+        )}
 
         <Tabs defaultValue="program" className="w-full">
           <TabsList className="grid w-full grid-cols-2">

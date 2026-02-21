@@ -7,7 +7,6 @@ interface TabNavigationProps {
 }
 
 const tabs = [
-  { id: 0, label: 'Grunduppgifter & Agenda', icon: ClipboardList },
   { id: 1, label: 'Studieplanering', icon: GraduationCap },
   { id: 2, label: 'Överblick & Export', icon: BarChart3 },
   { id: 3, label: 'Enkel planering', icon: Sparkles },

@@ -66,16 +66,6 @@ export const MainApp = ({ onLogout }: MainAppProps) => {
           </Button>
         </div>
 
-        {currentTab === 0 && (
-          <BasicInfoTab
-            studentInfo={studentInfo}
-            agenda={agenda}
-            onStudentInfoChange={updateStudentInfo}
-            onAgendaChange={setAgenda}
-            onNextTab={goToNextTab}
-          />
-        )}
-        
         {currentTab === 1 && (
           <PlanningTab
             program={studentInfo.program}
@@ -88,7 +78,18 @@ export const MainApp = ({ onLogout }: MainAppProps) => {
             onUpdateTerm={updateTerm}
             onNotesChange={setNotes}
             onTermsChange={setTerms}
-            onNextTab={goToNextTab}
+            onNextTab={() => setCurrentTab(0)}
+            onProgramChange={(program) => updateStudentInfo({ program })}
+          />
+        )}
+
+        {currentTab === 0 && (
+          <BasicInfoTab
+            studentInfo={studentInfo}
+            agenda={agenda}
+            onStudentInfoChange={updateStudentInfo}
+            onAgendaChange={setAgenda}
+            onNextTab={() => setCurrentTab(2)}
           />
         )}
         

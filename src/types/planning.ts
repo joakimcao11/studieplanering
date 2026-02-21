@@ -1,6 +1,6 @@
 // Types for the study planning tool
 
-export type Program = 'D' | 'C';
+export type Program = 'D' | 'C' | string;
 
 export interface Counselor {
   id: string;
