@@ -14,7 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      study_plan_stats: {
+        Row: {
+          action_type: string
+          counselor_id: string
+          counselor_name: string
+          created_at: string
+          id: string
+          program: string
+        }
+        Insert: {
+          action_type: string
+          counselor_id: string
+          counselor_name: string
+          created_at?: string
+          id?: string
+          program: string
+        }
+        Update: {
+          action_type?: string
+          counselor_id?: string
+          counselor_name?: string
+          created_at?: string
+          id?: string
+          program?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

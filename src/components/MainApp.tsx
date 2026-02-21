@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Header } from '@/components/Header';
 import { TabNavigation } from '@/components/TabNavigation';
 import { BasicInfoTab } from '@/components/BasicInfoTab';
@@ -5,6 +6,7 @@ import { PlanningTab } from '@/components/PlanningTab';
 import { OverviewTab } from '@/components/OverviewTab';
 import { SimplePlanningTab } from '@/components/SimplePlanningTab';
 import { TextToTextTab } from '@/components/TextToTextTab';
+import { StatisticsPage } from '@/components/StatisticsPage';
 import { usePlanningState } from '@/hooks/usePlanningState';
 import { Button } from '@/components/ui/button';
 import { RotateCcw } from 'lucide-react';
@@ -12,9 +14,12 @@ import lthLogo from '@/assets/lth-logo.png';
 
 interface MainAppProps {
   onLogout: () => void;
+  initialCounselorId: string;
+  onCounselorIdChange: (id: string) => void;
 }
 
-export const MainApp = ({ onLogout }: MainAppProps) => {
+export const MainApp = ({ onLogout, initialCounselorId, onCounselorIdChange }: MainAppProps) => {
+  const [showStats, setShowStats] = useState(false);
   const {
     currentTab,
     setCurrentTab,
@@ -36,17 +41,28 @@ export const MainApp = ({ onLogout }: MainAppProps) => {
     updateActionItem,
     removeActionItem,
     resetPlan,
-  } = usePlanningState();
+  } = usePlanningState(initialCounselorId);
 
   const handleCounselorChange = (counselorId: string) => {
     updateStudentInfo({ counselorId });
+    onCounselorIdChange(counselorId);
   };
 
-  const goToNextTab = () => {
-    if (currentTab < 4) {
-      setCurrentTab(currentTab + 1);
-    }
-  };
+  if (showStats) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col">
+        <Header 
+          onLogout={onLogout} 
+          counselorId={studentInfo.counselorId}
+          onCounselorChange={handleCounselorChange}
+          onShowStats={() => setShowStats(true)}
+        />
+        <main className="flex-1 container mx-auto px-4 py-6">
+          <StatisticsPage onBack={() => setShowStats(false)} />
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -54,6 +70,7 @@ export const MainApp = ({ onLogout }: MainAppProps) => {
         onLogout={onLogout} 
         counselorId={studentInfo.counselorId}
         onCounselorChange={handleCounselorChange}
+        onShowStats={() => setShowStats(true)}
       />
       <TabNavigation currentTab={currentTab} onTabChange={setCurrentTab} />
       
@@ -108,6 +125,7 @@ export const MainApp = ({ onLogout }: MainAppProps) => {
             agenda={agenda}
             terms={terms}
             notes={notes}
+            actionItems={actionItems}
             onAgendaChange={setAgenda}
             onNotesChange={setNotes}
             onTermsChange={setTerms}

@@ -15,6 +15,7 @@ export interface SimpleStudentInfo {
   program: string;
   antagningsar: string;
   termin: 'vt' | 'ht';
+  studievagledare: string;
 }
 
 export interface SimpleRestkurs {
@@ -56,6 +57,7 @@ export const SimplePlanningTab = () => {
     program: '',
     antagningsar: '',
     termin: 'vt',
+    studievagledare: '',
   });
   const [restkurser, setRestkurser] = useState<SimpleRestkurs[]>([]);
   const [nyaKurser, setNyaKurser] = useState<SimpleNyKurs[]>([]);

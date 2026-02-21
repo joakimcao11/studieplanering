@@ -27,9 +27,12 @@ const initialStudentInfo: StudentInfo = {
   counselorId: 'joakim',
 };
 
-export const usePlanningState = () => {
+export const usePlanningState = (initialCounselorId?: string) => {
   const [currentTab, setCurrentTab] = useState(1);
-  const [studentInfo, setStudentInfo] = useState<StudentInfo>(initialStudentInfo);
+  const [studentInfo, setStudentInfo] = useState<StudentInfo>({
+    ...initialStudentInfo,
+    counselorId: initialCounselorId || 'joakim',
+  });
   const [agenda, setAgenda] = useState('');
   const [terms, setTerms] = useState<TermPlan[]>([
     createEmptyTerm('VT', '2026'),
