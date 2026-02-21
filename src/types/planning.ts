@@ -22,6 +22,12 @@ export const COUNSELORS: Counselor[] = [
     email: 'tobias.bjorklund@lth.lu.se',
     displayName: 'STVL Tobias Björklund'
   },
+  { 
+    id: 'petra', 
+    name: 'Petra Parmvi', 
+    email: 'petra.parmvi@lth.lu.se',
+    displayName: 'STVL Petra Parmvi'
+  },
 ];
 
 export interface StudentInfo {
@@ -115,7 +121,8 @@ export const getHPStatus = (hp: number, target: number): 'optimal' | 'warning' |
 export const getCounselorById = (id: string): Counselor | undefined => {
   if (id.startsWith('custom:')) {
     const name = id.replace('custom:', '');
-    return { id, name, email: '', displayName: `STVL ${name}` };
+    const email = typeof window !== 'undefined' ? localStorage.getItem('lth_custom_counselor_email') || '' : '';
+    return { id, name, email, displayName: `STVL ${name}` };
   }
   return COUNSELORS.find(c => c.id === id);
 };

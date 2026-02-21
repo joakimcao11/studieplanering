@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { LogOut, User } from 'lucide-react';
+import { LogOut, User, BarChart3 } from 'lucide-react';
 import lthLogo from '@/assets/lth-logo.png';
 import { COUNSELORS, getCounselorById } from '@/types/planning';
 
@@ -8,9 +8,10 @@ interface HeaderProps {
   onLogout: () => void;
   counselorId: string;
   onCounselorChange: (counselorId: string) => void;
+  onShowStats: () => void;
 }
 
-export const Header = ({ onLogout, counselorId, onCounselorChange }: HeaderProps) => {
+export const Header = ({ onLogout, counselorId, onCounselorChange, onShowStats }: HeaderProps) => {
   const currentCounselor = getCounselorById(counselorId);
 
   return (
@@ -46,6 +47,15 @@ export const Header = ({ onLogout, counselorId, onCounselorChange }: HeaderProps
               </SelectContent>
             </Select>
           </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onShowStats}
+            className="text-primary-foreground hover:bg-primary-foreground/10"
+          >
+            <BarChart3 className="w-4 h-4 mr-1" />
+            Statistik
+          </Button>
           <Button
             variant="ghost"
             size="sm"

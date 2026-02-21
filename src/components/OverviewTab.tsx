@@ -5,18 +5,22 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Download, FileText, Eye, BarChart3, Calendar, User, GraduationCap, Edit2, Save, X, Plus, Trash2, ArrowLeft } from 'lucide-react';
-import { StudentInfo, TermPlan, PlannedCourse, calculatePeriodHP, calculateTermHP, HP_PER_TERM, getHPStatus, getCounselorById, StudyPace } from '@/types/planning';
+import { Download, FileText, Eye, BarChart3, Calendar, User, GraduationCap, Edit2, Save, X, Plus, Trash2, ArrowLeft, Mail, Copy, Loader2 } from 'lucide-react';
+import { StudentInfo, TermPlan, PlannedCourse, ActionItem, calculatePeriodHP, calculateTermHP, HP_PER_TERM, getHPStatus, getCounselorById, StudyPace } from '@/types/planning';
 import { HPProgressBar } from './HPProgressBar';
 import { exportToWord, exportToText } from '@/utils/export';
+import { trackDownload } from '@/hooks/useStats';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface OverviewTabProps {
   studentInfo: StudentInfo;
   agenda: string;
   terms: TermPlan[];
   notes: string;
+  actionItems?: ActionItem[];
   onAgendaChange: (agenda: string) => void;
   onNotesChange: (notes: string) => void;
   onTermsChange: (terms: TermPlan[]) => void;
@@ -29,6 +33,7 @@ export const OverviewTab = ({
   agenda,
   terms,
   notes,
+  actionItems,
   onAgendaChange,
   onNotesChange,
   onTermsChange,
@@ -40,6 +45,8 @@ export const OverviewTab = ({
   const [editingTermId, setEditingTermId] = useState<string | null>(null);
   const [editingCourseId, setEditingCourseId] = useState<string | null>(null);
   const [addingCourseToTerm, setAddingCourseToTerm] = useState<{termId: string, period: 'lp1' | 'lp2'} | null>(null);
+  const [emailDraft, setEmailDraft] = useState('');
+  const [isGeneratingEmail, setIsGeneratingEmail] = useState(false);
   
   // New course form state
   const [newCourseCode, setNewCourseCode] = useState('');
@@ -56,10 +63,47 @@ export const OverviewTab = ({
 
   const handleExportWord = async () => {
     await exportToWord({ studentInfo, agenda, terms, notes });
+    await trackDownload(studentInfo.counselorId, counselor?.name || '', studentInfo.program);
   };
 
   const handleExportText = () => {
     exportToText({ studentInfo, agenda, terms, notes });
+    trackDownload(studentInfo.counselorId, counselor?.name || '', studentInfo.program);
+  };
+
+  const handleGenerateEmail = async () => {
+    setIsGeneratingEmail(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-email-draft', {
+        body: {
+          studentName: studentInfo.name,
+          program: studentInfo.program === 'D' ? 'Datateknik' : studentInfo.program === 'C' ? 'Infocom' : studentInfo.program,
+          yearGroup: studentInfo.yearGroup,
+          counselorName: counselor?.name || '',
+          counselorEmail: counselor?.email || '',
+          terms,
+          notes,
+          actionItems: actionItems || [],
+          date: studentInfo.customDate || new Date().toISOString().split('T')[0],
+        },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      
+      setEmailDraft(data.result);
+      toast.success('Mailutkast genererat!');
+    } catch (e: any) {
+      console.error('Email draft error:', e);
+      toast.error(e.message || 'Kunde inte generera mailutkast');
+    } finally {
+      setIsGeneratingEmail(false);
+    }
+  };
+
+  const handleCopyEmail = () => {
+    navigator.clipboard.writeText(emailDraft);
+    toast.success('Mailutkast kopierat till urklipp!');
   };
 
   const updateTerm = (termId: string, updates: Partial<TermPlan>) => {
@@ -652,6 +696,47 @@ export const OverviewTab = ({
               ) : (
                 <p className="text-sm text-muted-foreground italic">Inga anteckningar</p>
               )
+            )}
+          </div>
+
+          {/* AI Email Draft */}
+          <div className="space-y-3 border-t border-border pt-4 mt-4">
+            <div className="flex items-center justify-between">
+              <h4 className="font-bold text-foreground flex items-center gap-2">
+                <Mail className="w-4 h-4 text-primary" />
+                Mailutkast till student
+              </h4>
+              <Button
+                onClick={handleGenerateEmail}
+                disabled={isGeneratingEmail}
+                size="sm"
+              >
+                {isGeneratingEmail ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Genererar...
+                  </>
+                ) : (
+                  <>
+                    <Mail className="w-4 h-4 mr-2" />
+                    Generera mailutkast med AI
+                  </>
+                )}
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Generera ett färdigt mailutkast baserat på studieplanering, handlingsplan och anteckningar som du kan kopiera och skicka till studenten.
+            </p>
+            {emailDraft && (
+              <div className="space-y-2">
+                <div className="bg-secondary/30 p-4 rounded-md">
+                  <pre className="text-sm whitespace-pre-wrap text-foreground font-sans">{emailDraft}</pre>
+                </div>
+                <Button variant="outline" size="sm" onClick={handleCopyEmail}>
+                  <Copy className="w-4 h-4 mr-2" />
+                  Kopiera mailutkast
+                </Button>
+              </div>
             )}
           </div>
 

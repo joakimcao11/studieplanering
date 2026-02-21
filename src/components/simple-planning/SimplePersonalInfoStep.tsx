@@ -71,6 +71,18 @@ export const SimplePersonalInfoStep = ({ studentInfo, onUpdate }: SimplePersonal
         </div>
 
         <div className="space-y-2">
+          <Label htmlFor="studievagledare" className="font-medium text-foreground">
+            Studievägledare
+          </Label>
+          <Input
+            id="studievagledare"
+            placeholder="Ex: Joakim Cao"
+            value={studentInfo.studievagledare || ''}
+            onChange={(e) => handleChange('studievagledare', e.target.value)}
+          />
+        </div>
+
+        <div className="space-y-2">
           <Label className="font-medium text-foreground">Termin</Label>
           <RadioGroup
             value={studentInfo.termin}
