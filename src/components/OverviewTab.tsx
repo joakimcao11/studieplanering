@@ -5,7 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Download, FileText, Eye, BarChart3, Calendar, User, GraduationCap, Edit2, Save, X, Plus, Trash2 } from 'lucide-react';
+import { Download, FileText, Eye, BarChart3, Calendar, User, GraduationCap, Edit2, Save, X, Plus, Trash2, ArrowLeft } from 'lucide-react';
 import { StudentInfo, TermPlan, PlannedCourse, calculatePeriodHP, calculateTermHP, HP_PER_TERM, getHPStatus, getCounselorById, StudyPace } from '@/types/planning';
 import { HPProgressBar } from './HPProgressBar';
 import { exportToWord, exportToText } from '@/utils/export';
@@ -21,6 +21,7 @@ interface OverviewTabProps {
   onNotesChange: (notes: string) => void;
   onTermsChange: (terms: TermPlan[]) => void;
   onStudentInfoChange: (updates: Partial<StudentInfo>) => void;
+  onPrevTab?: () => void;
 }
 
 export const OverviewTab = ({
@@ -32,6 +33,7 @@ export const OverviewTab = ({
   onNotesChange,
   onTermsChange,
   onStudentInfoChange,
+  onPrevTab,
 }: OverviewTabProps) => {
   const [isEditingAgenda, setIsEditingAgenda] = useState(false);
   const [isEditingNotes, setIsEditingNotes] = useState(false);
@@ -319,6 +321,15 @@ export const OverviewTab = ({
 
   return (
     <div className="space-y-6">
+      {/* Back button */}
+      {onPrevTab && (
+        <div className="flex justify-start">
+          <Button variant="outline" onClick={onPrevTab} size="sm">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Tillbaka till Grundinformation
+          </Button>
+        </div>
+      )}
       {/* Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>

@@ -31,6 +31,10 @@ export const MainApp = ({ onLogout }: MainAppProps) => {
     removeCourseFromTerm,
     notes,
     setNotes,
+    actionItems,
+    addActionItem,
+    updateActionItem,
+    removeActionItem,
     resetPlan,
   } = usePlanningState();
 
@@ -86,10 +90,15 @@ export const MainApp = ({ onLogout }: MainAppProps) => {
         {currentTab === 0 && (
           <BasicInfoTab
             studentInfo={studentInfo}
-            agenda={agenda}
+            actionItems={actionItems}
             onStudentInfoChange={updateStudentInfo}
-            onAgendaChange={setAgenda}
+            onActionItemsChange={{
+              add: addActionItem,
+              update: updateActionItem,
+              remove: removeActionItem,
+            }}
             onNextTab={() => setCurrentTab(2)}
+            onPrevTab={() => setCurrentTab(1)}
           />
         )}
         
@@ -103,6 +112,7 @@ export const MainApp = ({ onLogout }: MainAppProps) => {
             onNotesChange={setNotes}
             onTermsChange={setTerms}
             onStudentInfoChange={updateStudentInfo}
+            onPrevTab={() => setCurrentTab(0)}
           />
         )}
         

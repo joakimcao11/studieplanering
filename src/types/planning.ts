@@ -60,10 +60,18 @@ export interface TermPlan {
   retakeExamNotes: string; // Free text for retake exam notes
 }
 
+export interface ActionItem {
+  id: string;
+  activity: string;
+  comment: string;
+  done: boolean;
+}
+
 export interface StudyPlan {
   studentInfo: StudentInfo;
   date: string;
   agenda: string;
+  actionItems: ActionItem[];
   terms: TermPlan[];
   notes: string;
 }
@@ -72,6 +80,7 @@ export interface PlanningState {
   currentTab: number;
   studentInfo: StudentInfo;
   agenda: string;
+  actionItems: ActionItem[];
   terms: TermPlan[];
   notes: string;
 }
@@ -104,5 +113,9 @@ export const getHPStatus = (hp: number, target: number): 'optimal' | 'warning' |
 };
 
 export const getCounselorById = (id: string): Counselor | undefined => {
+  if (id.startsWith('custom:')) {
+    const name = id.replace('custom:', '');
+    return { id, name, email: '', displayName: `STVL ${name}` };
+  }
   return COUNSELORS.find(c => c.id === id);
 };
