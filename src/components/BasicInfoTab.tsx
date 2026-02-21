@@ -1,18 +1,24 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar, User, GraduationCap, FileText, ArrowRight } from 'lucide-react';
-import { StudentInfo, Program, COUNSELORS, getCounselorById } from '@/types/planning';
+import { Checkbox } from '@/components/ui/checkbox';
+import { User, GraduationCap, FileText, ArrowRight, ArrowLeft, Plus, Trash2, ListChecks } from 'lucide-react';
+import { StudentInfo, Program, COUNSELORS, getCounselorById, ActionItem } from '@/types/planning';
+import { useState } from 'react';
 
 interface BasicInfoTabProps {
   studentInfo: StudentInfo;
-  agenda: string;
+  actionItems: ActionItem[];
   onStudentInfoChange: (updates: Partial<StudentInfo>) => void;
-  onAgendaChange: (agenda: string) => void;
+  onActionItemsChange: {
+    add: () => void;
+    update: (id: string, updates: Partial<ActionItem>) => void;
+    remove: (id: string) => void;
+  };
   onNextTab?: () => void;
+  onPrevTab?: () => void;
 }
 
 const programs = [
@@ -33,18 +39,23 @@ const yearGroups = generateYearGroups();
 
 export const BasicInfoTab = ({ 
   studentInfo, 
-  agenda, 
+  actionItems,
   onStudentInfoChange, 
-  onAgendaChange,
+  onActionItemsChange,
   onNextTab,
+  onPrevTab,
 }: BasicInfoTabProps) => {
-  const todayFormatted = new Date().toLocaleDateString('sv-SE', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
-  
+  const [customProgram, setCustomProgram] = useState(
+    studentInfo.program !== 'D' && studentInfo.program !== 'C' ? studentInfo.program : ''
+  );
+  const [useCustomProgram, setUseCustomProgram] = useState(
+    studentInfo.program !== 'D' && studentInfo.program !== 'C' && studentInfo.program !== ''
+  );
+  const [customCounselor, setCustomCounselor] = useState('');
+  const [useCustomCounselor, setUseCustomCounselor] = useState(
+    !COUNSELORS.find(c => c.id === studentInfo.counselorId)
+  );
+
   const todayISO = new Date().toISOString().split('T')[0];
   const displayDate = studentInfo.customDate || todayISO;
 
@@ -52,6 +63,16 @@ export const BasicInfoTab = ({
 
   return (
     <div className="space-y-6">
+      {/* Back button */}
+      {onPrevTab && (
+        <div className="flex justify-start">
+          <Button variant="outline" onClick={onPrevTab} size="sm">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Tillbaka till Studieplanering
+          </Button>
+        </div>
+      )}
+
       {/* Basic Information Card */}
       <Card>
         <CardHeader>
@@ -85,24 +106,58 @@ export const BasicInfoTab = ({
               />
             </div>
 
-            {/* Program Selection */}
+            {/* Program Selection - with custom option */}
             <div className="space-y-2">
               <Label htmlFor="program" className="text-foreground font-medium">Program</Label>
-              <Select
-                value={studentInfo.program}
-                onValueChange={(value: Program) => onStudentInfoChange({ program: value })}
-              >
-                <SelectTrigger id="program" className="bg-background">
-                  <SelectValue placeholder="Välj program" />
-                </SelectTrigger>
-                <SelectContent className="bg-popover border border-border shadow-lg z-50">
-                  {programs.map((program) => (
-                    <SelectItem key={program.value} value={program.value}>
-                      {program.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {useCustomProgram ? (
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Ange programnamn..."
+                    value={customProgram}
+                    onChange={(e) => {
+                      setCustomProgram(e.target.value);
+                      onStudentInfoChange({ program: e.target.value as Program });
+                    }}
+                    className="flex-1"
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setUseCustomProgram(false);
+                      setCustomProgram('');
+                      onStudentInfoChange({ program: 'D' });
+                    }}
+                  >
+                    Välj från lista
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <Select
+                    value={studentInfo.program}
+                    onValueChange={(value: Program) => onStudentInfoChange({ program: value })}
+                  >
+                    <SelectTrigger id="program" className="bg-background flex-1">
+                      <SelectValue placeholder="Välj program" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover border border-border shadow-lg z-50">
+                      {programs.map((program) => (
+                        <SelectItem key={program.value} value={program.value}>
+                          {program.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setUseCustomProgram(true)}
+                  >
+                    Annat
+                  </Button>
+                </div>
+              )}
             </div>
 
             {/* Year Group */}
@@ -127,37 +182,120 @@ export const BasicInfoTab = ({
               </Select>
             </div>
 
-            {/* Counselor - Displayed from header selection */}
+            {/* Counselor - with custom option */}
             <div className="space-y-2">
               <Label htmlFor="counselor" className="text-foreground font-medium">Studievägledare</Label>
-              <div className="flex items-center gap-2 p-2 border border-input rounded-md bg-muted/30">
-                <GraduationCap className="w-4 h-4 text-primary" />
-                <span className="text-sm text-foreground">{currentCounselor?.name || 'Välj studievägledare'}</span>
-              </div>
+              {useCustomCounselor ? (
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Ange studievägledare..."
+                    value={customCounselor}
+                    onChange={(e) => {
+                      setCustomCounselor(e.target.value);
+                      onStudentInfoChange({ counselorId: `custom:${e.target.value}` });
+                    }}
+                    className="flex-1"
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setUseCustomCounselor(false);
+                      setCustomCounselor('');
+                      onStudentInfoChange({ counselorId: 'joakim' });
+                    }}
+                  >
+                    Välj från lista
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <Select
+                    value={studentInfo.counselorId}
+                    onValueChange={(value) => onStudentInfoChange({ counselorId: value })}
+                  >
+                    <SelectTrigger className="bg-background flex-1">
+                      <SelectValue placeholder="Välj studievägledare" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover border border-border shadow-lg z-50">
+                      {COUNSELORS.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setUseCustomCounselor(true)}
+                  >
+                    Annat
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Agenda Card */}
+      {/* Action Plan / Todo List Card */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-foreground font-bold">
-            <FileText className="w-5 h-5 text-primary" />
-            Agenda
+            <ListChecks className="w-5 h-5 text-primary" />
+            Handlingsplan – Att göra
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-2">
-            <Label htmlFor="agenda" className="text-foreground font-medium">Syftet med samtalet / agenda</Label>
-            <Textarea
-              id="agenda"
-              placeholder="Beskriv syftet med samtalet och vad ni ska gå igenom..."
-              value={agenda}
-              onChange={(e) => onAgendaChange(e.target.value)}
-              rows={5}
-              className="resize-none"
-            />
+          <div className="space-y-3">
+            {actionItems.length === 0 && (
+              <p className="text-sm text-muted-foreground italic">
+                Inga uppgifter tillagda ännu. Klicka på knappen nedan för att lägga till.
+              </p>
+            )}
+            {actionItems.map((item) => (
+              <div key={item.id} className="flex items-start gap-3 p-3 border border-border rounded-lg bg-secondary/20">
+                <Checkbox
+                  checked={item.done}
+                  onCheckedChange={(checked) => 
+                    onActionItemsChange.update(item.id, { done: checked === true })
+                  }
+                  className="mt-1"
+                />
+                <div className="flex-1 space-y-2">
+                  <Input
+                    placeholder="Aktivitet..."
+                    value={item.activity}
+                    onChange={(e) => onActionItemsChange.update(item.id, { activity: e.target.value })}
+                    className={item.done ? 'line-through text-muted-foreground' : ''}
+                  />
+                  <Input
+                    placeholder="Kommentar..."
+                    value={item.comment}
+                    onChange={(e) => onActionItemsChange.update(item.id, { comment: e.target.value })}
+                    className="text-sm"
+                  />
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive h-8 w-8 p-0"
+                  onClick={() => onActionItemsChange.remove(item.id)}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
+            ))}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onActionItemsChange.add}
+              className="w-full"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Lägg till uppgift
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -177,15 +315,23 @@ export const BasicInfoTab = ({
         </CardContent>
       </Card>
 
-      {/* Navigation Button */}
-      {onNextTab && (
-        <div className="flex justify-end pt-4">
+      {/* Navigation Buttons */}
+      <div className="flex justify-between pt-4">
+        <div>
+          {onPrevTab && (
+            <Button variant="outline" onClick={onPrevTab}>
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Studieplanering
+            </Button>
+          )}
+        </div>
+        {onNextTab && (
           <Button onClick={onNextTab} size="lg">
-            Fortsätt till Studieplanering
+            Fortsätt till Överblick & Export
             <ArrowRight className="w-4 h-4 ml-2" />
           </Button>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };

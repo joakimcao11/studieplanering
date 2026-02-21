@@ -3,7 +3,8 @@ import {
   StudentInfo, 
   TermPlan, 
   PlannedCourse,
-  Program 
+  Program,
+  ActionItem,
 } from '@/types/planning';
 
 const generateId = () => Math.random().toString(36).substring(2, 9);
@@ -34,6 +35,19 @@ export const usePlanningState = () => {
     createEmptyTerm('VT', '2026'),
   ]);
   const [notes, setNotes] = useState('');
+  const [actionItems, setActionItems] = useState<ActionItem[]>([]);
+
+  const addActionItem = useCallback(() => {
+    setActionItems(prev => [...prev, { id: generateId(), activity: '', comment: '', done: false }]);
+  }, []);
+
+  const updateActionItem = useCallback((id: string, updates: Partial<ActionItem>) => {
+    setActionItems(prev => prev.map(item => item.id === id ? { ...item, ...updates } : item));
+  }, []);
+
+  const removeActionItem = useCallback((id: string) => {
+    setActionItems(prev => prev.filter(item => item.id !== id));
+  }, []);
 
   const updateStudentInfo = useCallback((updates: Partial<StudentInfo>) => {
     setStudentInfo(prev => ({ ...prev, ...updates }));
@@ -118,6 +132,7 @@ export const usePlanningState = () => {
     setAgenda('');
     setTerms([createEmptyTerm('VT', '2026')]);
     setNotes('');
+    setActionItems([]);
     setCurrentTab(1);
   }, []);
 
@@ -139,6 +154,11 @@ export const usePlanningState = () => {
     setRetakeExamNotes,
     notes,
     setNotes,
+    actionItems,
+    setActionItems,
+    addActionItem,
+    updateActionItem,
+    removeActionItem,
     resetPlan,
   };
 };
