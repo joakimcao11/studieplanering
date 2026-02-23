@@ -62,12 +62,12 @@ export const OverviewTab = ({
   const counselor = getCounselorById(studentInfo.counselorId);
 
   const handleExportWord = async () => {
-    await exportToWord({ studentInfo, agenda, terms, notes });
+    await exportToWord({ studentInfo, agenda, terms, notes, actionItems });
     await trackDownload(studentInfo.counselorId, counselor?.name || '', studentInfo.program);
   };
 
   const handleExportText = () => {
-    exportToText({ studentInfo, agenda, terms, notes });
+    exportToText({ studentInfo, agenda, terms, notes, actionItems });
     trackDownload(studentInfo.counselorId, counselor?.name || '', studentInfo.program);
   };
 

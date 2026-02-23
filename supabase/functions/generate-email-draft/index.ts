@@ -32,14 +32,16 @@ serve(async (req) => {
           courseSummary += `  ${p1Label}:\n`;
           term.lp1.forEach((c: any) => {
             const pace = c.studyPace && c.studyPace !== 100 ? ` [${c.studyPace}%]` : "";
-            courseSummary += `    - ${c.code}: ${c.name} (${c.hp} hp)${pace}\n`;
+            const restkurs = c.completedHP && c.completedHP > 0 ? ` *Restkurs (${c.completedHP} hp avkl., ${Math.max(0, c.hp - c.completedHP)} hp kvar)` : "";
+            courseSummary += `    - ${c.code}: ${c.name} (${c.hp} hp)${pace}${restkurs}\n`;
           });
         }
         if (term.lp2?.length > 0) {
           courseSummary += `  ${p2Label}:\n`;
           term.lp2.forEach((c: any) => {
             const pace = c.studyPace && c.studyPace !== 100 ? ` [${c.studyPace}%]` : "";
-            courseSummary += `    - ${c.code}: ${c.name} (${c.hp} hp)${pace}\n`;
+            const restkurs = c.completedHP && c.completedHP > 0 ? ` *Restkurs (${c.completedHP} hp avkl., ${Math.max(0, c.hp - c.completedHP)} hp kvar)` : "";
+            courseSummary += `    - ${c.code}: ${c.name} (${c.hp} hp)${pace}${restkurs}\n`;
           });
         }
       });
