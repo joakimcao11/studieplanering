@@ -1,6 +1,6 @@
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType, BorderStyle, HeadingLevel, Footer, Header as DocxHeader, ImageRun, convertInchesToTwip, LineRuleType } from 'docx';
 import { saveAs } from 'file-saver';
-import { StudentInfo, TermPlan, calculatePeriodHP, calculateTermHP, getCounselorById } from '@/types/planning';
+import { StudentInfo, TermPlan, ActionItem, calculatePeriodHP, calculateTermHP, getCounselorById } from '@/types/planning';
 
 const EXAM_INFO_TEXT = `Utbildningens upplägg och examenskrav
 
@@ -25,6 +25,7 @@ interface ExportData {
   agenda: string;
   terms: TermPlan[];
   notes: string;
+  actionItems?: ActionItem[];
 }
 
 // Font size in half-points (24 = 12pt, 22 = 11pt, 20 = 10pt)
@@ -126,6 +127,18 @@ ${'-'.repeat(40)}
     
     content += `\n`;
   });
+
+  // Handlingsplan
+  if (data.actionItems && data.actionItems.length > 0) {
+    content += `HANDLINGSPLAN – ATT GÖRA
+${'-'.repeat(40)}
+`;
+    data.actionItems.forEach(item => {
+      const status = item.done ? '✓' : '☐';
+      content += `  ${status} ${item.activity}${item.comment ? ` – ${item.comment}` : ''}\n`;
+    });
+    content += `\n`;
+  }
 
   if (data.notes) {
     content += `ÖVRIGA ANTECKNINGAR
@@ -391,6 +404,31 @@ export const exportToWord = async (data: ExportData) => {
   });
 
   sections.push(new Paragraph({ children: [], spacing: { after: 200 } }));
+
+  // Handlingsplan
+  if (data.actionItems && data.actionItems.length > 0) {
+    sections.push(
+      new Paragraph({
+        children: [new TextRun({ text: 'Handlingsplan – Att göra', bold: true, size: FONT_SIZE_HEADING2, font: FONT_NAME })],
+        heading: HeadingLevel.HEADING_2,
+        spacing: { before: 200, after: 100 },
+      }),
+    );
+    data.actionItems.forEach(item => {
+      const status = item.done ? '✓' : '☐';
+      sections.push(
+        new Paragraph({
+          children: [
+            new TextRun({ text: `${status}  ${item.activity}`, size: FONT_SIZE_NORMAL, font: FONT_NAME, bold: item.done }),
+            item.comment ? new TextRun({ text: ` – ${item.comment}`, italics: true, size: FONT_SIZE_NORMAL, font: FONT_NAME }) : new TextRun({ text: '' }),
+          ],
+          indent: { left: convertInchesToTwip(0.25) },
+          spacing: defaultSpacing,
+        }),
+      );
+    });
+    sections.push(new Paragraph({ children: [], spacing: { after: 200 } }));
+  }
 
   // Notes
   if (data.notes) {
