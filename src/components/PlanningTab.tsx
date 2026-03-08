@@ -51,6 +51,7 @@ export const PlanningTab = ({
   onNextTab,
   onProgramChange,
 }: PlanningTabProps) => {
+  const { programs: allPrograms } = usePrograms();
   const getDefaultTermId = () => {
     const springTerm2026 = terms.find(t => t.semester === 'VT' && (t.year === '2026' || t.customYearLabel === '2026'));
     return springTerm2026?.id || terms[0]?.id || '';
