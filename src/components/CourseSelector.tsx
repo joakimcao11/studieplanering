@@ -266,8 +266,8 @@ export const CourseSelector = ({ program, onAddCourse, onCourseClick }: CourseSe
                           {course.name}
                         </p>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-primary">
+                      <div className="flex items-center gap-2 shrink-0 ml-2">
+                        <span className="text-sm font-medium text-primary whitespace-nowrap">
                           {course.hp} hp
                         </span>
                         <Button

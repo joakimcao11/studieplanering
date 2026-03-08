@@ -22,6 +22,8 @@ export const ProgramOverviewTab = () => {
   const years = Object.keys(coursesByYear).map(Number).sort();
 
   const totalHP = courses.reduce((sum, c) => sum + c.hp, 0);
+  const oblHP = courses.filter(c => c.isObligatory).reduce((sum, c) => sum + c.hp, 0);
+  const altOblHP = courses.filter(c => !c.isObligatory).reduce((sum, c) => sum + c.hp, 0);
 
   return (
     <Card>
@@ -41,9 +43,11 @@ export const ProgramOverviewTab = () => {
             </SelectContent>
           </Select>
         </div>
-        <div className="flex gap-4 text-sm text-muted-foreground mt-2">
+        <div className="flex flex-wrap gap-4 text-sm text-muted-foreground mt-2">
           <span>Totalt: <strong className="text-foreground">{courses.length}</strong> kurser</span>
           <span>Totalt: <strong className="text-foreground">{totalHP} hp</strong></span>
+          <span>Obl: <strong className="text-foreground">{oblHP} hp</strong></span>
+          <span>Alt.obl: <strong className="text-foreground">{altOblHP} hp</strong></span>
         </div>
       </CardHeader>
       <CardContent>
