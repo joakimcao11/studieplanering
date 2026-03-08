@@ -43,6 +43,7 @@ export const BasicInfoTab = ({
   onNextTab,
   onPrevTab,
 }: BasicInfoTabProps) => {
+  const { programs: dbPrograms } = usePrograms();
   const [customProgram, setCustomProgram] = useState(
     studentInfo.program !== 'D' && studentInfo.program !== 'C' ? studentInfo.program : ''
   );
