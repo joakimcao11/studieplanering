@@ -37,6 +37,7 @@ Förtydliganden:
 • Endast avslutade kurser med slutbetyg kan ingå i examen`,
   footer_text: 'Studie- och karriärvägledningen LTH',
   purpose_text: 'Studieplanering med studievägledare',
+  footer_image_url: '',
 });
 
 const generateTextContent = (data: ExportData): string => {
