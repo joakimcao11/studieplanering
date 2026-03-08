@@ -436,6 +436,7 @@ export const AdminPage = ({ onBack }: AdminPageProps) => {
                                 </AlertDialogFooter>
                               </AlertDialogContent>
                             </AlertDialog>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
