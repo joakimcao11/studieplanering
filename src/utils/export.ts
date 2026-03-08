@@ -236,7 +236,7 @@ export const exportToWord = async (data: ExportData) => {
     new Paragraph({
       children: [
         new TextRun({ text: 'Syfte: ', bold: true, size: FONT_SIZE_NORMAL, font: FONT_NAME }),
-        new TextRun({ text: 'Studieplanering med studievägledare', size: FONT_SIZE_NORMAL, font: FONT_NAME }),
+        new TextRun({ text: ts.purpose_text, size: FONT_SIZE_NORMAL, font: FONT_NAME }),
       ],
       spacing: defaultSpacing,
     }),
