@@ -73,7 +73,7 @@ export const OverviewTab = ({
   };
 
   const handleExportText = () => {
-    exportToText({ studentInfo, agenda, terms, notes, actionItems, templateSettings });
+    exportToText({ studentInfo, agenda, terms, notes, actionItems, templateSettings, programName: resolvedProgramName });
     trackDownload(studentInfo.counselorId, counselor?.name || '', studentInfo.program);
   };
 
