@@ -334,10 +334,25 @@ export const AdminPage = ({ onBack }: AdminPageProps) => {
                               <Button size="sm" variant="ghost" onClick={() => openEditCourse(course)} className="h-7 w-7 p-0">
                                 <Pencil className="w-3 h-3" />
                               </Button>
-                              <Button size="sm" variant="ghost" onClick={() => deleteCourse(course.id)} className="h-7 w-7 p-0 text-destructive hover:text-destructive">
-                                <Trash2 className="w-3 h-3" />
-                              </Button>
-                            </div>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive hover:text-destructive">
+                                    <Trash2 className="w-3 h-3" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Ta bort kurs?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Kursen "{course.code} – {course.name}" tas bort permanent. Åtgärden kan inte ångras.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Avbryt</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => deleteCourse(course.id)}>Ta bort</AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
                           </TableCell>
                         </TableRow>
                       ))}
