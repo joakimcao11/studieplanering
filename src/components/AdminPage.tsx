@@ -8,10 +8,27 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ArrowLeft, Plus, Pencil, Trash2, Save, BookOpen, Users, Search, FileText, LayoutList, GraduationCap } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { useCourses, useCounselorProfiles } from '@/hooks/useCourses';
+import { usePrograms } from '@/hooks/usePrograms';
+import { TemplateSettingsTab } from '@/components/admin/TemplateSettingsTab';
+import { ProgramOverviewTab } from '@/components/admin/ProgramOverviewTab';
+import { ProgramManagementTab } from '@/components/admin/ProgramManagementTab';
 import { useToast } from '@/hooks/use-toast';
 import { useCourses, useCounselorProfiles } from '@/hooks/useCourses';
 import { usePrograms } from '@/hooks/usePrograms';
