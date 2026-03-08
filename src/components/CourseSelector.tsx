@@ -33,7 +33,7 @@ export const CourseSelector = ({ program, onAddCourse, onCourseClick }: CourseSe
   const [customCourseHP, setCustomCourseHP] = useState<string>('');
   const [customStudyPace, setCustomStudyPace] = useState<StudyPace>(100);
 
-  const courses = getAllCourses(program);
+  const { courses, loading: coursesLoading } = useCourses(program);
   
   const filteredCourses = courses.filter((course) => {
     const matchesSearch = 

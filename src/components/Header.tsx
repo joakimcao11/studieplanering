@@ -60,6 +60,17 @@ export const Header = ({ onLogout, counselorId, onCounselorChange, onShowStats, 
             <BarChart3 className="w-4 h-4 mr-1" />
             Statistik
           </Button>
+          {isAdmin && onShowAdmin && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onShowAdmin}
+              className="text-primary-foreground hover:bg-primary-foreground/10"
+            >
+              <Settings className="w-4 h-4 mr-1" />
+              Admin
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="sm"
