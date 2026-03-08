@@ -159,6 +159,82 @@ export const TemplateSettingsTab = () => {
             </div>
           </div>
 
+          {/* Footer Image */}
+          <div className="space-y-3">
+            <h4 className="font-semibold text-foreground flex items-center gap-2">
+              <Image className="w-4 h-4" />
+              Sidfotsbild (höger)
+            </h4>
+            <div className="flex gap-2 mb-2">
+              <Button
+                variant={imageMode === 'url' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setImageMode('url')}
+              >
+                <Link className="w-4 h-4 mr-1" />
+                Bildlänk
+              </Button>
+              <Button
+                variant={imageMode === 'upload' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setImageMode('upload')}
+              >
+                <Upload className="w-4 h-4 mr-1" />
+                Ladda upp
+              </Button>
+            </div>
+            {imageMode === 'url' ? (
+              <div className="space-y-1">
+                <Label className="text-sm">Bild-URL</Label>
+                <Input
+                  placeholder="https://example.com/logo.png"
+                  value={form.footer_image_url}
+                  onChange={e => setForm(f => ({ ...f, footer_image_url: e.target.value }))}
+                />
+              </div>
+            ) : (
+              <div className="space-y-1">
+                <Label className="text-sm">Ladda upp bild</Label>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleFileUpload}
+                />
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  {uploading ? 'Laddar upp...' : 'Välj bild'}
+                </Button>
+              </div>
+            )}
+            {form.footer_image_url && (
+              <div className="flex items-center gap-3 p-3 border rounded-md bg-muted/30">
+                <img
+                  src={form.footer_image_url}
+                  alt="Sidfotsbild"
+                  className="h-12 object-contain"
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                />
+                <span className="text-xs text-muted-foreground truncate flex-1">
+                  {form.footer_image_url}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setForm(f => ({ ...f, footer_image_url: '' }))}
+                >
+                  Ta bort
+                </Button>
+              </div>
+            )}
+          </div>
+
           {/* Exam info */}
           <div className="space-y-3">
             <h4 className="font-semibold text-foreground">Examenskrav (obligatorisk bilaga)</h4>
