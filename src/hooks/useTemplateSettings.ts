@@ -12,6 +12,7 @@ export interface TemplateSettings {
   exam_info_text: string;
   footer_text: string;
   purpose_text: string;
+  footer_image_url: string;
 }
 
 const defaults: TemplateSettings = {
@@ -25,6 +26,7 @@ const defaults: TemplateSettings = {
   exam_info_text: '',
   footer_text: 'Studie- och karriärvägledningen LTH',
   purpose_text: 'Studieplanering med studievägledare',
+  footer_image_url: '',
 };
 
 export const useTemplateSettings = () => {

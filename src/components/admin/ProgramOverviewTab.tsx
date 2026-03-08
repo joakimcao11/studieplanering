@@ -22,6 +22,8 @@ export const ProgramOverviewTab = () => {
   const years = Object.keys(coursesByYear).map(Number).sort();
 
   const totalHP = courses.reduce((sum, c) => sum + c.hp, 0);
+  const oblHP = courses.filter(c => c.isObligatory).reduce((sum, c) => sum + c.hp, 0);
+  const altOblHP = courses.filter(c => !c.isObligatory).reduce((sum, c) => sum + c.hp, 0);
 
   return (
     <Card>
@@ -41,9 +43,11 @@ export const ProgramOverviewTab = () => {
             </SelectContent>
           </Select>
         </div>
-        <div className="flex gap-4 text-sm text-muted-foreground mt-2">
+        <div className="flex flex-wrap gap-4 text-sm text-muted-foreground mt-2">
           <span>Totalt: <strong className="text-foreground">{courses.length}</strong> kurser</span>
           <span>Totalt: <strong className="text-foreground">{totalHP} hp</strong></span>
+          <span>Obl: <strong className="text-foreground">{oblHP} hp</strong></span>
+          <span>Alt.obl: <strong className="text-foreground">{altOblHP} hp</strong></span>
         </div>
       </CardHeader>
       <CardContent>
@@ -55,13 +59,25 @@ export const ProgramOverviewTab = () => {
               {years.map(year => {
                 const yearCourses = coursesByYear[year];
                 const yearHP = yearCourses.reduce((sum, c) => sum + c.hp, 0);
+                const yearOblHP = yearCourses.filter(c => c.isObligatory).reduce((sum, c) => sum + c.hp, 0);
+                const yearAltOblHP = yearCourses.filter(c => !c.isObligatory).reduce((sum, c) => sum + c.hp, 0);
                 return (
                   <div key={year}>
-                    <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
                       <h3 className="font-semibold text-foreground">Årskurs {year}</h3>
-                      <Badge variant="secondary" className="text-xs">
-                        Summa: {yearHP} hp
-                      </Badge>
+                      <div className="flex gap-2 flex-wrap">
+                        <Badge variant="secondary" className="text-xs">
+                          Summa: {yearHP} hp
+                        </Badge>
+                        <Badge variant="outline" className="text-xs">
+                          Obl: {yearOblHP} hp
+                        </Badge>
+                        {yearAltOblHP > 0 && (
+                          <Badge variant="outline" className="text-xs border-amber-500 text-amber-600">
+                            Alt.obl: {yearAltOblHP} hp
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                     <Table>
                       <TableHeader>
