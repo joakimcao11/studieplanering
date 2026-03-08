@@ -50,6 +50,9 @@ export const ProgramCoursesManager = ({ programCode, programName, onBack }: Prog
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<CourseForm>(emptyForm);
   const [reuseSearch, setReuseSearch] = useState('');
+  const [reuseDialog, setReuseDialog] = useState(false);
+  const [reuseSource, setReuseSource] = useState<any>(null);
+  const [reuseForm, setReuseForm] = useState<{ periods: string[]; year: string; is_obligatory: boolean }>({ periods: [], year: '1', is_obligatory: true });
 
   // Courses from OTHER programs that are not already in this program
   const existingCodes = new Set(courses.map(c => c.code));
