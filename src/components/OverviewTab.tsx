@@ -503,7 +503,7 @@ export const OverviewTab = ({
                 <GraduationCap className="w-4 h-4 text-muted-foreground" />
                 <span className="text-muted-foreground">Program och kull:</span>
                 <span className="text-foreground">
-                  {studentInfo.program === 'D' ? 'Datateknik' : studentInfo.program === 'C' ? 'Infocom' : studentInfo.program}
+                  {resolvedProgramName}
                   {studentInfo.yearGroup ? ` (${studentInfo.yearGroup})` : ''}
                 </span>
               </div>
