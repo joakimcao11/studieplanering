@@ -488,6 +488,44 @@ export const exportToWord = async (data: ExportData) => {
     );
   });
 
+  // Fetch footer image if URL is provided
+  let footerImageRun: ImageRun | null = null;
+  if (ts.footer_image_url) {
+    try {
+      const response = await fetch(ts.footer_image_url);
+      const arrayBuffer = await response.arrayBuffer();
+      footerImageRun = new ImageRun({
+        data: arrayBuffer,
+        transformation: { width: 80, height: 40 },
+        type: 'png',
+      });
+    } catch (e) {
+      console.warn('Could not load footer image:', e);
+    }
+  }
+
+  const footerChildren: Paragraph[] = [];
+  if (footerImageRun) {
+    footerChildren.push(
+      new Paragraph({
+        children: [
+          new TextRun({ text: ts.footer_text, size: FONT_SIZE_SMALL, font: FONT_NAME }),
+          new TextRun({ text: '\t' }),
+          footerImageRun,
+        ],
+        alignment: AlignmentType.LEFT,
+        tabStops: [{ type: 'right' as any, position: convertInchesToTwip(6.5) }],
+      }),
+    );
+  } else {
+    footerChildren.push(
+      new Paragraph({
+        children: [new TextRun({ text: ts.footer_text, size: FONT_SIZE_SMALL, font: FONT_NAME })],
+        alignment: AlignmentType.LEFT,
+      }),
+    );
+  }
+
   const doc = new Document({
     styles: {
       default: {
@@ -505,16 +543,7 @@ export const exportToWord = async (data: ExportData) => {
         children: sections,
         footers: {
           default: new Footer({
-            children: [
-              new Paragraph({
-                children: [new TextRun({ 
-                  text: ts.footer_text, 
-                  size: FONT_SIZE_SMALL,
-                  font: FONT_NAME,
-                })],
-                alignment: AlignmentType.LEFT,
-              }),
-            ],
+            children: footerChildren,
           }),
         },
       },
