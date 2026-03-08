@@ -24,9 +24,9 @@ export const HPProgressBar = ({
   };
 
   const statusLabels = {
-    optimal: 'Inom rekommenderad studietakt',
-    warning: 'Avviker från rekommenderad studietakt',
-    danger: 'Betydande avvikelse',
+    optimal: 'Inom rekommenderad studietakt (30 hp/termin)',
+    warning: 'Avviker från rekommendation (mål: 30 hp/termin)',
+    danger: `Betydande avvikelse – ${current < target ? `${(target - current).toFixed(1).replace(/\.0$/, '')} hp under` : `${(current - target).toFixed(1).replace(/\.0$/, '')} hp över`} rekommenderade ${target} hp`,
   };
 
   return (
