@@ -92,6 +92,30 @@ export type Database = {
         }
         Relationships: []
       }
+      programs: {
+        Row: {
+          code: string
+          created_at: string | null
+          id: string
+          link_url: string | null
+          name: string
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          id?: string
+          link_url?: string | null
+          name: string
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          id?: string
+          link_url?: string | null
+          name?: string
+        }
+        Relationships: []
+      }
       study_plan_stats: {
         Row: {
           action_type: string
