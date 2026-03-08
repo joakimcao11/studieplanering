@@ -7,7 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Plus, BookOpen, PenLine, GraduationCap, ExternalLink } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Search, Plus, BookOpen, PenLine, GraduationCap, ExternalLink, AlertTriangle } from 'lucide-react';
 import { Course } from '@/data/courses';
 import { Program, PlannedCourse, StudyPace } from '@/types/planning';
 import { useCourses } from '@/hooks/useCourses';
@@ -35,7 +36,24 @@ export const CourseSelector = ({ program, onAddCourse, onCourseClick }: CourseSe
   const [customStudyPace, setCustomStudyPace] = useState<StudyPace>(100);
 
   const { courses, loading: coursesLoading } = useCourses(program);
+  const { courses: allCoursesGlobal } = useCourses(); // All courses across all programs
   const { programs: allPrograms } = usePrograms();
+
+  // Build a map: courseCode -> [{program, periods}] for cross-program period comparison
+  const crossProgramMap = new Map<string, { program: string; periods: string[] }[]>();
+  allCoursesGlobal.forEach(c => {
+    if (!crossProgramMap.has(c.code)) crossProgramMap.set(c.code, []);
+    crossProgramMap.get(c.code)!.push({ program: c.program, periods: c.periods || [] });
+  });
+
+  const getCrossProgramWarning = (course: Course): string | null => {
+    const entries = crossProgramMap.get(course.code);
+    if (!entries || entries.length <= 1) return null;
+    const thisPeriods = (course.periods || []).sort().join(',');
+    const others = entries.filter(e => e.program !== program && e.periods.sort().join(',') !== thisPeriods);
+    if (others.length === 0) return null;
+    return others.map(o => `${o.program}: LP${o.periods.join(',')}`).join(' · ');
+  };
   
   const filteredCourses = courses.filter((course) => {
     const matchesSearch = 
@@ -230,7 +248,9 @@ export const CourseSelector = ({ program, onAddCourse, onCourseClick }: CourseSe
                     Inga kurser hittades
                   </p>
                 ) : (
-                  filteredCourses.map((course) => (
+                  filteredCourses.map((course) => {
+                    const crossWarning = getCrossProgramWarning(course);
+                    return (
                     <div
                       key={course.id}
                       className="p-2 rounded-md hover:bg-muted/50 cursor-pointer"
@@ -261,6 +281,19 @@ export const CourseSelector = ({ program, onAddCourse, onCourseClick }: CourseSe
                                 *Flerperiod
                               </Badge>
                             )}
+                            {crossWarning && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span className="inline-flex items-center">
+                                    <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+                                  </span>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="max-w-xs text-xs">
+                                  <p className="font-semibold">Andra läsperioder i andra program:</p>
+                                  <p>{crossWarning}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
                           </div>
                           <p className="text-sm text-foreground break-words leading-snug pr-2">
                             {course.isMultiPeriod && <span className="font-bold">*</span>}
@@ -272,7 +305,8 @@ export const CourseSelector = ({ program, onAddCourse, onCourseClick }: CourseSe
                         </span>
                       </div>
                     </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             </ScrollArea>

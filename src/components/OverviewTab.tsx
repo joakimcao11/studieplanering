@@ -15,6 +15,7 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useTemplateSettings } from '@/hooks/useTemplateSettings';
+import { usePrograms } from '@/hooks/usePrograms';
 
 interface OverviewTabProps {
   studentInfo: StudentInfo;
@@ -49,6 +50,9 @@ export const OverviewTab = ({
   const [emailDraft, setEmailDraft] = useState('');
   const [isGeneratingEmail, setIsGeneratingEmail] = useState(false);
   const { settings: templateSettings } = useTemplateSettings();
+  const { programs: allPrograms } = usePrograms();
+
+  const resolvedProgramName = allPrograms.find(p => p.code === studentInfo.program)?.name || studentInfo.program;
   
   // New course form state
   const [newCourseCode, setNewCourseCode] = useState('');
@@ -64,12 +68,12 @@ export const OverviewTab = ({
   const counselor = getCounselorById(studentInfo.counselorId);
 
   const handleExportWord = async () => {
-    await exportToWord({ studentInfo, agenda, terms, notes, actionItems, templateSettings });
+    await exportToWord({ studentInfo, agenda, terms, notes, actionItems, templateSettings, programName: resolvedProgramName });
     await trackDownload(studentInfo.counselorId, counselor?.name || '', studentInfo.program);
   };
 
   const handleExportText = () => {
-    exportToText({ studentInfo, agenda, terms, notes, actionItems, templateSettings });
+    exportToText({ studentInfo, agenda, terms, notes, actionItems, templateSettings, programName: resolvedProgramName });
     trackDownload(studentInfo.counselorId, counselor?.name || '', studentInfo.program);
   };
 
@@ -79,7 +83,7 @@ export const OverviewTab = ({
       const { data, error } = await supabase.functions.invoke('generate-email-draft', {
         body: {
           studentName: studentInfo.name,
-          program: studentInfo.program === 'D' ? 'Datateknik' : studentInfo.program === 'C' ? 'Infocom' : studentInfo.program,
+          program: resolvedProgramName,
           yearGroup: studentInfo.yearGroup,
           counselorName: counselor?.name || '',
           counselorEmail: counselor?.email || '',
@@ -499,7 +503,7 @@ export const OverviewTab = ({
                 <GraduationCap className="w-4 h-4 text-muted-foreground" />
                 <span className="text-muted-foreground">Program och kull:</span>
                 <span className="text-foreground">
-                  {studentInfo.program === 'D' ? 'Datateknik' : studentInfo.program === 'C' ? 'Infocom' : studentInfo.program}
+                  {resolvedProgramName}
                   {studentInfo.yearGroup ? ` (${studentInfo.yearGroup})` : ''}
                 </span>
               </div>
