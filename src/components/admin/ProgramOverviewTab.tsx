@@ -59,13 +59,25 @@ export const ProgramOverviewTab = () => {
               {years.map(year => {
                 const yearCourses = coursesByYear[year];
                 const yearHP = yearCourses.reduce((sum, c) => sum + c.hp, 0);
+                const yearOblHP = yearCourses.filter(c => c.isObligatory).reduce((sum, c) => sum + c.hp, 0);
+                const yearAltOblHP = yearCourses.filter(c => !c.isObligatory).reduce((sum, c) => sum + c.hp, 0);
                 return (
                   <div key={year}>
-                    <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
                       <h3 className="font-semibold text-foreground">Årskurs {year}</h3>
-                      <Badge variant="secondary" className="text-xs">
-                        Summa: {yearHP} hp
-                      </Badge>
+                      <div className="flex gap-2 flex-wrap">
+                        <Badge variant="secondary" className="text-xs">
+                          Summa: {yearHP} hp
+                        </Badge>
+                        <Badge variant="outline" className="text-xs">
+                          Obl: {yearOblHP} hp
+                        </Badge>
+                        {yearAltOblHP > 0 && (
+                          <Badge variant="outline" className="text-xs border-amber-500 text-amber-600">
+                            Alt.obl: {yearAltOblHP} hp
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                     <Table>
                       <TableHeader>
