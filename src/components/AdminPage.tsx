@@ -11,9 +11,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ArrowLeft, Plus, Pencil, Trash2, Save, BookOpen, Users, Search } from 'lucide-react';
+import { ArrowLeft, Plus, Pencil, Trash2, Save, BookOpen, Users, Search, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useCourses, useCounselorProfiles } from '@/hooks/useCourses';
+import { TemplateSettingsTab } from '@/components/admin/TemplateSettingsTab';
 
 interface AdminPageProps {
   onBack: () => void;
