@@ -15,6 +15,9 @@ export const TemplateSettingsTab = () => {
   const { settings, loading, updateSetting, refetch } = useTemplateSettings();
   const [form, setForm] = useState<TemplateSettings>(settings);
   const [saving, setSaving] = useState(false);
+  const [imageMode, setImageMode] = useState<'url' | 'upload'>('url');
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setForm(settings);
