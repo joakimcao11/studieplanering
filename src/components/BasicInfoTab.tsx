@@ -7,6 +7,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { User, GraduationCap, FileText, ArrowRight, ArrowLeft, Plus, Trash2, ListChecks } from 'lucide-react';
 import { StudentInfo, Program, COUNSELORS, getCounselorById, ActionItem } from '@/types/planning';
 import { useState } from 'react';
+import { usePrograms } from '@/hooks/usePrograms';
 
 interface BasicInfoTabProps {
   studentInfo: StudentInfo;

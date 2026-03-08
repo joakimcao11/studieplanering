@@ -238,10 +238,9 @@ export const PlanningTab = ({
               </CardHeader>
               <CardContent>
                 <Select 
-                  value={program === 'D' || program === 'C' ? program : 'custom'} 
+                  value={allPrograms.some(p => p.code === program) ? program : 'custom'} 
                   onValueChange={(v) => {
                     if (v === 'custom') {
-                      // Don't change yet, wait for custom name input
                       setCustomProgramName('');
                       onProgramChange?.('custom');
                     } else {
@@ -254,12 +253,15 @@ export const PlanningTab = ({
                     <SelectValue placeholder="Välj program" />
                   </SelectTrigger>
                   <SelectContent className="bg-popover border border-border shadow-lg z-50">
-                    <SelectItem value="D">Datateknik (D)</SelectItem>
-                    <SelectItem value="C">Infocom (C)</SelectItem>
+                    {allPrograms.map(p => (
+                      <SelectItem key={p.code} value={p.code}>
+                        {p.name} ({p.code})
+                      </SelectItem>
+                    ))}
                     <SelectItem value="custom">Annat program...</SelectItem>
                   </SelectContent>
                 </Select>
-                {program !== 'D' && program !== 'C' && (
+                {!allPrograms.some(p => p.code === program) && program !== '' && (
                   <Input
                     className="mt-2"
                     placeholder="Ange programnamn..."
