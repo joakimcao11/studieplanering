@@ -141,9 +141,9 @@ export const BasicInfoTab = ({
                       <SelectValue placeholder="Välj program" />
                     </SelectTrigger>
                     <SelectContent className="bg-popover border border-border shadow-lg z-50">
-                      {programs.map((program) => (
-                        <SelectItem key={program.value} value={program.value}>
-                          {program.label}
+                      {dbPrograms.map((p) => (
+                        <SelectItem key={p.code} value={p.code}>
+                          {p.name} ({p.code})
                         </SelectItem>
                       ))}
                     </SelectContent>
