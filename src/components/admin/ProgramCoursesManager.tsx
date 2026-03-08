@@ -50,6 +50,9 @@ export const ProgramCoursesManager = ({ programCode, programName, onBack }: Prog
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<CourseForm>(emptyForm);
   const [reuseSearch, setReuseSearch] = useState('');
+  const [reuseDialog, setReuseDialog] = useState(false);
+  const [reuseSource, setReuseSource] = useState<any>(null);
+  const [reuseForm, setReuseForm] = useState<{ periods: string[]; year: string; is_obligatory: boolean }>({ periods: [], year: '1', is_obligatory: true });
 
   // Courses from OTHER programs that are not already in this program
   const existingCodes = new Set(courses.map(c => c.code));
@@ -132,24 +135,49 @@ export const ProgramCoursesManager = ({ programCode, programName, onBack }: Prog
     }
   };
 
-  const reuseCourse = async (course: any) => {
-    const data = {
-      code: course.code,
-      name: course.name,
-      hp: course.hp,
-      level: course.level,
-      year: course.year,
+  const openReuseDialog = (course: any) => {
+    setReuseSource(course);
+    setReuseForm({
       periods: course.periods || [],
+      year: String(course.year),
       is_obligatory: course.isObligatory,
+    });
+    setReuseDialog(true);
+  };
+
+  const toggleReusePeriod = (period: string) => {
+    setReuseForm(prev => ({
+      ...prev,
+      periods: prev.periods.includes(period)
+        ? prev.periods.filter(p => p !== period)
+        : [...prev.periods, period].sort(),
+    }));
+  };
+
+  const confirmReuse = async () => {
+    if (!reuseSource) return;
+    if (reuseForm.periods.length === 0) {
+      toast({ title: 'Välj minst en läsperiod', variant: 'destructive' });
+      return;
+    }
+    const data = {
+      code: reuseSource.code,
+      name: reuseSource.name,
+      hp: reuseSource.hp,
+      level: reuseSource.level,
+      year: parseInt(reuseForm.year),
+      periods: reuseForm.periods,
+      is_obligatory: reuseForm.is_obligatory,
       program: programCode,
-      is_multi_period: course.isMultiPeriod || false,
-      default_study_pace: course.defaultStudyPace || null,
+      is_multi_period: reuseSource.isMultiPeriod || false,
+      default_study_pace: reuseSource.defaultStudyPace || null,
     };
     const { error } = await supabase.from('courses').insert(data);
     if (error) {
       toast({ title: 'Fel', description: error.message, variant: 'destructive' });
     } else {
-      toast({ title: `${course.code} tillagd i ${programCode}` });
+      toast({ title: `${reuseSource.code} tillagd i ${programCode}` });
+      setReuseDialog(false);
       refetch();
     }
   };
@@ -300,7 +328,7 @@ export const ProgramCoursesManager = ({ programCode, programName, onBack }: Prog
                       <div
                         key={c.id}
                         className="flex items-center justify-between p-2 rounded-md hover:bg-muted/50 cursor-pointer group"
-                        onClick={() => reuseCourse(c)}
+                        onClick={() => openReuseDialog(c)}
                       >
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-1.5 flex-wrap">
@@ -425,6 +453,75 @@ export const ProgramCoursesManager = ({ programCode, programName, onBack }: Prog
             <Button onClick={save}>
               <Save className="w-4 h-4 mr-1" />
               Spara
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reuse Course Dialog – customize before adding */}
+      <Dialog open={reuseDialog} onOpenChange={setReuseDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Lägg till kurs i {programCode}</DialogTitle>
+          </DialogHeader>
+          {reuseSource && (
+            <div className="space-y-4">
+              <div className="rounded-md border p-3 bg-muted/30 space-y-1">
+                <p className="font-mono text-sm font-semibold">{reuseSource.code}</p>
+                <p className="text-sm">{reuseSource.name}</p>
+                <p className="text-xs text-muted-foreground">{reuseSource.hp} hp · {reuseSource.level}</p>
+              </div>
+
+              <div className="flex items-start gap-2 rounded-md border border-border bg-accent/50 p-3">
+                <span className="font-bold text-sm mt-0.5 text-accent-foreground">!</span>
+                <p className="text-xs text-accent-foreground">
+                  Samma kurskod kan ha olika läsperioder och årskurs beroende på program. Kontrollera att inställningarna nedan stämmer för <strong>{programCode}</strong>.
+                  <br />
+                  <span className="text-muted-foreground">I {reuseSource.program}: Åk{reuseSource.year}, LP{reuseSource.periods?.join(',')}</span>
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-sm">Årskurs i {programCode} *</Label>
+                <Select value={reuseForm.year} onValueChange={v => setReuseForm(f => ({ ...f, year: v }))}>
+                  <SelectTrigger className="bg-background"><SelectValue /></SelectTrigger>
+                  <SelectContent className="bg-popover border border-border shadow-lg z-50">
+                    <SelectItem value="1">Årskurs 1</SelectItem>
+                    <SelectItem value="2">Årskurs 2</SelectItem>
+                    <SelectItem value="3">Årskurs 3</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-sm">Läsperioder i {programCode} *</Label>
+                <div className="flex gap-3">
+                  {['1', '2', '3', '4'].map(p => (
+                    <label key={p} className="flex items-center gap-1.5 cursor-pointer">
+                      <Checkbox
+                        checked={reuseForm.periods.includes(p)}
+                        onCheckedChange={() => toggleReusePeriod(p)}
+                      />
+                      <span className="text-sm">LP{p}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <label className="flex items-center gap-2 cursor-pointer">
+                <Checkbox
+                  checked={reuseForm.is_obligatory}
+                  onCheckedChange={(v) => setReuseForm(f => ({ ...f, is_obligatory: !!v }))}
+                />
+                <span className="text-sm">Obligatorisk</span>
+              </label>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReuseDialog(false)}>Avbryt</Button>
+            <Button onClick={confirmReuse}>
+              <Plus className="w-4 h-4 mr-1" />
+              Lägg till
             </Button>
           </DialogFooter>
         </DialogContent>
