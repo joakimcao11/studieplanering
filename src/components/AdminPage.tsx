@@ -220,7 +220,7 @@ export const AdminPage = ({ onBack }: AdminPageProps) => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-2 max-w-md">
+        <TabsList className="grid w-full grid-cols-3 max-w-lg">
           <TabsTrigger value="courses" className="flex items-center gap-2">
             <BookOpen className="w-4 h-4" />
             Kurser
@@ -228,6 +228,10 @@ export const AdminPage = ({ onBack }: AdminPageProps) => {
           <TabsTrigger value="profiles" className="flex items-center gap-2">
             <Users className="w-4 h-4" />
             STVL-profiler
+          </TabsTrigger>
+          <TabsTrigger value="template" className="flex items-center gap-2">
+            <FileText className="w-4 h-4" />
+            Word-mall
           </TabsTrigger>
         </TabsList>
 
