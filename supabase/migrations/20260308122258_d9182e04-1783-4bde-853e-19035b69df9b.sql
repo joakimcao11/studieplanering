@@ -1,0 +1,1 @@
+INSERT INTO word_template_settings (setting_key, setting_value) VALUES ('footer_image_url', '') ON CONFLICT DO NOTHING;
