@@ -56,6 +56,24 @@ export const MainApp = ({ onLogout, initialCounselorId, onCounselorIdChange }: M
     onCounselorIdChange(counselorId);
   };
 
+  if (showAdmin && isAdmin) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col">
+        <Header 
+          onLogout={onLogout} 
+          counselorId={studentInfo.counselorId}
+          onCounselorChange={handleCounselorChange}
+          onShowStats={() => { setShowAdmin(false); setShowStats(true); }}
+          onShowAdmin={() => setShowAdmin(true)}
+          isAdmin={isAdmin}
+        />
+        <main className="flex-1 container mx-auto px-4 py-6">
+          <AdminPage onBack={() => setShowAdmin(false)} />
+        </main>
+      </div>
+    );
+  }
+
   if (showStats) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
@@ -64,6 +82,8 @@ export const MainApp = ({ onLogout, initialCounselorId, onCounselorIdChange }: M
           counselorId={studentInfo.counselorId}
           onCounselorChange={handleCounselorChange}
           onShowStats={() => setShowStats(true)}
+          onShowAdmin={() => { setShowStats(false); setShowAdmin(true); }}
+          isAdmin={isAdmin}
         />
         <main className="flex-1 container mx-auto px-4 py-6">
           <StatisticsPage onBack={() => setShowStats(false)} />
