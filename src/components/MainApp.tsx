@@ -11,7 +11,19 @@ import { AdminPage } from '@/components/AdminPage';
 import { usePlanningState } from '@/hooks/usePlanningState';
 import { useCounselorProfiles } from '@/hooks/useCourses';
 import { Button } from '@/components/ui/button';
-import { RotateCcw } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { RotateCcw, Save } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import lthLogo from '@/assets/lth-logo.png';
 
 interface MainAppProps {
@@ -23,6 +35,7 @@ interface MainAppProps {
 export const MainApp = ({ onLogout, initialCounselorId, onCounselorIdChange }: MainAppProps) => {
   const [showStats, setShowStats] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const { profiles } = useCounselorProfiles();
   
   // Check if current counselor is admin
@@ -51,9 +64,22 @@ export const MainApp = ({ onLogout, initialCounselorId, onCounselorIdChange }: M
     resetPlan,
   } = usePlanningState(initialCounselorId);
 
+  // Track last saved time
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLastSaved(new Date());
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [terms, studentInfo, notes, agenda, actionItems]);
+
   const handleCounselorChange = (counselorId: string) => {
     updateStudentInfo({ counselorId });
     onCounselorIdChange(counselorId);
+  };
+
+  const formatLastSaved = () => {
+    if (!lastSaved) return null;
+    return lastSaved.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
   };
 
   if (showAdmin && isAdmin) {
@@ -105,16 +131,44 @@ export const MainApp = ({ onLogout, initialCounselorId, onCounselorIdChange }: M
       <TabNavigation currentTab={currentTab} onTabChange={setCurrentTab} />
       
       <main className="flex-1 container mx-auto px-4 py-6">
-        <div className="flex justify-end mb-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={resetPlan}
-            className="text-muted-foreground"
-          >
-            <RotateCcw className="w-4 h-4 mr-1" />
-            Ny plan
-          </Button>
+        <div className="flex items-center justify-between mb-4">
+          {/* Last saved indicator */}
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            {lastSaved && (
+              <>
+                <Save className="w-3.5 h-3.5" />
+                <span>Senast sparad: {formatLastSaved()}</span>
+              </>
+            )}
+          </div>
+
+          {/* New plan with confirmation */}
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-muted-foreground"
+              >
+                <RotateCcw className="w-4 h-4 mr-1" />
+                Ny plan
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Skapa ny plan?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Detta raderar all nuvarande planering inklusive kurser, terminer och anteckningar. Åtgärden kan inte ångras.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Avbryt</AlertDialogCancel>
+                <AlertDialogAction onClick={resetPlan}>
+                  Ja, skapa ny plan
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
 
         {currentTab === 1 && (

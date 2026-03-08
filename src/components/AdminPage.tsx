@@ -8,6 +8,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -18,6 +29,7 @@ import { usePrograms } from '@/hooks/usePrograms';
 import { TemplateSettingsTab } from '@/components/admin/TemplateSettingsTab';
 import { ProgramOverviewTab } from '@/components/admin/ProgramOverviewTab';
 import { ProgramManagementTab } from '@/components/admin/ProgramManagementTab';
+
 
 interface AdminPageProps {
   onBack: () => void;
@@ -322,9 +334,25 @@ export const AdminPage = ({ onBack }: AdminPageProps) => {
                               <Button size="sm" variant="ghost" onClick={() => openEditCourse(course)} className="h-7 w-7 p-0">
                                 <Pencil className="w-3 h-3" />
                               </Button>
-                              <Button size="sm" variant="ghost" onClick={() => deleteCourse(course.id)} className="h-7 w-7 p-0 text-destructive hover:text-destructive">
-                                <Trash2 className="w-3 h-3" />
-                              </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive hover:text-destructive">
+                                    <Trash2 className="w-3 h-3" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Ta bort kurs?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Kursen "{course.code} – {course.name}" tas bort permanent. Åtgärden kan inte ångras.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Avbryt</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => deleteCourse(course.id)}>Ta bort</AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
                             </div>
                           </TableCell>
                         </TableRow>
@@ -389,9 +417,25 @@ export const AdminPage = ({ onBack }: AdminPageProps) => {
                             <Button size="sm" variant="ghost" onClick={() => openEditProfile(profile)} className="h-7 w-7 p-0">
                               <Pencil className="w-3 h-3" />
                             </Button>
-                            <Button size="sm" variant="ghost" onClick={() => deleteProfile(profile.id)} className="h-7 w-7 p-0 text-destructive hover:text-destructive">
-                              <Trash2 className="w-3 h-3" />
-                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive hover:text-destructive">
+                                  <Trash2 className="w-3 h-3" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Ta bort profil?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Profilen "{profile.name}" tas bort permanent. Åtgärden kan inte ångras.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Avbryt</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => deleteProfile(profile.id)}>Ta bort</AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                           </div>
                         </TableCell>
                       </TableRow>
