@@ -233,11 +233,11 @@ export const CourseSelector = ({ program, onAddCourse, onCourseClick }: CourseSe
                   filteredCourses.map((course) => (
                     <div
                       key={course.id}
-                      className="flex items-center justify-between p-2 rounded-md hover:bg-muted/50 group cursor-pointer"
+                      className="flex items-start justify-between p-2 rounded-md hover:bg-muted/50 group cursor-pointer gap-2"
                       onClick={() => handleAddProgramCourse(course)}
                     >
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
+                      <div className="min-w-0 flex-1 overflow-hidden">
+                        <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="text-xs text-muted-foreground font-mono">
                             {course.code}
                           </span>
@@ -266,22 +266,9 @@ export const CourseSelector = ({ program, onAddCourse, onCourseClick }: CourseSe
                           {course.name}
                         </p>
                       </div>
-                      <div className="flex items-center gap-2 shrink-0 ml-2">
-                        <span className="text-sm font-medium text-primary whitespace-nowrap">
-                          {course.hp} hp
-                        </span>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleAddProgramCourse(course);
-                          }}
-                          className="opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <Plus className="w-4 h-4" />
-                        </Button>
-                      </div>
+                      <span className="text-sm font-medium text-primary whitespace-nowrap shrink-0 pt-0.5">
+                        {course.hp} hp
+                      </span>
                     </div>
                   ))
                 )}
