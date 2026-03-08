@@ -1,10 +1,26 @@
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType, BorderStyle, HeadingLevel, Footer, Header as DocxHeader, ImageRun, convertInchesToTwip, LineRuleType } from 'docx';
 import { saveAs } from 'file-saver';
 import { StudentInfo, TermPlan, ActionItem, calculatePeriodHP, calculateTermHP, getCounselorById } from '@/types/planning';
+import { TemplateSettings } from '@/hooks/useTemplateSettings';
 
-const EXAM_INFO_TEXT = `Utbildningens upplägg och examenskrav
+interface ExportData {
+  studentInfo: StudentInfo;
+  agenda: string;
+  terms: TermPlan[];
+  notes: string;
+  actionItems?: ActionItem[];
+  templateSettings?: TemplateSettings;
+}
 
-Din civilingenjörsexamen på 300 hp ska innehålla kurser enligt nedan. Dessa krav är inte behörighetskrav för att få påbörja ett examensarbete.
+const getTemplateDefaults = (): TemplateSettings => ({
+  font_name: 'Times New Roman',
+  font_size_normal: '24',
+  font_size_heading1: '32',
+  font_size_heading2: '28',
+  font_size_heading3: '26',
+  document_title: 'MINNESANTECKNINGAR – STUDIEPLANERING',
+  exam_info_title: 'Utbildningens upplägg och examenskrav',
+  exam_info_text: `Din civilingenjörsexamen på 300 hp ska innehålla kurser enligt nedan. Dessa krav är inte behörighetskrav för att få påbörja ett examensarbete.
 
 • Obligatoriska kurser – ca 180 hp (Åk 1–3)
 • Kurser i specialisering – minst 45 hp, varav minst 30 hp på A-nivå (Åk 4–5)
@@ -18,26 +34,10 @@ För studenter antagna:
 Förtydliganden:
 • Kurser i specialisering betraktas som valfria kurser
 • Max 15 hp får vara externt valfria
-• Endast avslutade kurser med slutbetyg kan ingå i examen`;
-
-interface ExportData {
-  studentInfo: StudentInfo;
-  agenda: string;
-  terms: TermPlan[];
-  notes: string;
-  actionItems?: ActionItem[];
-}
-
-// Font size in half-points (24 = 12pt, 22 = 11pt, 20 = 10pt)
-const FONT_SIZE_NORMAL = 24; // 12pt
-const FONT_SIZE_SMALL = 20; // 10pt
-const FONT_SIZE_HEADING1 = 32; // 16pt
-const FONT_SIZE_HEADING2 = 28; // 14pt
-const FONT_SIZE_HEADING3 = 26; // 13pt
-const FONT_NAME = 'Times New Roman';
-
-// Line spacing in twips (240 = single spacing, 360 = 1.5 spacing)
-const LINE_SPACING_SINGLE = 240;
+• Endast avslutade kurser med slutbetyg kan ingå i examen`,
+  footer_text: 'Studie- och karriärvägledningen LTH',
+  purpose_text: 'Studieplanering med studievägledare',
+});
 
 const generateTextContent = (data: ExportData): string => {
   const currentDate = data.studentInfo.customDate 
