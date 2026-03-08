@@ -22,6 +22,7 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { ArrowLeft, Plus, Pencil, Trash2, Save, BookOpen, Users, Search, FileText, LayoutList, GraduationCap } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useCourses, useCounselorProfiles } from '@/hooks/useCourses';
 import { usePrograms } from '@/hooks/usePrograms';
