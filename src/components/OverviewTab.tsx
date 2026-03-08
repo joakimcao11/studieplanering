@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useTemplateSettings } from '@/hooks/useTemplateSettings';
 
 interface OverviewTabProps {
   studentInfo: StudentInfo;
@@ -47,6 +48,7 @@ export const OverviewTab = ({
   const [addingCourseToTerm, setAddingCourseToTerm] = useState<{termId: string, period: 'lp1' | 'lp2'} | null>(null);
   const [emailDraft, setEmailDraft] = useState('');
   const [isGeneratingEmail, setIsGeneratingEmail] = useState(false);
+  const { settings: templateSettings } = useTemplateSettings();
   
   // New course form state
   const [newCourseCode, setNewCourseCode] = useState('');
@@ -62,12 +64,12 @@ export const OverviewTab = ({
   const counselor = getCounselorById(studentInfo.counselorId);
 
   const handleExportWord = async () => {
-    await exportToWord({ studentInfo, agenda, terms, notes, actionItems });
+    await exportToWord({ studentInfo, agenda, terms, notes, actionItems, templateSettings });
     await trackDownload(studentInfo.counselorId, counselor?.name || '', studentInfo.program);
   };
 
   const handleExportText = () => {
-    exportToText({ studentInfo, agenda, terms, notes, actionItems });
+    exportToText({ studentInfo, agenda, terms, notes, actionItems, templateSettings });
     trackDownload(studentInfo.counselorId, counselor?.name || '', studentInfo.program);
   };
 

@@ -1,10 +1,26 @@
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType, BorderStyle, HeadingLevel, Footer, Header as DocxHeader, ImageRun, convertInchesToTwip, LineRuleType } from 'docx';
 import { saveAs } from 'file-saver';
 import { StudentInfo, TermPlan, ActionItem, calculatePeriodHP, calculateTermHP, getCounselorById } from '@/types/planning';
+import { TemplateSettings } from '@/hooks/useTemplateSettings';
 
-const EXAM_INFO_TEXT = `Utbildningens upplägg och examenskrav
+interface ExportData {
+  studentInfo: StudentInfo;
+  agenda: string;
+  terms: TermPlan[];
+  notes: string;
+  actionItems?: ActionItem[];
+  templateSettings?: TemplateSettings;
+}
 
-Din civilingenjörsexamen på 300 hp ska innehålla kurser enligt nedan. Dessa krav är inte behörighetskrav för att få påbörja ett examensarbete.
+const getTemplateDefaults = (): TemplateSettings => ({
+  font_name: 'Times New Roman',
+  font_size_normal: '24',
+  font_size_heading1: '32',
+  font_size_heading2: '28',
+  font_size_heading3: '26',
+  document_title: 'MINNESANTECKNINGAR – STUDIEPLANERING',
+  exam_info_title: 'Utbildningens upplägg och examenskrav',
+  exam_info_text: `Din civilingenjörsexamen på 300 hp ska innehålla kurser enligt nedan. Dessa krav är inte behörighetskrav för att få påbörja ett examensarbete.
 
 • Obligatoriska kurser – ca 180 hp (Åk 1–3)
 • Kurser i specialisering – minst 45 hp, varav minst 30 hp på A-nivå (Åk 4–5)
@@ -18,28 +34,13 @@ För studenter antagna:
 Förtydliganden:
 • Kurser i specialisering betraktas som valfria kurser
 • Max 15 hp får vara externt valfria
-• Endast avslutade kurser med slutbetyg kan ingå i examen`;
-
-interface ExportData {
-  studentInfo: StudentInfo;
-  agenda: string;
-  terms: TermPlan[];
-  notes: string;
-  actionItems?: ActionItem[];
-}
-
-// Font size in half-points (24 = 12pt, 22 = 11pt, 20 = 10pt)
-const FONT_SIZE_NORMAL = 24; // 12pt
-const FONT_SIZE_SMALL = 20; // 10pt
-const FONT_SIZE_HEADING1 = 32; // 16pt
-const FONT_SIZE_HEADING2 = 28; // 14pt
-const FONT_SIZE_HEADING3 = 26; // 13pt
-const FONT_NAME = 'Times New Roman';
-
-// Line spacing in twips (240 = single spacing, 360 = 1.5 spacing)
-const LINE_SPACING_SINGLE = 240;
+• Endast avslutade kurser med slutbetyg kan ingå i examen`,
+  footer_text: 'Studie- och karriärvägledningen LTH',
+  purpose_text: 'Studieplanering med studievägledare',
+});
 
 const generateTextContent = (data: ExportData): string => {
+  const ts = data.templateSettings || getTemplateDefaults();
   const currentDate = data.studentInfo.customDate 
     ? new Date(data.studentInfo.customDate).toLocaleDateString('sv-SE')
     : new Date().toLocaleDateString('sv-SE');
@@ -55,7 +56,7 @@ MINNESANTECKNINGAR - STUDIEPLANERING
 
 ================================================================================
 
-Syfte: Studieplanering med studievägledare
+Syfte: ${ts.purpose_text}
 Datum: ${currentDate}
 Student: ${data.studentInfo.name || '—'}
 Program och kull: ${programName}${data.studentInfo.yearGroup ? ` (${data.studentInfo.yearGroup})` : ''}
@@ -150,11 +151,11 @@ ${data.notes}
 
   content += `================================================================================
 
-${EXAM_INFO_TEXT}
+${ts.exam_info_text}
 
 ================================================================================
 
-Studie- och karriärvägledningen LTH
+${ts.footer_text}
 `;
 
   return content;
@@ -168,6 +169,15 @@ export const exportToText = (data: ExportData) => {
 };
 
 export const exportToWord = async (data: ExportData) => {
+  const ts = data.templateSettings || getTemplateDefaults();
+  const FONT_NAME = ts.font_name;
+  const FONT_SIZE_NORMAL = parseInt(ts.font_size_normal);
+  const FONT_SIZE_SMALL = Math.max(parseInt(ts.font_size_normal) - 4, 16);
+  const FONT_SIZE_HEADING1 = parseInt(ts.font_size_heading1);
+  const FONT_SIZE_HEADING2 = parseInt(ts.font_size_heading2);
+  const FONT_SIZE_HEADING3 = parseInt(ts.font_size_heading3);
+  const LINE_SPACING_SINGLE = 240;
+
   const currentDate = data.studentInfo.customDate 
     ? new Date(data.studentInfo.customDate).toLocaleDateString('sv-SE')
     : new Date().toLocaleDateString('sv-SE');
@@ -211,7 +221,7 @@ export const exportToWord = async (data: ExportData) => {
   sections.push(
     new Paragraph({
       children: [new TextRun({ 
-        text: 'MINNESANTECKNINGAR – STUDIEPLANERING', 
+        text: ts.document_title, 
         bold: true, 
         size: FONT_SIZE_HEADING1,
         font: FONT_NAME,
@@ -226,7 +236,7 @@ export const exportToWord = async (data: ExportData) => {
     new Paragraph({
       children: [
         new TextRun({ text: 'Syfte: ', bold: true, size: FONT_SIZE_NORMAL, font: FONT_NAME }),
-        new TextRun({ text: 'Studieplanering med studievägledare', size: FONT_SIZE_NORMAL, font: FONT_NAME }),
+        new TextRun({ text: ts.purpose_text, size: FONT_SIZE_NORMAL, font: FONT_NAME }),
       ],
       spacing: defaultSpacing,
     }),
@@ -446,92 +456,36 @@ export const exportToWord = async (data: ExportData) => {
     );
   }
 
-  // Exam info (mandatory) - new page
+  // Exam info (mandatory) - new page - render from dynamic settings
   sections.push(
     new Paragraph({
       children: [],
       pageBreakBefore: true,
     }),
     new Paragraph({
-      children: [new TextRun({ text: 'Utbildningens upplägg och examenskrav', bold: true, size: FONT_SIZE_HEADING2, font: FONT_NAME })],
+      children: [new TextRun({ text: ts.exam_info_title, bold: true, size: FONT_SIZE_HEADING2, font: FONT_NAME })],
       heading: HeadingLevel.HEADING_2,
       spacing: { before: 0, after: 200 },
     }),
   );
 
-  // Intro text
-  sections.push(
-    new Paragraph({
-      children: [new TextRun({ 
-        text: 'Din civilingenjörsexamen på 300 hp ska innehålla kurser enligt nedan. Dessa krav är inte behörighetskrav för att få påbörja ett examensarbete.',
-        size: FONT_SIZE_NORMAL,
-        font: FONT_NAME,
-      })],
-      spacing: { ...defaultSpacing, after: 150 },
-    }),
-  );
-
-  // Requirements list
-  const requirements = [
-    'Obligatoriska kurser – ca 180 hp (Åk 1–3)',
-    'Kurser i specialisering – minst 45 hp, varav minst 30 hp på A-nivå (Åk 4–5)',
-    'Valfria kurser – ca 45 hp, varav max 15 hp externt valfria (Åk 4–5)',
-    'Examensarbete – 30 hp på A-nivå (Åk 5)',
-  ];
-
-  requirements.forEach(req => {
+  // Render exam info text as paragraphs (split by newlines)
+  const examLines = ts.exam_info_text.split('\n').filter(line => line.trim() !== '');
+  examLines.forEach(line => {
+    const isBullet = line.trim().startsWith('•');
     sections.push(
       new Paragraph({
-        children: [new TextRun({ text: `• ${req}`, size: FONT_SIZE_NORMAL, font: FONT_NAME })],
-        indent: { left: convertInchesToTwip(0.25) },
+        children: [new TextRun({ 
+          text: line.trim(), 
+          size: FONT_SIZE_NORMAL, 
+          font: FONT_NAME,
+          bold: !isBullet && !line.trim().startsWith('•'),
+        })],
+        indent: isBullet ? { left: convertInchesToTwip(0.25) } : undefined,
         spacing: defaultSpacing,
       }),
     );
   });
-
-  sections.push(new Paragraph({ children: [], spacing: { after: 150 } }));
-
-  // Year-specific requirements
-  sections.push(
-    new Paragraph({
-      children: [new TextRun({ text: 'För studenter antagna:', bold: true, size: FONT_SIZE_NORMAL, font: FONT_NAME })],
-      spacing: { ...defaultSpacing, before: 150 },
-    }),
-    new Paragraph({
-      children: [new TextRun({ text: '• 2023 eller tidigare: minst 75 hp på A-nivå', size: FONT_SIZE_NORMAL, font: FONT_NAME })],
-      indent: { left: convertInchesToTwip(0.25) },
-      spacing: defaultSpacing,
-    }),
-    new Paragraph({
-      children: [new TextRun({ text: '• 2024 eller senare: minst 90 hp på A-nivå', size: FONT_SIZE_NORMAL, font: FONT_NAME })],
-      indent: { left: convertInchesToTwip(0.25) },
-      spacing: defaultSpacing,
-    }),
-    new Paragraph({ children: [], spacing: { after: 150 } }),
-  );
-
-  // Clarifications
-  sections.push(
-    new Paragraph({
-      children: [new TextRun({ text: 'Förtydliganden:', bold: true, size: FONT_SIZE_NORMAL, font: FONT_NAME })],
-      spacing: { ...defaultSpacing, before: 150 },
-    }),
-    new Paragraph({
-      children: [new TextRun({ text: '• Kurser i specialisering betraktas som valfria kurser', size: FONT_SIZE_NORMAL, font: FONT_NAME })],
-      indent: { left: convertInchesToTwip(0.25) },
-      spacing: defaultSpacing,
-    }),
-    new Paragraph({
-      children: [new TextRun({ text: '• Max 15 hp får vara externt valfria', size: FONT_SIZE_NORMAL, font: FONT_NAME })],
-      indent: { left: convertInchesToTwip(0.25) },
-      spacing: defaultSpacing,
-    }),
-    new Paragraph({
-      children: [new TextRun({ text: '• Endast avslutade kurser med slutbetyg kan ingå i examen', size: FONT_SIZE_NORMAL, font: FONT_NAME })],
-      indent: { left: convertInchesToTwip(0.25) },
-      spacing: defaultSpacing,
-    }),
-  );
 
   const doc = new Document({
     styles: {
@@ -553,7 +507,7 @@ export const exportToWord = async (data: ExportData) => {
             children: [
               new Paragraph({
                 children: [new TextRun({ 
-                  text: 'Studie- och karriärvägledningen LTH', 
+                  text: ts.footer_text, 
                   size: FONT_SIZE_SMALL,
                   font: FONT_NAME,
                 })],

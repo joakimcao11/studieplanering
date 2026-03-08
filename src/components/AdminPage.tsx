@@ -11,9 +11,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ArrowLeft, Plus, Pencil, Trash2, Save, BookOpen, Users, Search } from 'lucide-react';
+import { ArrowLeft, Plus, Pencil, Trash2, Save, BookOpen, Users, Search, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useCourses, useCounselorProfiles } from '@/hooks/useCourses';
+import { TemplateSettingsTab } from '@/components/admin/TemplateSettingsTab';
 
 interface AdminPageProps {
   onBack: () => void;
@@ -219,7 +220,7 @@ export const AdminPage = ({ onBack }: AdminPageProps) => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-2 max-w-md">
+        <TabsList className="grid w-full grid-cols-3 max-w-lg">
           <TabsTrigger value="courses" className="flex items-center gap-2">
             <BookOpen className="w-4 h-4" />
             Kurser
@@ -227,6 +228,10 @@ export const AdminPage = ({ onBack }: AdminPageProps) => {
           <TabsTrigger value="profiles" className="flex items-center gap-2">
             <Users className="w-4 h-4" />
             STVL-profiler
+          </TabsTrigger>
+          <TabsTrigger value="template" className="flex items-center gap-2">
+            <FileText className="w-4 h-4" />
+            Word-mall
           </TabsTrigger>
         </TabsList>
 
@@ -371,6 +376,10 @@ export const AdminPage = ({ onBack }: AdminPageProps) => {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+        {/* TEMPLATE TAB */}
+        <TabsContent value="template">
+          <TemplateSettingsTab />
         </TabsContent>
       </Tabs>
 
