@@ -456,92 +456,36 @@ export const exportToWord = async (data: ExportData) => {
     );
   }
 
-  // Exam info (mandatory) - new page
+  // Exam info (mandatory) - new page - render from dynamic settings
   sections.push(
     new Paragraph({
       children: [],
       pageBreakBefore: true,
     }),
     new Paragraph({
-      children: [new TextRun({ text: 'Utbildningens upplägg och examenskrav', bold: true, size: FONT_SIZE_HEADING2, font: FONT_NAME })],
+      children: [new TextRun({ text: ts.exam_info_title, bold: true, size: FONT_SIZE_HEADING2, font: FONT_NAME })],
       heading: HeadingLevel.HEADING_2,
       spacing: { before: 0, after: 200 },
     }),
   );
 
-  // Intro text
-  sections.push(
-    new Paragraph({
-      children: [new TextRun({ 
-        text: 'Din civilingenjörsexamen på 300 hp ska innehålla kurser enligt nedan. Dessa krav är inte behörighetskrav för att få påbörja ett examensarbete.',
-        size: FONT_SIZE_NORMAL,
-        font: FONT_NAME,
-      })],
-      spacing: { ...defaultSpacing, after: 150 },
-    }),
-  );
-
-  // Requirements list
-  const requirements = [
-    'Obligatoriska kurser – ca 180 hp (Åk 1–3)',
-    'Kurser i specialisering – minst 45 hp, varav minst 30 hp på A-nivå (Åk 4–5)',
-    'Valfria kurser – ca 45 hp, varav max 15 hp externt valfria (Åk 4–5)',
-    'Examensarbete – 30 hp på A-nivå (Åk 5)',
-  ];
-
-  requirements.forEach(req => {
+  // Render exam info text as paragraphs (split by newlines)
+  const examLines = ts.exam_info_text.split('\n').filter(line => line.trim() !== '');
+  examLines.forEach(line => {
+    const isBullet = line.trim().startsWith('•');
     sections.push(
       new Paragraph({
-        children: [new TextRun({ text: `• ${req}`, size: FONT_SIZE_NORMAL, font: FONT_NAME })],
-        indent: { left: convertInchesToTwip(0.25) },
+        children: [new TextRun({ 
+          text: line.trim(), 
+          size: FONT_SIZE_NORMAL, 
+          font: FONT_NAME,
+          bold: !isBullet && !line.trim().startsWith('•'),
+        })],
+        indent: isBullet ? { left: convertInchesToTwip(0.25) } : undefined,
         spacing: defaultSpacing,
       }),
     );
   });
-
-  sections.push(new Paragraph({ children: [], spacing: { after: 150 } }));
-
-  // Year-specific requirements
-  sections.push(
-    new Paragraph({
-      children: [new TextRun({ text: 'För studenter antagna:', bold: true, size: FONT_SIZE_NORMAL, font: FONT_NAME })],
-      spacing: { ...defaultSpacing, before: 150 },
-    }),
-    new Paragraph({
-      children: [new TextRun({ text: '• 2023 eller tidigare: minst 75 hp på A-nivå', size: FONT_SIZE_NORMAL, font: FONT_NAME })],
-      indent: { left: convertInchesToTwip(0.25) },
-      spacing: defaultSpacing,
-    }),
-    new Paragraph({
-      children: [new TextRun({ text: '• 2024 eller senare: minst 90 hp på A-nivå', size: FONT_SIZE_NORMAL, font: FONT_NAME })],
-      indent: { left: convertInchesToTwip(0.25) },
-      spacing: defaultSpacing,
-    }),
-    new Paragraph({ children: [], spacing: { after: 150 } }),
-  );
-
-  // Clarifications
-  sections.push(
-    new Paragraph({
-      children: [new TextRun({ text: 'Förtydliganden:', bold: true, size: FONT_SIZE_NORMAL, font: FONT_NAME })],
-      spacing: { ...defaultSpacing, before: 150 },
-    }),
-    new Paragraph({
-      children: [new TextRun({ text: '• Kurser i specialisering betraktas som valfria kurser', size: FONT_SIZE_NORMAL, font: FONT_NAME })],
-      indent: { left: convertInchesToTwip(0.25) },
-      spacing: defaultSpacing,
-    }),
-    new Paragraph({
-      children: [new TextRun({ text: '• Max 15 hp får vara externt valfria', size: FONT_SIZE_NORMAL, font: FONT_NAME })],
-      indent: { left: convertInchesToTwip(0.25) },
-      spacing: defaultSpacing,
-    }),
-    new Paragraph({
-      children: [new TextRun({ text: '• Endast avslutade kurser med slutbetyg kan ingå i examen', size: FONT_SIZE_NORMAL, font: FONT_NAME })],
-      indent: { left: convertInchesToTwip(0.25) },
-      spacing: defaultSpacing,
-    }),
-  );
 
   const doc = new Document({
     styles: {
