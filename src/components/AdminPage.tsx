@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,10 +11,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ArrowLeft, Plus, Pencil, Trash2, Save, BookOpen, Users, Search, FileText } from 'lucide-react';
+import { ArrowLeft, Plus, Pencil, Trash2, Save, BookOpen, Users, Search, FileText, LayoutList, GraduationCap } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useCourses, useCounselorProfiles } from '@/hooks/useCourses';
+import { usePrograms } from '@/hooks/usePrograms';
 import { TemplateSettingsTab } from '@/components/admin/TemplateSettingsTab';
+import { ProgramOverviewTab } from '@/components/admin/ProgramOverviewTab';
+import { ProgramManagementTab } from '@/components/admin/ProgramManagementTab';
 
 interface AdminPageProps {
   onBack: () => void;
@@ -55,6 +58,7 @@ export const AdminPage = ({ onBack }: AdminPageProps) => {
   const [activeTab, setActiveTab] = useState('courses');
   
   // Course state
+  const { programs } = usePrograms();
   const [programFilter, setProgramFilter] = useState<string>('D');
   const [searchQuery, setSearchQuery] = useState('');
   const { courses, loading: coursesLoading, refetch: refetchCourses } = useCourses();
@@ -220,18 +224,26 @@ export const AdminPage = ({ onBack }: AdminPageProps) => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3 max-w-lg">
-          <TabsTrigger value="courses" className="flex items-center gap-2">
+        <TabsList className="grid w-full grid-cols-5 max-w-2xl">
+          <TabsTrigger value="courses" className="flex items-center gap-1 text-xs sm:text-sm">
             <BookOpen className="w-4 h-4" />
-            Kurser
+            <span className="hidden sm:inline">Kurser</span>
           </TabsTrigger>
-          <TabsTrigger value="profiles" className="flex items-center gap-2">
+          <TabsTrigger value="programs" className="flex items-center gap-1 text-xs sm:text-sm">
+            <GraduationCap className="w-4 h-4" />
+            <span className="hidden sm:inline">Program</span>
+          </TabsTrigger>
+          <TabsTrigger value="overview" className="flex items-center gap-1 text-xs sm:text-sm">
+            <LayoutList className="w-4 h-4" />
+            <span className="hidden sm:inline">Översikt</span>
+          </TabsTrigger>
+          <TabsTrigger value="profiles" className="flex items-center gap-1 text-xs sm:text-sm">
             <Users className="w-4 h-4" />
-            STVL-profiler
+            <span className="hidden sm:inline">STVL</span>
           </TabsTrigger>
-          <TabsTrigger value="template" className="flex items-center gap-2">
+          <TabsTrigger value="template" className="flex items-center gap-1 text-xs sm:text-sm">
             <FileText className="w-4 h-4" />
-            Word-mall
+            <span className="hidden sm:inline">Word-mall</span>
           </TabsTrigger>
         </TabsList>
 
@@ -248,12 +260,15 @@ export const AdminPage = ({ onBack }: AdminPageProps) => {
               </div>
               <div className="flex items-center gap-3 flex-wrap">
                 <Select value={programFilter} onValueChange={setProgramFilter}>
-                  <SelectTrigger className="w-40 bg-background">
+                  <SelectTrigger className="w-56 bg-background">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-popover border border-border shadow-lg z-50">
-                    <SelectItem value="D">Datateknik (D)</SelectItem>
-                    <SelectItem value="C">Infocom (C)</SelectItem>
+                    {programs.map(p => (
+                      <SelectItem key={p.code} value={p.code}>
+                        {p.name} ({p.code})
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 <div className="relative flex-1 min-w-[200px]">
@@ -322,6 +337,16 @@ export const AdminPage = ({ onBack }: AdminPageProps) => {
           </Card>
         </TabsContent>
 
+        {/* PROGRAMS TAB */}
+        <TabsContent value="programs" className="space-y-4">
+          <ProgramManagementTab />
+        </TabsContent>
+
+        {/* OVERVIEW TAB */}
+        <TabsContent value="overview" className="space-y-4">
+          <ProgramOverviewTab />
+        </TabsContent>
+
         {/* PROFILES TAB */}
         <TabsContent value="profiles" className="space-y-4">
           <Card>
@@ -377,6 +402,7 @@ export const AdminPage = ({ onBack }: AdminPageProps) => {
             </CardContent>
           </Card>
         </TabsContent>
+
         {/* TEMPLATE TAB */}
         <TabsContent value="template">
           <TemplateSettingsTab />
@@ -400,8 +426,9 @@ export const AdminPage = ({ onBack }: AdminPageProps) => {
                 <Select value={courseForm.program} onValueChange={(v) => setCourseForm(f => ({ ...f, program: v }))}>
                   <SelectTrigger className="bg-background"><SelectValue /></SelectTrigger>
                   <SelectContent className="bg-popover border border-border shadow-lg z-50">
-                    <SelectItem value="D">Datateknik (D)</SelectItem>
-                    <SelectItem value="C">Infocom (C)</SelectItem>
+                    {programs.map(p => (
+                      <SelectItem key={p.code} value={p.code}>{p.name} ({p.code})</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

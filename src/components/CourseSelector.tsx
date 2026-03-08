@@ -103,13 +103,9 @@ export const CourseSelector = ({ program, onAddCourse, onCourseClick }: CourseSe
     setCustomStudyPace(100);
   };
 
-  const programLink = program === 'D' 
-    ? 'https://kurser.lth.se/lot/programme?ay=25_26&programme=D'
-    : program === 'C'
-    ? 'https://kurser.lth.se/lot/programme?ay=25_26&programme=C'
-    : '';
-  
-  const programLinkLabel = program === 'D' ? 'Program läsår D' : program === 'C' ? 'Program läsår C' : `Program läsår ${program}`;
+  const currentProgram = allPrograms.find(p => p.code === program);
+  const programLink = currentProgram?.link_url || '';
+  const programLinkLabel = currentProgram ? `Program läsår ${currentProgram.code}` : `Program läsår ${program}`;
 
   return (
     <Card className="h-full">
