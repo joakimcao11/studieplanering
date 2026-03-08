@@ -472,9 +472,9 @@ export const ProgramCoursesManager = ({ programCode, programName, onBack }: Prog
                 <p className="text-xs text-muted-foreground">{reuseSource.hp} hp · {reuseSource.level}</p>
               </div>
 
-              <div className="flex items-start gap-2 rounded-md border border-yellow-500/30 bg-yellow-500/10 p-3">
-                <span className="text-yellow-600 font-bold text-sm mt-0.5">!</span>
-                <p className="text-xs text-yellow-700 dark:text-yellow-400">
+              <div className="flex items-start gap-2 rounded-md border border-border bg-accent/50 p-3">
+                <span className="font-bold text-sm mt-0.5 text-accent-foreground">!</span>
+                <p className="text-xs text-accent-foreground">
                   Samma kurskod kan ha olika läsperioder och årskurs beroende på program. Kontrollera att inställningarna nedan stämmer för <strong>{programCode}</strong>.
                   <br />
                   <span className="text-muted-foreground">I {reuseSource.program}: Åk{reuseSource.year}, LP{reuseSource.periods?.join(',')}</span>
