@@ -14,8 +14,9 @@ interface HeaderProps {
   isAdmin?: boolean;
 }
 
-export const Header = ({ onLogout, counselorId, onCounselorChange, onShowStats }: HeaderProps) => {
+export const Header = ({ onLogout, counselorId, onCounselorChange, onShowStats, onShowAdmin, isAdmin }: HeaderProps) => {
   const currentCounselor = getCounselorById(counselorId);
+  const { profiles } = useCounselorProfiles();
 
   return (
     <header className="bg-primary text-primary-foreground shadow-md">
