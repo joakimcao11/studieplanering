@@ -64,7 +64,7 @@ export const OverviewTab = ({
   const counselor = getCounselorById(studentInfo.counselorId);
 
   const handleExportWord = async () => {
-    await exportToWord({ studentInfo, agenda, terms, notes, actionItems });
+    await exportToWord({ studentInfo, agenda, terms, notes, actionItems, templateSettings });
     await trackDownload(studentInfo.counselorId, counselor?.name || '', studentInfo.program);
   };
 
