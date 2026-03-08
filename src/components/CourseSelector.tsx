@@ -11,6 +11,7 @@ import { Search, Plus, BookOpen, PenLine, GraduationCap, ExternalLink } from 'lu
 import { Course } from '@/data/courses';
 import { Program, PlannedCourse, StudyPace } from '@/types/planning';
 import { useCourses } from '@/hooks/useCourses';
+import { usePrograms } from '@/hooks/usePrograms';
 
 interface CourseSelectorProps {
   program: Program;
