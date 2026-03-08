@@ -10,6 +10,7 @@ interface ExportData {
   notes: string;
   actionItems?: ActionItem[];
   templateSettings?: TemplateSettings;
+  programName?: string; // Dynamic program name from DB
 }
 
 const getTemplateDefaults = (): TemplateSettings => ({
