@@ -24,16 +24,14 @@ interface BasicInfoTabProps {
 
 // Programs are now loaded dynamically via usePrograms hook
 
-// Generate year groups from kull 15 to kull 30
-const generateYearGroups = () => {
+// Generate year groups dynamically based on programs
+const generateYearGroups = (programCodes: string[]) => {
   const groups: string[] = [];
   for (let year = 15; year <= 30; year++) {
-    groups.push(`D${year}`, `C${year}`);
+    programCodes.forEach(code => groups.push(`${code}${year}`));
   }
   return groups.sort();
 };
-
-const yearGroups = generateYearGroups();
 
 export const BasicInfoTab = ({ 
   studentInfo, 
