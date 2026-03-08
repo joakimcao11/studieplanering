@@ -276,6 +276,7 @@ export const AdminPage = ({ onBack }: AdminPageProps) => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-popover border border-border shadow-lg z-50">
+                    <SelectItem value="ALL">Alla kurser</SelectItem>
                     {programs.map(p => (
                       <SelectItem key={p.code} value={p.code}>
                         {p.name} ({p.code})
