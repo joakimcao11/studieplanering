@@ -71,7 +71,7 @@ export const AdminPage = ({ onBack }: AdminPageProps) => {
   
   // Course state
   const { programs } = usePrograms();
-  const [programFilter, setProgramFilter] = useState<string>('D');
+  const [programFilter, setProgramFilter] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const { courses, loading: coursesLoading, refetch: refetchCourses } = useCourses();
   const [courseDialog, setCourseDialog] = useState(false);
