@@ -135,24 +135,49 @@ export const ProgramCoursesManager = ({ programCode, programName, onBack }: Prog
     }
   };
 
-  const reuseCourse = async (course: any) => {
-    const data = {
-      code: course.code,
-      name: course.name,
-      hp: course.hp,
-      level: course.level,
-      year: course.year,
+  const openReuseDialog = (course: any) => {
+    setReuseSource(course);
+    setReuseForm({
       periods: course.periods || [],
+      year: String(course.year),
       is_obligatory: course.isObligatory,
+    });
+    setReuseDialog(true);
+  };
+
+  const toggleReusePeriod = (period: string) => {
+    setReuseForm(prev => ({
+      ...prev,
+      periods: prev.periods.includes(period)
+        ? prev.periods.filter(p => p !== period)
+        : [...prev.periods, period].sort(),
+    }));
+  };
+
+  const confirmReuse = async () => {
+    if (!reuseSource) return;
+    if (reuseForm.periods.length === 0) {
+      toast({ title: 'Välj minst en läsperiod', variant: 'destructive' });
+      return;
+    }
+    const data = {
+      code: reuseSource.code,
+      name: reuseSource.name,
+      hp: reuseSource.hp,
+      level: reuseSource.level,
+      year: parseInt(reuseForm.year),
+      periods: reuseForm.periods,
+      is_obligatory: reuseForm.is_obligatory,
       program: programCode,
-      is_multi_period: course.isMultiPeriod || false,
-      default_study_pace: course.defaultStudyPace || null,
+      is_multi_period: reuseSource.isMultiPeriod || false,
+      default_study_pace: reuseSource.defaultStudyPace || null,
     };
     const { error } = await supabase.from('courses').insert(data);
     if (error) {
       toast({ title: 'Fel', description: error.message, variant: 'destructive' });
     } else {
-      toast({ title: `${course.code} tillagd i ${programCode}` });
+      toast({ title: `${reuseSource.code} tillagd i ${programCode}` });
+      setReuseDialog(false);
       refetch();
     }
   };
