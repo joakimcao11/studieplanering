@@ -85,7 +85,7 @@ export const AdminPage = ({ onBack }: AdminPageProps) => {
   const [profileForm, setProfileForm] = useState<ProfileForm>(emptyProfileForm);
 
   const filteredCourses = courses.filter(c => {
-    const matchesProgram = c.program === programFilter;
+    const matchesProgram = programFilter === 'ALL' || c.program === programFilter;
     const matchesSearch = !searchQuery || 
       c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       c.code.toLowerCase().includes(searchQuery.toLowerCase());
