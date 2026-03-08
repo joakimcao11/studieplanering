@@ -221,7 +221,7 @@ export const exportToWord = async (data: ExportData) => {
   sections.push(
     new Paragraph({
       children: [new TextRun({ 
-        text: 'MINNESANTECKNINGAR – STUDIEPLANERING', 
+        text: ts.document_title, 
         bold: true, 
         size: FONT_SIZE_HEADING1,
         font: FONT_NAME,
