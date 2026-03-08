@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useTemplateSettings } from '@/hooks/useTemplateSettings';
 
 interface OverviewTabProps {
   studentInfo: StudentInfo;
