@@ -69,7 +69,7 @@ export const OverviewTab = ({
   };
 
   const handleExportText = () => {
-    exportToText({ studentInfo, agenda, terms, notes, actionItems });
+    exportToText({ studentInfo, agenda, terms, notes, actionItems, templateSettings });
     trackDownload(studentInfo.counselorId, counselor?.name || '', studentInfo.program);
   };
 
