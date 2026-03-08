@@ -169,6 +169,15 @@ export const exportToText = (data: ExportData) => {
 };
 
 export const exportToWord = async (data: ExportData) => {
+  const ts = data.templateSettings || getTemplateDefaults();
+  const FONT_NAME = ts.font_name;
+  const FONT_SIZE_NORMAL = parseInt(ts.font_size_normal);
+  const FONT_SIZE_SMALL = Math.max(parseInt(ts.font_size_normal) - 4, 16);
+  const FONT_SIZE_HEADING1 = parseInt(ts.font_size_heading1);
+  const FONT_SIZE_HEADING2 = parseInt(ts.font_size_heading2);
+  const FONT_SIZE_HEADING3 = parseInt(ts.font_size_heading3);
+  const LINE_SPACING_SINGLE = 240;
+
   const currentDate = data.studentInfo.customDate 
     ? new Date(data.studentInfo.customDate).toLocaleDateString('sv-SE')
     : new Date().toLocaleDateString('sv-SE');
