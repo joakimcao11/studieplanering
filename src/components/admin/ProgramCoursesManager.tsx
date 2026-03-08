@@ -328,7 +328,7 @@ export const ProgramCoursesManager = ({ programCode, programName, onBack }: Prog
                       <div
                         key={c.id}
                         className="flex items-center justify-between p-2 rounded-md hover:bg-muted/50 cursor-pointer group"
-                        onClick={() => reuseCourse(c)}
+                        onClick={() => openReuseDialog(c)}
                       >
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-1.5 flex-wrap">
