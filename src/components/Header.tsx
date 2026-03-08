@@ -1,8 +1,9 @@
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { LogOut, User, BarChart3 } from 'lucide-react';
+import { LogOut, User, BarChart3, Settings } from 'lucide-react';
 import lthLogo from '@/assets/lth-logo.png';
 import { COUNSELORS, getCounselorById } from '@/types/planning';
+import { useCounselorProfiles } from '@/hooks/useCourses';
 
 interface HeaderProps {
   onLogout: () => void;
