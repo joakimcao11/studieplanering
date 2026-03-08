@@ -7,6 +7,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { User, GraduationCap, FileText, ArrowRight, ArrowLeft, Plus, Trash2, ListChecks } from 'lucide-react';
 import { StudentInfo, Program, COUNSELORS, getCounselorById, ActionItem } from '@/types/planning';
 import { useState } from 'react';
+import { usePrograms } from '@/hooks/usePrograms';
 
 interface BasicInfoTabProps {
   studentInfo: StudentInfo;
@@ -21,21 +22,16 @@ interface BasicInfoTabProps {
   onPrevTab?: () => void;
 }
 
-const programs = [
-  { value: 'D', label: 'Civilingenjör i Datateknik (D)' },
-  { value: 'C', label: 'Civilingenjör i Infocom (C)' },
-];
+// Programs are now loaded dynamically via usePrograms hook
 
-// Generate year groups from kull 15 to kull 30
-const generateYearGroups = () => {
+// Generate year groups dynamically based on programs
+const generateYearGroups = (programCodes: string[]) => {
   const groups: string[] = [];
   for (let year = 15; year <= 30; year++) {
-    groups.push(`D${year}`, `C${year}`);
+    programCodes.forEach(code => groups.push(`${code}${year}`));
   }
   return groups.sort();
 };
-
-const yearGroups = generateYearGroups();
 
 export const BasicInfoTab = ({ 
   studentInfo, 
@@ -45,12 +41,14 @@ export const BasicInfoTab = ({
   onNextTab,
   onPrevTab,
 }: BasicInfoTabProps) => {
+  const { programs: dbPrograms } = usePrograms();
   const [customProgram, setCustomProgram] = useState(
     studentInfo.program !== 'D' && studentInfo.program !== 'C' ? studentInfo.program : ''
   );
   const [useCustomProgram, setUseCustomProgram] = useState(
     studentInfo.program !== 'D' && studentInfo.program !== 'C' && studentInfo.program !== ''
   );
+  const yearGroups = generateYearGroups(dbPrograms.map(p => p.code));
   const [customCounselor, setCustomCounselor] = useState('');
   const [useCustomCounselor, setUseCustomCounselor] = useState(
     !COUNSELORS.find(c => c.id === studentInfo.counselorId)
@@ -142,9 +140,9 @@ export const BasicInfoTab = ({
                       <SelectValue placeholder="Välj program" />
                     </SelectTrigger>
                     <SelectContent className="bg-popover border border-border shadow-lg z-50">
-                      {programs.map((program) => (
-                        <SelectItem key={program.value} value={program.value}>
-                          {program.label}
+                      {dbPrograms.map((p) => (
+                        <SelectItem key={p.code} value={p.code}>
+                          {p.name} ({p.code})
                         </SelectItem>
                       ))}
                     </SelectContent>

@@ -11,6 +11,7 @@ import { Search, Plus, BookOpen, PenLine, GraduationCap, ExternalLink } from 'lu
 import { Course } from '@/data/courses';
 import { Program, PlannedCourse, StudyPace } from '@/types/planning';
 import { useCourses } from '@/hooks/useCourses';
+import { usePrograms } from '@/hooks/usePrograms';
 
 interface CourseSelectorProps {
   program: Program;
@@ -34,6 +35,7 @@ export const CourseSelector = ({ program, onAddCourse, onCourseClick }: CourseSe
   const [customStudyPace, setCustomStudyPace] = useState<StudyPace>(100);
 
   const { courses, loading: coursesLoading } = useCourses(program);
+  const { programs: allPrograms } = usePrograms();
   
   const filteredCourses = courses.filter((course) => {
     const matchesSearch = 
@@ -101,13 +103,9 @@ export const CourseSelector = ({ program, onAddCourse, onCourseClick }: CourseSe
     setCustomStudyPace(100);
   };
 
-  const programLink = program === 'D' 
-    ? 'https://kurser.lth.se/lot/programme?ay=25_26&programme=D'
-    : program === 'C'
-    ? 'https://kurser.lth.se/lot/programme?ay=25_26&programme=C'
-    : '';
-  
-  const programLinkLabel = program === 'D' ? 'Program läsår D' : program === 'C' ? 'Program läsår C' : `Program läsår ${program}`;
+  const currentProgram = allPrograms.find(p => p.code === program);
+  const programLink = currentProgram?.link_url || '';
+  const programLinkLabel = currentProgram ? `Program läsår ${currentProgram.code}` : `Program läsår ${program}`;
 
   return (
     <Card className="h-full">

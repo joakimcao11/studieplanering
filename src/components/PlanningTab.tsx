@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { usePrograms } from '@/hooks/usePrograms';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -50,6 +51,7 @@ export const PlanningTab = ({
   onNextTab,
   onProgramChange,
 }: PlanningTabProps) => {
+  const { programs: allPrograms } = usePrograms();
   const getDefaultTermId = () => {
     const springTerm2026 = terms.find(t => t.semester === 'VT' && (t.year === '2026' || t.customYearLabel === '2026'));
     return springTerm2026?.id || terms[0]?.id || '';
@@ -236,10 +238,9 @@ export const PlanningTab = ({
               </CardHeader>
               <CardContent>
                 <Select 
-                  value={program === 'D' || program === 'C' ? program : 'custom'} 
+                  value={allPrograms.some(p => p.code === program) ? program : 'custom'} 
                   onValueChange={(v) => {
                     if (v === 'custom') {
-                      // Don't change yet, wait for custom name input
                       setCustomProgramName('');
                       onProgramChange?.('custom');
                     } else {
@@ -252,12 +253,15 @@ export const PlanningTab = ({
                     <SelectValue placeholder="Välj program" />
                   </SelectTrigger>
                   <SelectContent className="bg-popover border border-border shadow-lg z-50">
-                    <SelectItem value="D">Datateknik (D)</SelectItem>
-                    <SelectItem value="C">Infocom (C)</SelectItem>
+                    {allPrograms.map(p => (
+                      <SelectItem key={p.code} value={p.code}>
+                        {p.name} ({p.code})
+                      </SelectItem>
+                    ))}
                     <SelectItem value="custom">Annat program...</SelectItem>
                   </SelectContent>
                 </Select>
-                {program !== 'D' && program !== 'C' && (
+                {!allPrograms.some(p => p.code === program) && program !== '' && (
                   <Input
                     className="mt-2"
                     placeholder="Ange programnamn..."
