@@ -507,7 +507,7 @@ export const exportToWord = async (data: ExportData) => {
             children: [
               new Paragraph({
                 children: [new TextRun({ 
-                  text: 'Studie- och karriärvägledningen LTH', 
+                  text: ts.footer_text, 
                   size: FONT_SIZE_SMALL,
                   font: FONT_NAME,
                 })],
