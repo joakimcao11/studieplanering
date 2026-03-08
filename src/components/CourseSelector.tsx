@@ -236,37 +236,41 @@ export const CourseSelector = ({ program, onAddCourse, onCourseClick }: CourseSe
                       className="p-2 rounded-md hover:bg-muted/50 cursor-pointer"
                       onClick={() => handleAddProgramCourse(course)}
                     >
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="text-xs text-muted-foreground font-mono">
-                          {course.code}
-                        </span>
-                        {course.isObligatory ? (
-                          <Badge variant="secondary" className="text-xs">
-                            Obl.
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="text-xs border-amber-500 text-amber-600">
-                            Alt.obl
-                          </Badge>
-                        )}
-                        {course.periods && course.periods.length > 0 && (
-                          <span className="text-xs text-muted-foreground">
-                            LP{course.periods.join(',')}
-                          </span>
-                        )}
-                        {course.isMultiPeriod && (
-                          <Badge variant="outline" className="text-xs bg-warning/20 text-warning-foreground border-warning">
-                            *Flerperiod
-                          </Badge>
-                        )}
-                        <span className="text-xs font-semibold text-primary ml-auto">
+                      <div className="flex items-start gap-2">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-xs text-muted-foreground font-mono">
+                              {course.code}
+                            </span>
+                            {course.isObligatory ? (
+                              <Badge variant="secondary" className="text-xs">
+                                Obl.
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-xs border-amber-500 text-amber-600">
+                                Alt.obl
+                              </Badge>
+                            )}
+                            {course.periods && course.periods.length > 0 && (
+                              <span className="text-xs text-muted-foreground">
+                                LP{course.periods.join(',')}
+                              </span>
+                            )}
+                            {course.isMultiPeriod && (
+                              <Badge variant="outline" className="text-xs bg-warning/20 text-warning-foreground border-warning">
+                                *Flerperiod
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-sm text-foreground break-words leading-snug pr-2">
+                            {course.isMultiPeriod && <span className="font-bold">*</span>}
+                            {course.name}
+                          </p>
+                        </div>
+                        <span className="text-xs font-semibold text-primary shrink-0 whitespace-nowrap self-start">
                           {course.hp} hp
                         </span>
                       </div>
-                      <p className="text-sm truncate text-foreground">
-                        {course.isMultiPeriod && <span className="font-bold">*</span>}
-                        {course.name}
-                      </p>
                     </div>
                   ))
                 )}
