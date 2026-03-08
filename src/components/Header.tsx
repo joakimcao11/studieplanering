@@ -10,6 +10,8 @@ interface HeaderProps {
   counselorId: string;
   onCounselorChange: (counselorId: string) => void;
   onShowStats: () => void;
+  onShowAdmin?: () => void;
+  isAdmin?: boolean;
 }
 
 export const Header = ({ onLogout, counselorId, onCounselorChange, onShowStats }: HeaderProps) => {
