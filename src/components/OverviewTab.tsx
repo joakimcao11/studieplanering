@@ -83,7 +83,7 @@ export const OverviewTab = ({
       const { data, error } = await supabase.functions.invoke('generate-email-draft', {
         body: {
           studentName: studentInfo.name,
-          program: studentInfo.program === 'D' ? 'Datateknik' : studentInfo.program === 'C' ? 'Infocom' : studentInfo.program,
+          program: resolvedProgramName,
           yearGroup: studentInfo.yearGroup,
           counselorName: counselor?.name || '',
           counselorEmail: counselor?.email || '',
