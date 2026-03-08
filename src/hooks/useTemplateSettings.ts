@@ -12,6 +12,7 @@ export interface TemplateSettings {
   exam_info_text: string;
   footer_text: string;
   purpose_text: string;
+  footer_image_url: string;
 }
 
 const defaults: TemplateSettings = {
