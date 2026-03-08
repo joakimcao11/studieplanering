@@ -233,55 +233,40 @@ export const CourseSelector = ({ program, onAddCourse, onCourseClick }: CourseSe
                   filteredCourses.map((course) => (
                     <div
                       key={course.id}
-                      className="flex items-center justify-between p-2 rounded-md hover:bg-muted/50 group cursor-pointer"
+                      className="p-2 rounded-md hover:bg-muted/50 cursor-pointer"
                       onClick={() => handleAddProgramCourse(course)}
                     >
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-xs text-muted-foreground font-mono">
-                            {course.code}
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-xs text-muted-foreground font-mono">
+                          {course.code}
+                        </span>
+                        {course.isObligatory ? (
+                          <Badge variant="secondary" className="text-xs">
+                            Obl.
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-xs border-amber-500 text-amber-600">
+                            Alt.obl
+                          </Badge>
+                        )}
+                        {course.periods && course.periods.length > 0 && (
+                          <span className="text-xs text-muted-foreground">
+                            LP{course.periods.join(',')}
                           </span>
-                          {course.isObligatory ? (
-                            <Badge variant="secondary" className="text-xs">
-                              Obl.
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-xs border-amber-500 text-amber-600">
-                              Alt.obl
-                            </Badge>
-                          )}
-                          {course.periods && course.periods.length > 0 && (
-                            <span className="text-xs text-muted-foreground">
-                              LP{course.periods.join(',')}
-                            </span>
-                          )}
-                          {course.isMultiPeriod && (
-                            <Badge variant="outline" className="text-xs bg-warning/20 text-warning-foreground border-warning">
-                              *Flerperiod
-                            </Badge>
-                          )}
-                        </div>
-                        <p className="text-sm truncate text-foreground">
-                          {course.isMultiPeriod && <span className="font-bold">*</span>}
-                          {course.name}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0 ml-2">
-                        <span className="text-sm font-medium text-primary whitespace-nowrap">
+                        )}
+                        {course.isMultiPeriod && (
+                          <Badge variant="outline" className="text-xs bg-warning/20 text-warning-foreground border-warning">
+                            *Flerperiod
+                          </Badge>
+                        )}
+                        <span className="text-xs font-semibold text-primary ml-auto">
                           {course.hp} hp
                         </span>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleAddProgramCourse(course);
-                          }}
-                          className="opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <Plus className="w-4 h-4" />
-                        </Button>
                       </div>
+                      <p className="text-sm truncate text-foreground">
+                        {course.isMultiPeriod && <span className="font-bold">*</span>}
+                        {course.name}
+                      </p>
                     </div>
                   ))
                 )}
