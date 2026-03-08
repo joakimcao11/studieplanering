@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Header } from '@/components/Header';
 import { TabNavigation } from '@/components/TabNavigation';
 import { BasicInfoTab } from '@/components/BasicInfoTab';
@@ -7,7 +7,9 @@ import { OverviewTab } from '@/components/OverviewTab';
 import { SimplePlanningTab } from '@/components/SimplePlanningTab';
 import { TextToTextTab } from '@/components/TextToTextTab';
 import { StatisticsPage } from '@/components/StatisticsPage';
+import { AdminPage } from '@/components/AdminPage';
 import { usePlanningState } from '@/hooks/usePlanningState';
+import { useCounselorProfiles } from '@/hooks/useCourses';
 import { Button } from '@/components/ui/button';
 import { RotateCcw } from 'lucide-react';
 import lthLogo from '@/assets/lth-logo.png';
