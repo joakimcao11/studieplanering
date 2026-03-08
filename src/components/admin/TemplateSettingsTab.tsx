@@ -46,6 +46,23 @@ export const TemplateSettingsTab = () => {
     setForm(settings);
   };
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    const ext = file.name.split('.').pop();
+    const path = `footer-images/${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from('template-assets').upload(path, file, { upsert: true });
+    if (error) {
+      toast({ title: 'Uppladdning misslyckades', variant: 'destructive' });
+    } else {
+      const { data: urlData } = supabase.storage.from('template-assets').getPublicUrl(path);
+      setForm(f => ({ ...f, footer_image_url: urlData.publicUrl }));
+      toast({ title: 'Bild uppladdad!' });
+    }
+    setUploading(false);
+  };
+
   if (loading) {
     return <p className="text-muted-foreground text-center py-8">Laddar inställningar...</p>;
   }
