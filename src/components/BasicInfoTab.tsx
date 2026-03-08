@@ -48,6 +48,7 @@ export const BasicInfoTab = ({
   const [useCustomProgram, setUseCustomProgram] = useState(
     studentInfo.program !== 'D' && studentInfo.program !== 'C' && studentInfo.program !== ''
   );
+  const yearGroups = generateYearGroups(dbPrograms.map(p => p.code));
   const [customCounselor, setCustomCounselor] = useState('');
   const [useCustomCounselor, setUseCustomCounselor] = useState(
     !COUNSELORS.find(c => c.id === studentInfo.counselorId)
