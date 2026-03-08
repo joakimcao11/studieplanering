@@ -56,7 +56,7 @@ MINNESANTECKNINGAR - STUDIEPLANERING
 
 ================================================================================
 
-Syfte: Studieplanering med studievägledare
+Syfte: ${ts.purpose_text}
 Datum: ${currentDate}
 Student: ${data.studentInfo.name || '—'}
 Program och kull: ${programName}${data.studentInfo.yearGroup ? ` (${data.studentInfo.yearGroup})` : ''}
