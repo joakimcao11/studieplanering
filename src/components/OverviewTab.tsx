@@ -50,6 +50,9 @@ export const OverviewTab = ({
   const [emailDraft, setEmailDraft] = useState('');
   const [isGeneratingEmail, setIsGeneratingEmail] = useState(false);
   const { settings: templateSettings } = useTemplateSettings();
+  const { programs: allPrograms } = usePrograms();
+
+  const resolvedProgramName = allPrograms.find(p => p.code === studentInfo.program)?.name || studentInfo.program;
   
   // New course form state
   const [newCourseCode, setNewCourseCode] = useState('');
