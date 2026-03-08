@@ -40,6 +40,7 @@ Förtydliganden:
 });
 
 const generateTextContent = (data: ExportData): string => {
+  const ts = data.templateSettings || getTemplateDefaults();
   const currentDate = data.studentInfo.customDate 
     ? new Date(data.studentInfo.customDate).toLocaleDateString('sv-SE')
     : new Date().toLocaleDateString('sv-SE');
