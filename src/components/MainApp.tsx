@@ -94,12 +94,14 @@ export const MainApp = ({ onLogout, initialCounselorId, onCounselorIdChange }: M
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <Header 
-        onLogout={onLogout} 
-        counselorId={studentInfo.counselorId}
-        onCounselorChange={handleCounselorChange}
-        onShowStats={() => setShowStats(true)}
-      />
+        <Header 
+          onLogout={onLogout} 
+          counselorId={studentInfo.counselorId}
+          onCounselorChange={handleCounselorChange}
+          onShowStats={() => setShowStats(true)}
+          onShowAdmin={() => setShowAdmin(true)}
+          isAdmin={isAdmin}
+        />
       <TabNavigation currentTab={currentTab} onTabChange={setCurrentTab} />
       
       <main className="flex-1 container mx-auto px-4 py-6">
