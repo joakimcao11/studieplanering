@@ -14,9 +14,9 @@ const tabs = [
 
 export const TabNavigation = ({ currentTab, onTabChange }: TabNavigationProps) => {
   return (
-    <div className="bg-card border-b border-border">
+    <div className="bg-card border-b border-border overflow-x-auto">
       <div className="container mx-auto px-4">
-        <nav className="flex gap-1" aria-label="Huvudnavigering">
+        <nav className="flex gap-1 min-w-max" aria-label="Huvudnavigering">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = currentTab === tab.id;
