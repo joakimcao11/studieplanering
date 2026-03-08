@@ -6,9 +6,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Pencil, Trash2, Save, ExternalLink } from 'lucide-react';
+import { Plus, Pencil, Trash2, Save, ExternalLink, BookOpen } from 'lucide-react';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { usePrograms, ProgramData } from '@/hooks/usePrograms';
+import { ProgramCoursesManager } from './ProgramCoursesManager';
 
 interface ProgramForm {
   code: string;
@@ -24,6 +29,17 @@ export const ProgramManagementTab = () => {
   const [dialog, setDialog] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<ProgramForm>(emptyForm);
+  const [managingProgram, setManagingProgram] = useState<ProgramData | null>(null);
+
+  if (managingProgram) {
+    return (
+      <ProgramCoursesManager
+        programCode={managingProgram.code}
+        programName={managingProgram.name}
+        onBack={() => setManagingProgram(null)}
+      />
+    );
+  }
 
   const openNew = () => {
     setForm(emptyForm);
@@ -94,7 +110,7 @@ export const ProgramManagementTab = () => {
                   <TableHead className="w-20">Kod</TableHead>
                   <TableHead>Namn</TableHead>
                   <TableHead>Programsida</TableHead>
-                  <TableHead className="w-24">Åtgärd</TableHead>
+                  <TableHead className="w-40">Åtgärd</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -119,12 +135,37 @@ export const ProgramManagementTab = () => {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setManagingProgram(p)}
+                          className="h-7 px-2 text-xs"
+                        >
+                          <BookOpen className="w-3 h-3 mr-1" />
+                          Kurser
+                        </Button>
                         <Button size="sm" variant="ghost" onClick={() => openEdit(p)} className="h-7 w-7 p-0">
                           <Pencil className="w-3 h-3" />
                         </Button>
-                        <Button size="sm" variant="ghost" onClick={() => remove(p.id)} className="h-7 w-7 p-0 text-destructive hover:text-destructive">
-                          <Trash2 className="w-3 h-3" />
-                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive hover:text-destructive">
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Ta bort program?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Programmet "{p.name} ({p.code})" tas bort permanent. Kurser kopplade till programmet påverkas inte.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Avbryt</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => remove(p.id)}>Ta bort</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -146,7 +187,7 @@ export const ProgramManagementTab = () => {
               <Input
                 value={form.code}
                 onChange={e => setForm(f => ({ ...f, code: e.target.value }))}
-                placeholder="D"
+                placeholder="F"
                 maxLength={10}
               />
             </div>
@@ -155,7 +196,7 @@ export const ProgramManagementTab = () => {
               <Input
                 value={form.name}
                 onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                placeholder="Civilingenjör i Datateknik"
+                placeholder="Civilingenjör i Teknisk fysik"
               />
             </div>
             <div className="space-y-1">
