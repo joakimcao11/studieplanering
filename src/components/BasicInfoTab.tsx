@@ -22,10 +22,7 @@ interface BasicInfoTabProps {
   onPrevTab?: () => void;
 }
 
-const programs = [
-  { value: 'D', label: 'Civilingenjör i Datateknik (D)' },
-  { value: 'C', label: 'Civilingenjör i Infocom (C)' },
-];
+// Programs are now loaded dynamically via usePrograms hook
 
 // Generate year groups from kull 15 to kull 30
 const generateYearGroups = () => {
