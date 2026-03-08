@@ -35,6 +35,7 @@ export const CourseSelector = ({ program, onAddCourse, onCourseClick }: CourseSe
   const [customStudyPace, setCustomStudyPace] = useState<StudyPace>(100);
 
   const { courses, loading: coursesLoading } = useCourses(program);
+  const { programs: allPrograms } = usePrograms();
   
   const filteredCourses = courses.filter((course) => {
     const matchesSearch = 
