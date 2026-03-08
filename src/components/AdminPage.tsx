@@ -306,6 +306,7 @@ export const AdminPage = ({ onBack }: AdminPageProps) => {
                         <TableHead>Kod</TableHead>
                         <TableHead>Namn</TableHead>
                         <TableHead>HP</TableHead>
+                        {programFilter === 'ALL' && <TableHead>Program</TableHead>}
                         <TableHead>Åk</TableHead>
                         <TableHead>LP</TableHead>
                         <TableHead>Typ</TableHead>
@@ -321,6 +322,7 @@ export const AdminPage = ({ onBack }: AdminPageProps) => {
                             {course.name}
                           </TableCell>
                           <TableCell>{course.hp}</TableCell>
+                          {programFilter === 'ALL' && <TableCell><Badge variant="outline" className="text-xs">{course.program}</Badge></TableCell>}
                           <TableCell>{course.year}</TableCell>
                           <TableCell>
                             {course.periods?.map(p => `LP${p}`).join(', ')}
