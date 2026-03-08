@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Header } from '@/components/Header';
 import { TabNavigation } from '@/components/TabNavigation';
 import { BasicInfoTab } from '@/components/BasicInfoTab';
@@ -7,7 +7,9 @@ import { OverviewTab } from '@/components/OverviewTab';
 import { SimplePlanningTab } from '@/components/SimplePlanningTab';
 import { TextToTextTab } from '@/components/TextToTextTab';
 import { StatisticsPage } from '@/components/StatisticsPage';
+import { AdminPage } from '@/components/AdminPage';
 import { usePlanningState } from '@/hooks/usePlanningState';
+import { useCounselorProfiles } from '@/hooks/useCourses';
 import { Button } from '@/components/ui/button';
 import { RotateCcw } from 'lucide-react';
 import lthLogo from '@/assets/lth-logo.png';
@@ -20,6 +22,12 @@ interface MainAppProps {
 
 export const MainApp = ({ onLogout, initialCounselorId, onCounselorIdChange }: MainAppProps) => {
   const [showStats, setShowStats] = useState(false);
+  const [showAdmin, setShowAdmin] = useState(false);
+  const { profiles } = useCounselorProfiles();
+  
+  // Check if current counselor is admin
+  const isAdmin = profiles.some(p => p.counselor_key === initialCounselorId && p.is_admin) ||
+    initialCounselorId === 'joakim' || initialCounselorId === 'tobias';
   const {
     currentTab,
     setCurrentTab,
@@ -48,6 +56,24 @@ export const MainApp = ({ onLogout, initialCounselorId, onCounselorIdChange }: M
     onCounselorIdChange(counselorId);
   };
 
+  if (showAdmin && isAdmin) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col">
+        <Header 
+          onLogout={onLogout} 
+          counselorId={studentInfo.counselorId}
+          onCounselorChange={handleCounselorChange}
+          onShowStats={() => { setShowAdmin(false); setShowStats(true); }}
+          onShowAdmin={() => setShowAdmin(true)}
+          isAdmin={isAdmin}
+        />
+        <main className="flex-1 container mx-auto px-4 py-6">
+          <AdminPage onBack={() => setShowAdmin(false)} />
+        </main>
+      </div>
+    );
+  }
+
   if (showStats) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
@@ -56,6 +82,8 @@ export const MainApp = ({ onLogout, initialCounselorId, onCounselorIdChange }: M
           counselorId={studentInfo.counselorId}
           onCounselorChange={handleCounselorChange}
           onShowStats={() => setShowStats(true)}
+          onShowAdmin={() => { setShowStats(false); setShowAdmin(true); }}
+          isAdmin={isAdmin}
         />
         <main className="flex-1 container mx-auto px-4 py-6">
           <StatisticsPage onBack={() => setShowStats(false)} />
@@ -66,12 +94,14 @@ export const MainApp = ({ onLogout, initialCounselorId, onCounselorIdChange }: M
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <Header 
-        onLogout={onLogout} 
-        counselorId={studentInfo.counselorId}
-        onCounselorChange={handleCounselorChange}
-        onShowStats={() => setShowStats(true)}
-      />
+        <Header 
+          onLogout={onLogout} 
+          counselorId={studentInfo.counselorId}
+          onCounselorChange={handleCounselorChange}
+          onShowStats={() => setShowStats(true)}
+          onShowAdmin={() => setShowAdmin(true)}
+          isAdmin={isAdmin}
+        />
       <TabNavigation currentTab={currentTab} onTabChange={setCurrentTab} />
       
       <main className="flex-1 container mx-auto px-4 py-6">

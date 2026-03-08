@@ -1,18 +1,22 @@
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { LogOut, User, BarChart3 } from 'lucide-react';
+import { LogOut, User, BarChart3, Settings } from 'lucide-react';
 import lthLogo from '@/assets/lth-logo.png';
 import { COUNSELORS, getCounselorById } from '@/types/planning';
+import { useCounselorProfiles } from '@/hooks/useCourses';
 
 interface HeaderProps {
   onLogout: () => void;
   counselorId: string;
   onCounselorChange: (counselorId: string) => void;
   onShowStats: () => void;
+  onShowAdmin?: () => void;
+  isAdmin?: boolean;
 }
 
-export const Header = ({ onLogout, counselorId, onCounselorChange, onShowStats }: HeaderProps) => {
+export const Header = ({ onLogout, counselorId, onCounselorChange, onShowStats, onShowAdmin, isAdmin }: HeaderProps) => {
   const currentCounselor = getCounselorById(counselorId);
+  const { profiles } = useCounselorProfiles();
 
   return (
     <header className="bg-primary text-primary-foreground shadow-md">
@@ -56,6 +60,17 @@ export const Header = ({ onLogout, counselorId, onCounselorChange, onShowStats }
             <BarChart3 className="w-4 h-4 mr-1" />
             Statistik
           </Button>
+          {isAdmin && onShowAdmin && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onShowAdmin}
+              className="text-primary-foreground hover:bg-primary-foreground/10"
+            >
+              <Settings className="w-4 h-4 mr-1" />
+              Admin
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="sm"

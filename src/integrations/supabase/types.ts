@@ -14,6 +14,84 @@ export type Database = {
   }
   public: {
     Tables: {
+      counselor_profiles: {
+        Row: {
+          counselor_key: string
+          created_at: string | null
+          display_name: string
+          email: string
+          id: string
+          is_admin: boolean | null
+          name: string
+        }
+        Insert: {
+          counselor_key: string
+          created_at?: string | null
+          display_name: string
+          email: string
+          id?: string
+          is_admin?: boolean | null
+          name: string
+        }
+        Update: {
+          counselor_key?: string
+          created_at?: string | null
+          display_name?: string
+          email?: string
+          id?: string
+          is_admin?: boolean | null
+          name?: string
+        }
+        Relationships: []
+      }
+      courses: {
+        Row: {
+          code: string
+          created_at: string | null
+          default_study_pace: number | null
+          hp: number
+          id: string
+          is_multi_period: boolean | null
+          is_obligatory: boolean
+          level: string
+          name: string
+          periods: string[] | null
+          program: string
+          updated_at: string | null
+          year: number
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          default_study_pace?: number | null
+          hp: number
+          id?: string
+          is_multi_period?: boolean | null
+          is_obligatory?: boolean
+          level?: string
+          name: string
+          periods?: string[] | null
+          program: string
+          updated_at?: string | null
+          year?: number
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          default_study_pace?: number | null
+          hp?: number
+          id?: string
+          is_multi_period?: boolean | null
+          is_obligatory?: boolean
+          level?: string
+          name?: string
+          periods?: string[] | null
+          program?: string
+          updated_at?: string | null
+          year?: number
+        }
+        Relationships: []
+      }
       study_plan_stats: {
         Row: {
           action_type: string

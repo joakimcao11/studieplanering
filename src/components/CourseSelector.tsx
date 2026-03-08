@@ -8,8 +8,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Search, Plus, BookOpen, PenLine, GraduationCap, ExternalLink } from 'lucide-react';
-import { Course, getAllCourses } from '@/data/courses';
+import { Course } from '@/data/courses';
 import { Program, PlannedCourse, StudyPace } from '@/types/planning';
+import { useCourses } from '@/hooks/useCourses';
 
 interface CourseSelectorProps {
   program: Program;
@@ -32,7 +33,7 @@ export const CourseSelector = ({ program, onAddCourse, onCourseClick }: CourseSe
   const [customCourseHP, setCustomCourseHP] = useState<string>('');
   const [customStudyPace, setCustomStudyPace] = useState<StudyPace>(100);
 
-  const courses = getAllCourses(program);
+  const { courses, loading: coursesLoading } = useCourses(program);
   
   const filteredCourses = courses.filter((course) => {
     const matchesSearch = 
