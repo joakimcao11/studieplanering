@@ -457,6 +457,75 @@ export const ProgramCoursesManager = ({ programCode, programName, onBack }: Prog
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Reuse Course Dialog – customize before adding */}
+      <Dialog open={reuseDialog} onOpenChange={setReuseDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Lägg till kurs i {programCode}</DialogTitle>
+          </DialogHeader>
+          {reuseSource && (
+            <div className="space-y-4">
+              <div className="rounded-md border p-3 bg-muted/30 space-y-1">
+                <p className="font-mono text-sm font-semibold">{reuseSource.code}</p>
+                <p className="text-sm">{reuseSource.name}</p>
+                <p className="text-xs text-muted-foreground">{reuseSource.hp} hp · {reuseSource.level}</p>
+              </div>
+
+              <div className="flex items-start gap-2 rounded-md border border-yellow-500/30 bg-yellow-500/10 p-3">
+                <span className="text-yellow-600 font-bold text-sm mt-0.5">!</span>
+                <p className="text-xs text-yellow-700 dark:text-yellow-400">
+                  Samma kurskod kan ha olika läsperioder och årskurs beroende på program. Kontrollera att inställningarna nedan stämmer för <strong>{programCode}</strong>.
+                  <br />
+                  <span className="text-muted-foreground">I {reuseSource.program}: Åk{reuseSource.year}, LP{reuseSource.periods?.join(',')}</span>
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-sm">Årskurs i {programCode} *</Label>
+                <Select value={reuseForm.year} onValueChange={v => setReuseForm(f => ({ ...f, year: v }))}>
+                  <SelectTrigger className="bg-background"><SelectValue /></SelectTrigger>
+                  <SelectContent className="bg-popover border border-border shadow-lg z-50">
+                    <SelectItem value="1">Årskurs 1</SelectItem>
+                    <SelectItem value="2">Årskurs 2</SelectItem>
+                    <SelectItem value="3">Årskurs 3</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-sm">Läsperioder i {programCode} *</Label>
+                <div className="flex gap-3">
+                  {['1', '2', '3', '4'].map(p => (
+                    <label key={p} className="flex items-center gap-1.5 cursor-pointer">
+                      <Checkbox
+                        checked={reuseForm.periods.includes(p)}
+                        onCheckedChange={() => toggleReusePeriod(p)}
+                      />
+                      <span className="text-sm">LP{p}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <label className="flex items-center gap-2 cursor-pointer">
+                <Checkbox
+                  checked={reuseForm.is_obligatory}
+                  onCheckedChange={(v) => setReuseForm(f => ({ ...f, is_obligatory: !!v }))}
+                />
+                <span className="text-sm">Obligatorisk</span>
+              </label>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReuseDialog(false)}>Avbryt</Button>
+            <Button onClick={confirmReuse}>
+              <Plus className="w-4 h-4 mr-1" />
+              Lägg till
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
