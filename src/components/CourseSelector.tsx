@@ -248,7 +248,9 @@ export const CourseSelector = ({ program, onAddCourse, onCourseClick }: CourseSe
                     Inga kurser hittades
                   </p>
                 ) : (
-                  filteredCourses.map((course) => (
+                  filteredCourses.map((course) => {
+                    const crossWarning = getCrossProgramWarning(course);
+                    return (
                     <div
                       key={course.id}
                       className="p-2 rounded-md hover:bg-muted/50 cursor-pointer"
@@ -279,6 +281,19 @@ export const CourseSelector = ({ program, onAddCourse, onCourseClick }: CourseSe
                                 *Flerperiod
                               </Badge>
                             )}
+                            {crossWarning && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span className="inline-flex items-center">
+                                    <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+                                  </span>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="max-w-xs text-xs">
+                                  <p className="font-semibold">Andra läsperioder i andra program:</p>
+                                  <p>{crossWarning}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
                           </div>
                           <p className="text-sm text-foreground break-words leading-snug pr-2">
                             {course.isMultiPeriod && <span className="font-bold">*</span>}
@@ -290,7 +305,8 @@ export const CourseSelector = ({ program, onAddCourse, onCourseClick }: CourseSe
                         </span>
                       </div>
                     </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             </ScrollArea>

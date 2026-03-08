@@ -183,7 +183,7 @@ export const exportToWord = async (data: ExportData) => {
   const currentDate = data.studentInfo.customDate 
     ? new Date(data.studentInfo.customDate).toLocaleDateString('sv-SE')
     : new Date().toLocaleDateString('sv-SE');
-  const programName = data.studentInfo.program === 'D' ? 'Datateknik' : 'Infocom';
+  const programName = data.programName || data.studentInfo.program;
   const counselor = getCounselorById(data.studentInfo.counselorId);
 
   const sections: Paragraph[] = [];
