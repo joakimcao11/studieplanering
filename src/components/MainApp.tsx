@@ -22,6 +22,12 @@ interface MainAppProps {
 
 export const MainApp = ({ onLogout, initialCounselorId, onCounselorIdChange }: MainAppProps) => {
   const [showStats, setShowStats] = useState(false);
+  const [showAdmin, setShowAdmin] = useState(false);
+  const { profiles } = useCounselorProfiles();
+  
+  // Check if current counselor is admin
+  const isAdmin = profiles.some(p => p.counselor_key === initialCounselorId && p.is_admin) ||
+    initialCounselorId === 'joakim' || initialCounselorId === 'tobias';
   const {
     currentTab,
     setCurrentTab,
