@@ -48,6 +48,7 @@ export const OverviewTab = ({
   const [addingCourseToTerm, setAddingCourseToTerm] = useState<{termId: string, period: 'lp1' | 'lp2'} | null>(null);
   const [emailDraft, setEmailDraft] = useState('');
   const [isGeneratingEmail, setIsGeneratingEmail] = useState(false);
+  const { settings: templateSettings } = useTemplateSettings();
   
   // New course form state
   const [newCourseCode, setNewCourseCode] = useState('');
