@@ -151,11 +151,11 @@ ${data.notes}
 
   content += `================================================================================
 
-${EXAM_INFO_TEXT}
+${ts.exam_info_text}
 
 ================================================================================
 
-Studie- och karriärvägledningen LTH
+${ts.footer_text}
 `;
 
   return content;
