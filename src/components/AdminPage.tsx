@@ -71,7 +71,7 @@ export const AdminPage = ({ onBack }: AdminPageProps) => {
   
   // Course state
   const { programs } = usePrograms();
-  const [programFilter, setProgramFilter] = useState<string>('D');
+  const [programFilter, setProgramFilter] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const { courses, loading: coursesLoading, refetch: refetchCourses } = useCourses();
   const [courseDialog, setCourseDialog] = useState(false);
@@ -85,7 +85,7 @@ export const AdminPage = ({ onBack }: AdminPageProps) => {
   const [profileForm, setProfileForm] = useState<ProfileForm>(emptyProfileForm);
 
   const filteredCourses = courses.filter(c => {
-    const matchesProgram = c.program === programFilter;
+    const matchesProgram = programFilter === 'ALL' || c.program === programFilter;
     const matchesSearch = !searchQuery || 
       c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       c.code.toLowerCase().includes(searchQuery.toLowerCase());
@@ -276,6 +276,7 @@ export const AdminPage = ({ onBack }: AdminPageProps) => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-popover border border-border shadow-lg z-50">
+                    <SelectItem value="ALL">Alla kurser</SelectItem>
                     {programs.map(p => (
                       <SelectItem key={p.code} value={p.code}>
                         {p.name} ({p.code})
@@ -305,6 +306,7 @@ export const AdminPage = ({ onBack }: AdminPageProps) => {
                         <TableHead>Kod</TableHead>
                         <TableHead>Namn</TableHead>
                         <TableHead>HP</TableHead>
+                        {programFilter === 'ALL' && <TableHead>Program</TableHead>}
                         <TableHead>Åk</TableHead>
                         <TableHead>LP</TableHead>
                         <TableHead>Typ</TableHead>
@@ -320,6 +322,7 @@ export const AdminPage = ({ onBack }: AdminPageProps) => {
                             {course.name}
                           </TableCell>
                           <TableCell>{course.hp}</TableCell>
+                          {programFilter === 'ALL' && <TableCell><Badge variant="outline" className="text-xs">{course.program}</Badge></TableCell>}
                           <TableCell>{course.year}</TableCell>
                           <TableCell>
                             {course.periods?.map(p => `LP${p}`).join(', ')}
