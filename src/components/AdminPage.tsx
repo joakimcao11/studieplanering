@@ -377,6 +377,10 @@ export const AdminPage = ({ onBack }: AdminPageProps) => {
             </CardContent>
           </Card>
         </TabsContent>
+        {/* TEMPLATE TAB */}
+        <TabsContent value="template">
+          <TemplateSettingsTab />
+        </TabsContent>
       </Tabs>
 
       {/* Course Dialog */}
