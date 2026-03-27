@@ -7,6 +7,7 @@ import { OverviewTab } from '@/components/OverviewTab';
 import { SimplePlanningTab } from '@/components/SimplePlanningTab';
 import { TextToTextTab } from '@/components/TextToTextTab';
 import { DocumentSupportTab } from '@/components/DocumentSupportTab';
+import { OnboardingOverlay } from '@/components/OnboardingOverlay';
 import { StatisticsPage } from '@/components/StatisticsPage';
 import { AdminPage } from '@/components/AdminPage';
 import { usePlanningState } from '@/hooks/usePlanningState';
