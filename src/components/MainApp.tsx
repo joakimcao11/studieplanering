@@ -174,6 +174,7 @@ export const MainApp = ({ onLogout, initialCounselorId, onCounselorIdChange }: M
         </div>
 
         {currentTab === 1 && (
+          <OnboardingOverlay tabId={1} />
           <PlanningTab
             program={studentInfo.program}
             terms={terms}
@@ -221,11 +222,17 @@ export const MainApp = ({ onLogout, initialCounselorId, onCounselorIdChange }: M
         )}
         
         {currentTab === 3 && (
-          <SimplePlanningTab />
+          <>
+            <OnboardingOverlay tabId={3} />
+            <SimplePlanningTab />
+          </>
         )}
         
         {currentTab === 4 && (
-          <TextToTextTab />
+          <>
+            <OnboardingOverlay tabId={4} />
+            <TextToTextTab />
+          </>
         )}
         
         {currentTab === 5 && (
