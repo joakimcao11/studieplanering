@@ -174,21 +174,23 @@ export const MainApp = ({ onLogout, initialCounselorId, onCounselorIdChange }: M
         </div>
 
         {currentTab === 1 && (
-          <OnboardingOverlay tabId={1} />
-          <PlanningTab
-            program={studentInfo.program}
-            terms={terms}
-            notes={notes}
-            onAddTerm={addTerm}
-            onRemoveTerm={removeTerm}
-            onAddCourse={addCourseToTerm}
-            onRemoveCourse={removeCourseFromTerm}
-            onUpdateTerm={updateTerm}
-            onNotesChange={setNotes}
-            onTermsChange={setTerms}
-            onNextTab={() => setCurrentTab(0)}
-            onProgramChange={(program) => updateStudentInfo({ program })}
-          />
+          <>
+            <OnboardingOverlay tabId={1} />
+            <PlanningTab
+              program={studentInfo.program}
+              terms={terms}
+              notes={notes}
+              onAddTerm={addTerm}
+              onRemoveTerm={removeTerm}
+              onAddCourse={addCourseToTerm}
+              onRemoveCourse={removeCourseFromTerm}
+              onUpdateTerm={updateTerm}
+              onNotesChange={setNotes}
+              onTermsChange={setTerms}
+              onNextTab={() => setCurrentTab(0)}
+              onProgramChange={(program) => updateStudentInfo({ program })}
+            />
+          </>
         )}
 
         {currentTab === 0 && (
