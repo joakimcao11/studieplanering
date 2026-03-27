@@ -6,6 +6,8 @@ import { PlanningTab } from '@/components/PlanningTab';
 import { OverviewTab } from '@/components/OverviewTab';
 import { SimplePlanningTab } from '@/components/SimplePlanningTab';
 import { TextToTextTab } from '@/components/TextToTextTab';
+import { DocumentSupportTab } from '@/components/DocumentSupportTab';
+import { OnboardingOverlay } from '@/components/OnboardingOverlay';
 import { StatisticsPage } from '@/components/StatisticsPage';
 import { AdminPage } from '@/components/AdminPage';
 import { usePlanningState } from '@/hooks/usePlanningState';
@@ -172,20 +174,23 @@ export const MainApp = ({ onLogout, initialCounselorId, onCounselorIdChange }: M
         </div>
 
         {currentTab === 1 && (
-          <PlanningTab
-            program={studentInfo.program}
-            terms={terms}
-            notes={notes}
-            onAddTerm={addTerm}
-            onRemoveTerm={removeTerm}
-            onAddCourse={addCourseToTerm}
-            onRemoveCourse={removeCourseFromTerm}
-            onUpdateTerm={updateTerm}
-            onNotesChange={setNotes}
-            onTermsChange={setTerms}
-            onNextTab={() => setCurrentTab(0)}
-            onProgramChange={(program) => updateStudentInfo({ program })}
-          />
+          <>
+            <OnboardingOverlay tabId={1} />
+            <PlanningTab
+              program={studentInfo.program}
+              terms={terms}
+              notes={notes}
+              onAddTerm={addTerm}
+              onRemoveTerm={removeTerm}
+              onAddCourse={addCourseToTerm}
+              onRemoveCourse={removeCourseFromTerm}
+              onUpdateTerm={updateTerm}
+              onNotesChange={setNotes}
+              onTermsChange={setTerms}
+              onNextTab={() => setCurrentTab(0)}
+              onProgramChange={(program) => updateStudentInfo({ program })}
+            />
+          </>
         )}
 
         {currentTab === 0 && (
@@ -219,11 +224,21 @@ export const MainApp = ({ onLogout, initialCounselorId, onCounselorIdChange }: M
         )}
         
         {currentTab === 3 && (
-          <SimplePlanningTab />
+          <>
+            <OnboardingOverlay tabId={3} />
+            <SimplePlanningTab />
+          </>
         )}
         
         {currentTab === 4 && (
-          <TextToTextTab />
+          <>
+            <OnboardingOverlay tabId={4} />
+            <TextToTextTab />
+          </>
+        )}
+        
+        {currentTab === 5 && (
+          <DocumentSupportTab />
         )}
       </main>
 
