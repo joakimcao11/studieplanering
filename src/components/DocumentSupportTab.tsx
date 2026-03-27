@@ -415,5 +415,3 @@ export const DocumentSupportTab = () => {
   );
 };
 
-// Import Sparkles for the button
-import { Sparkles } from 'lucide-react';
