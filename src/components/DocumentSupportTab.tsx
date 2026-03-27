@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Upload, FileImage, FileText, Send, Loader2, Trash2, Download, Copy, Check, X } from 'lucide-react';
+import { Upload, FileImage, FileText, Send, Loader2, Trash2, Download, Copy, Check, X, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
 import { Document, Packer, Paragraph, TextRun, HeadingLevel } from 'docx';
