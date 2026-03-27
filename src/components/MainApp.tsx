@@ -6,6 +6,7 @@ import { PlanningTab } from '@/components/PlanningTab';
 import { OverviewTab } from '@/components/OverviewTab';
 import { SimplePlanningTab } from '@/components/SimplePlanningTab';
 import { TextToTextTab } from '@/components/TextToTextTab';
+import { DocumentSupportTab } from '@/components/DocumentSupportTab';
 import { StatisticsPage } from '@/components/StatisticsPage';
 import { AdminPage } from '@/components/AdminPage';
 import { usePlanningState } from '@/hooks/usePlanningState';
@@ -224,6 +225,10 @@ export const MainApp = ({ onLogout, initialCounselorId, onCounselorIdChange }: M
         
         {currentTab === 4 && (
           <TextToTextTab />
+        )}
+        
+        {currentTab === 5 && (
+          <DocumentSupportTab />
         )}
       </main>
 
