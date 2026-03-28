@@ -1,4 +1,4 @@
-import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType, BorderStyle, HeadingLevel, Footer, Header as DocxHeader, ImageRun, convertInchesToTwip, LineRuleType } from 'docx';
+import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType, BorderStyle, HeadingLevel, Footer, Header as DocxHeader, ImageRun, convertInchesToTwip, LineRuleType, PageNumber, TabStopType, TabStopPosition } from 'docx';
 import { saveAs } from 'file-saver';
 import { StudentInfo, TermPlan, ActionItem, calculatePeriodHP, calculateTermHP, getCounselorById } from '@/types/planning';
 import { TemplateSettings } from '@/hooks/useTemplateSettings';
