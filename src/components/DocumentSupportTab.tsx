@@ -80,7 +80,7 @@ async function exportDocumentationWord(content: string, title: string) {
   const FONT = 'Arial';
   const ACCENT = '2E75B6';
 
-  const children: Paragraph[] = [];
+  const children: (Paragraph | Table)[] = [];
 
   // Title with accent border
   children.push(new Paragraph({
