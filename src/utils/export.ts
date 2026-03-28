@@ -542,7 +542,9 @@ export const exportToWord = async (data: ExportData) => {
     },
     sections: [
       {
-        properties: {},
+        properties: {
+          page: { size: { width: 11906, height: 16838 }, margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 } },
+        },
         children: sections,
         footers: {
           default: new Footer({
