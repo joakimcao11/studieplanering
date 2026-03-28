@@ -7,7 +7,7 @@ import { Separator } from '@/components/ui/separator';
 import { FileText, Download, Plus, Trash2, Edit2, Check, GraduationCap, BookOpen, User } from 'lucide-react';
 import { SimpleStudentInfo, SimpleRestkurs, SimpleNyKurs } from '../SimplePlanningTab';
 import { useState } from 'react';
-import { Document, Packer, Paragraph, TextRun, AlignmentType, ImageRun } from 'docx';
+import { Document, Packer, Paragraph, TextRun, AlignmentType, ImageRun, BorderStyle, Footer, PageNumber, TabStopType, TabStopPosition } from 'docx';
 import { saveAs } from 'file-saver';
 
 interface SimpleSummaryStepProps {
