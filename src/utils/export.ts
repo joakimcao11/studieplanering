@@ -219,7 +219,8 @@ export const exportToWord = async (data: ExportData) => {
     new Paragraph({ children: [], spacing: { after: 200 } }),
   );
 
-  // Title
+  // Title with accent border
+  const ACCENT = '2E75B6';
   sections.push(
     new Paragraph({
       children: [new TextRun({ 
@@ -227,9 +228,11 @@ export const exportToWord = async (data: ExportData) => {
         bold: true, 
         size: FONT_SIZE_HEADING1,
         font: FONT_NAME,
+        color: ACCENT,
       })],
       heading: HeadingLevel.HEADING_1,
       spacing: { before: 0, after: 300 },
+      border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: ACCENT, space: 4 } },
     }),
   );
 
@@ -506,26 +509,25 @@ export const exportToWord = async (data: ExportData) => {
   }
 
   const footerChildren: Paragraph[] = [];
+  const footerParagraphChildren = [
+    new TextRun({ text: ts.footer_text, size: FONT_SIZE_SMALL, font: FONT_NAME, color: '888888' }),
+    new TextRun({ text: '\t' }),
+  ];
   if (footerImageRun) {
-    footerChildren.push(
-      new Paragraph({
-        children: [
-          new TextRun({ text: ts.footer_text, size: FONT_SIZE_SMALL, font: FONT_NAME }),
-          new TextRun({ text: '\t' }),
-          footerImageRun,
-        ],
-        alignment: AlignmentType.LEFT,
-        tabStops: [{ type: 'right' as any, position: convertInchesToTwip(6.5) }],
-      }),
-    );
-  } else {
-    footerChildren.push(
-      new Paragraph({
-        children: [new TextRun({ text: ts.footer_text, size: FONT_SIZE_SMALL, font: FONT_NAME })],
-        alignment: AlignmentType.LEFT,
-      }),
-    );
+    footerParagraphChildren.push(footerImageRun as any);
+    footerParagraphChildren.push(new TextRun({ text: '  ' }));
   }
+  footerParagraphChildren.push(
+    new TextRun({ text: 'Sida ', size: FONT_SIZE_SMALL, font: FONT_NAME, color: '888888' }),
+    new TextRun({ children: [PageNumber.CURRENT], size: FONT_SIZE_SMALL, font: FONT_NAME, color: '888888' }),
+  );
+  footerChildren.push(
+    new Paragraph({
+      children: footerParagraphChildren,
+      alignment: AlignmentType.LEFT,
+      tabStops: [{ type: TabStopType.RIGHT, position: TabStopPosition.MAX }],
+    }),
+  );
 
   const doc = new Document({
     styles: {
