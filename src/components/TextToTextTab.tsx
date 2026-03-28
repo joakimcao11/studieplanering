@@ -81,6 +81,8 @@ export const TextToTextTab = () => {
       return;
     }
 
+    const FONT = 'Arial';
+    const ACCENT = '2E75B6';
     const lines = generatedText.split('\n');
     const paragraphs: Paragraph[] = [];
 
@@ -90,44 +92,67 @@ export const TextToTextTab = () => {
 
       if (trimmed.startsWith('MINNESANTECKNING') || trimmed.startsWith('# ')) {
         paragraphs.push(new Paragraph({
-          children: [new TextRun({ text: trimmed.replace(/^#+\s*/, ''), bold: true, size: 28, font: 'Calibri' })],
+          children: [new TextRun({ text: trimmed.replace(/^#+\s*/, ''), bold: true, size: 30, font: FONT, color: ACCENT })],
           heading: HeadingLevel.HEADING_1,
           spacing: { after: 200 },
+          border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: ACCENT, space: 4 } },
         }));
       } else if (trimmed.startsWith('## ') || trimmed.match(/^(Datum|Student|Program|TERMIN|Läsperiod|Omtentor|Totalt|Planering|Studievägledare)/)) {
         paragraphs.push(new Paragraph({
-          children: [new TextRun({ text: trimmed.replace(/^#+\s*/, ''), bold: true, size: 24, font: 'Calibri' })],
+          children: [new TextRun({ text: trimmed.replace(/^#+\s*/, ''), bold: true, size: 24, font: FONT })],
           heading: HeadingLevel.HEADING_2,
           spacing: { before: 200, after: 100 },
         }));
       } else if (trimmed.startsWith('- ')) {
         paragraphs.push(new Paragraph({
-          children: [new TextRun({ text: trimmed.substring(2), size: 22, font: 'Calibri' })],
+          children: [new TextRun({ text: trimmed.substring(2), size: 22, font: FONT })],
           bullet: { level: 0 },
           spacing: { after: 60 },
         }));
       } else if (trimmed) {
         paragraphs.push(new Paragraph({
-          children: [new TextRun({ text: trimmed, size: 22, font: 'Calibri' })],
+          children: [new TextRun({ text: trimmed, size: 22, font: FONT })],
           spacing: { after: 80 },
         }));
       }
     }
 
+    const selectedCounselor = COUNSELORS.find(c => c.id === counselor);
     const doc = new Document({
+      styles: { default: { document: { run: { font: FONT, size: 22 } } } },
+      numbering: { config: [{ reference: 'bullets', levels: [{ level: 0, format: 'bullet' as any, text: '\u2022', alignment: AlignmentType.LEFT, style: { paragraph: { indent: { left: 720, hanging: 360 } } } }] }] },
       sections: [{
-        properties: {},
+        properties: {
+          page: { size: { width: 11906, height: 16838 }, margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 } },
+        },
         children: [
           new Paragraph({
-            children: [new TextRun({ text: 'Studie- och karriärvägledningen LTH', bold: true, size: 20, font: 'Calibri', color: '666666' })],
+            children: [new TextRun({ text: selectedCounselor?.name || 'Studievägledare', bold: true, size: 22, font: FONT })],
+            spacing: { after: 40 },
+          }),
+          new Paragraph({
+            children: [new TextRun({ text: selectedCounselor?.email || '', size: 20, font: FONT, color: '666666' })],
             spacing: { after: 300 },
           }),
           ...paragraphs,
           new Paragraph({
-            children: [new TextRun({ text: `Genererat: ${new Date().toLocaleDateString('sv-SE')}`, size: 18, font: 'Calibri', color: '999999', italics: true })],
+            children: [new TextRun({ text: `Genererat: ${new Date().toLocaleDateString('sv-SE')}`, size: 18, font: FONT, color: '999999', italics: true })],
             spacing: { before: 400 },
           }),
         ],
+        footers: {
+          default: new Footer({
+            children: [new Paragraph({
+              children: [
+                new TextRun({ text: 'Studie- och karriärvägledningen LTH', size: 18, font: FONT, color: '888888' }),
+                new TextRun({ text: '\t' }),
+                new TextRun({ text: 'Sida ', size: 18, font: FONT, color: '888888' }),
+                new TextRun({ children: [PageNumber.CURRENT], size: 18, font: FONT, color: '888888' }),
+              ],
+              tabStops: [{ type: TabStopType.RIGHT, position: TabStopPosition.MAX }],
+            })],
+          }),
+        },
       }],
     });
 
