@@ -7,7 +7,7 @@ import { Separator } from '@/components/ui/separator';
 import { FileText, Download, Plus, Trash2, Edit2, Check, GraduationCap, BookOpen, User } from 'lucide-react';
 import { SimpleStudentInfo, SimpleRestkurs, SimpleNyKurs } from '../SimplePlanningTab';
 import { useState } from 'react';
-import { Document, Packer, Paragraph, TextRun, AlignmentType, ImageRun } from 'docx';
+import { Document, Packer, Paragraph, TextRun, AlignmentType, ImageRun, BorderStyle, Footer, PageNumber, TabStopType, TabStopPosition } from 'docx';
 import { saveAs } from 'file-saver';
 
 interface SimpleSummaryStepProps {
@@ -78,98 +78,77 @@ export const SimpleSummaryStep = ({
 
   const exportToWord = async () => {
     try {
-      // Load logo
-      let logoImageRun: ImageRun | null = null;
-      try {
-        const logoResponse = await fetch('/src/assets/lth-logo.png');
-        const logoBlob = await logoResponse.blob();
-        const logoArrayBuffer = await logoBlob.arrayBuffer();
-        logoImageRun = new ImageRun({
-          data: logoArrayBuffer,
-          transformation: { width: 150, height: 50 },
-          type: 'png',
-        });
-      } catch (e) {
-        console.log('Could not load logo');
-      }
-
+      const FONT = 'Arial';
+      const ACCENT = '2E75B6';
       const children: Paragraph[] = [];
 
-      // Header with logo
-      if (logoImageRun) {
-        children.push(new Paragraph({ children: [logoImageRun], alignment: AlignmentType.LEFT }));
-        children.push(new Paragraph({ text: '', spacing: { after: 200 } }));
-      }
-
-      // Title
+      // Title with accent
       children.push(new Paragraph({
-        children: [new TextRun({ text: `Studieplan för ${terminLabel}`, bold: true, size: 28, font: 'Times New Roman' })],
-        alignment: AlignmentType.CENTER,
-        spacing: { after: 400 }
+        children: [new TextRun({ text: `Studieplan för ${terminLabel}`, bold: true, size: 30, font: FONT, color: ACCENT })],
+        alignment: AlignmentType.LEFT,
+        spacing: { after: 100 },
+        border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: ACCENT, space: 4 } },
+      }));
+
+      children.push(new Paragraph({
+        children: [new TextRun({ text: `Genererat: ${new Date().toLocaleDateString('sv-SE')}`, size: 20, font: FONT, color: '888888', italics: true })],
+        spacing: { after: 300 },
       }));
 
       // Student info
       children.push(new Paragraph({
-        children: [new TextRun({ text: 'Student', bold: true, size: 24, font: 'Times New Roman' })],
-        spacing: { before: 200, after: 100 }
+        children: [new TextRun({ text: 'Studentinformation', bold: true, size: 26, font: FONT })],
+        spacing: { before: 200, after: 100 },
       }));
       children.push(new Paragraph({
-        children: [new TextRun({ text: `${studentInfo.fornamn} ${studentInfo.efternamn}`, size: 24, font: 'Times New Roman' })],
-        spacing: { after: 100 }
+        children: [
+          new TextRun({ text: 'Namn: ', bold: true, size: 22, font: FONT }),
+          new TextRun({ text: `${studentInfo.fornamn} ${studentInfo.efternamn}`, size: 22, font: FONT }),
+        ],
+        spacing: { after: 60 },
       }));
       children.push(new Paragraph({
-        children: [new TextRun({ text: `Program: ${studentInfo.program}`, size: 24, font: 'Times New Roman' })],
-        spacing: { after: 100 }
+        children: [
+          new TextRun({ text: 'Program: ', bold: true, size: 22, font: FONT }),
+          new TextRun({ text: studentInfo.program, size: 22, font: FONT }),
+        ],
+        spacing: { after: 60 },
       }));
       children.push(new Paragraph({
-        children: [new TextRun({ text: `Antagningsår: ${studentInfo.antagningsar}`, size: 24, font: 'Times New Roman' })],
-        spacing: { after: 300 }
+        children: [
+          new TextRun({ text: 'Antagningsår: ', bold: true, size: 22, font: FONT }),
+          new TextRun({ text: studentInfo.antagningsar, size: 22, font: FONT }),
+        ],
+        spacing: { after: 200 },
       }));
 
       // Summary
       children.push(new Paragraph({
-        children: [new TextRun({ text: 'Sammanfattning', bold: true, size: 24, font: 'Times New Roman' })],
-        spacing: { before: 200, after: 100 }
+        children: [new TextRun({ text: 'Sammanfattning', bold: true, size: 26, font: FONT, color: ACCENT })],
+        spacing: { before: 200, after: 100 },
+        border: { bottom: { style: BorderStyle.SINGLE, size: 3, color: ACCENT, space: 2 } },
       }));
       children.push(new Paragraph({
-        children: [new TextRun({ text: `Totalt antal HP: ${totalHP}`, size: 24, font: 'Times New Roman' })],
-        spacing: { after: 100 }
+        children: [new TextRun({ text: `Totalt antal HP: ${totalHP}`, bold: true, size: 22, font: FONT })],
+        spacing: { after: 60 },
       }));
-      if (lp1HP > 0) {
-        children.push(new Paragraph({
-          children: [new TextRun({ text: `Läsperiod 1: ${lp1HP.toFixed(1)} HP`, size: 24, font: 'Times New Roman' })],
-          spacing: { after: 50 }
-        }));
-      }
-      if (lp2HP > 0) {
-        children.push(new Paragraph({
-          children: [new TextRun({ text: `Läsperiod 2: ${lp2HP.toFixed(1)} HP`, size: 24, font: 'Times New Roman' })],
-          spacing: { after: 50 }
-        }));
-      }
-      if (lp3HP > 0) {
-        children.push(new Paragraph({
-          children: [new TextRun({ text: `Läsperiod 3: ${lp3HP.toFixed(1)} HP`, size: 24, font: 'Times New Roman' })],
-          spacing: { after: 50 }
-        }));
-      }
-      if (lp4HP > 0) {
-        children.push(new Paragraph({
-          children: [new TextRun({ text: `Läsperiod 4: ${lp4HP.toFixed(1)} HP`, size: 24, font: 'Times New Roman' })],
-          spacing: { after: 300 }
-        }));
-      }
+      if (lp1HP > 0) children.push(new Paragraph({ children: [new TextRun({ text: `Läsperiod 1: ${lp1HP.toFixed(1)} HP`, size: 22, font: FONT })], spacing: { after: 40 } }));
+      if (lp2HP > 0) children.push(new Paragraph({ children: [new TextRun({ text: `Läsperiod 2: ${lp2HP.toFixed(1)} HP`, size: 22, font: FONT })], spacing: { after: 40 } }));
+      if (lp3HP > 0) children.push(new Paragraph({ children: [new TextRun({ text: `Läsperiod 3: ${lp3HP.toFixed(1)} HP`, size: 22, font: FONT })], spacing: { after: 40 } }));
+      if (lp4HP > 0) children.push(new Paragraph({ children: [new TextRun({ text: `Läsperiod 4: ${lp4HP.toFixed(1)} HP`, size: 22, font: FONT })], spacing: { after: 200 } }));
 
       // Restkurser
       if (restkurser.length > 0) {
         children.push(new Paragraph({
-          children: [new TextRun({ text: 'Restkurser (omregistrering)', bold: true, size: 24, font: 'Times New Roman' })],
-          spacing: { before: 200, after: 100 }
+          children: [new TextRun({ text: 'Restkurser (omregistrering)', bold: true, size: 26, font: FONT, color: ACCENT })],
+          spacing: { before: 200, after: 100 },
+          border: { bottom: { style: BorderStyle.SINGLE, size: 3, color: ACCENT, space: 2 } },
         }));
         restkurser.forEach(kurs => {
           children.push(new Paragraph({
-            children: [new TextRun({ text: `${kurs.kurskod} - ${kurs.kursnamn} (${kurs.restpoang} HP) - ${formatPeriods(kurs)}`, size: 24, font: 'Times New Roman' })],
-            spacing: { after: 50 }
+            children: [new TextRun({ text: `${kurs.kurskod} – ${kurs.kursnamn} (${kurs.restpoang} HP) – ${formatPeriods(kurs)}`, size: 22, font: FONT })],
+            bullet: { level: 0 },
+            spacing: { after: 50 },
           }));
         });
       }
@@ -177,29 +156,51 @@ export const SimpleSummaryStep = ({
       // Nya kurser
       if (nyaKurser.length > 0) {
         children.push(new Paragraph({
-          children: [new TextRun({ text: 'Nya kurser', bold: true, size: 24, font: 'Times New Roman' })],
-          spacing: { before: 200, after: 100 }
+          children: [new TextRun({ text: 'Nya kurser', bold: true, size: 26, font: FONT, color: ACCENT })],
+          spacing: { before: 200, after: 100 },
+          border: { bottom: { style: BorderStyle.SINGLE, size: 3, color: ACCENT, space: 2 } },
         }));
         nyaKurser.forEach(kurs => {
           children.push(new Paragraph({
-            children: [new TextRun({ text: `${kurs.kurskod} - ${kurs.kursnamn} (${kurs.hp} HP) - ${formatPeriods(kurs)}`, size: 24, font: 'Times New Roman' })],
-            spacing: { after: 50 }
+            children: [new TextRun({ text: `${kurs.kurskod} – ${kurs.kursnamn} (${kurs.hp} HP) – ${formatPeriods(kurs)}`, size: 22, font: FONT })],
+            bullet: { level: 0 },
+            spacing: { after: 50 },
           }));
         });
       }
 
-      // Contact info
+      // Contact
       children.push(new Paragraph({
-        children: [new TextRun({ text: 'Kontakt', bold: true, size: 24, font: 'Times New Roman' })],
-        spacing: { before: 400, after: 100 }
+        children: [new TextRun({ text: 'Kontakt', bold: true, size: 26, font: FONT })],
+        spacing: { before: 400, after: 100 },
       }));
       children.push(new Paragraph({
-        children: [new TextRun({ text: 'Vid frågor, kontakta din studievägledare.', size: 24, font: 'Times New Roman' })],
-        spacing: { after: 50 }
+        children: [new TextRun({ text: 'Vid frågor, kontakta din studievägledare.', size: 22, font: FONT })],
+        spacing: { after: 50 },
       }));
 
       const doc = new Document({
-        sections: [{ properties: {}, children }]
+        styles: { default: { document: { run: { font: FONT, size: 22 } } } },
+        numbering: { config: [{ reference: 'bullets', levels: [{ level: 0, format: 'bullet' as any, text: '\u2022', alignment: AlignmentType.LEFT, style: { paragraph: { indent: { left: 720, hanging: 360 } } } }] }] },
+        sections: [{
+          properties: {
+            page: { size: { width: 11906, height: 16838 }, margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 } },
+          },
+          children,
+          footers: {
+            default: new Footer({
+              children: [new Paragraph({
+                children: [
+                  new TextRun({ text: 'Studie- och karriärvägledningen LTH', size: 18, font: FONT, color: '888888' }),
+                  new TextRun({ text: '\t' }),
+                  new TextRun({ text: 'Sida ', size: 18, font: FONT, color: '888888' }),
+                  new TextRun({ children: [PageNumber.CURRENT], size: 18, font: FONT, color: '888888' }),
+                ],
+                tabStops: [{ type: TabStopType.RIGHT, position: TabStopPosition.MAX }],
+              })],
+            }),
+          },
+        }],
       });
 
       const blob = await Packer.toBlob(doc);
