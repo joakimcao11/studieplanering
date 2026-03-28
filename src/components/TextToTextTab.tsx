@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Sparkles, Loader2, Download, Save, FileText, User } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Document, Packer, Paragraph, TextRun, HeadingLevel } from 'docx';
+import { Document, Packer, Paragraph, TextRun, HeadingLevel, BorderStyle, Footer, PageNumber, TabStopType, TabStopPosition, AlignmentType } from 'docx';
 import { saveAs } from 'file-saver';
 import { COUNSELORS } from '@/types/planning';
 
