@@ -8,7 +8,7 @@ import { Upload, FileImage, FileText, Send, Loader2, Trash2, Download, Copy, Che
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle, Footer, Table, TableRow, TableCell, WidthType, ShadingType, PageNumber, TabStopType, TabStopPosition } from 'docx';
+import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle, Footer, Table, TableRow, TableCell, WidthType, ShadingType, PageNumber, TabStopType, TabStopPosition, ISectionOptions } from 'docx';
 import { saveAs } from 'file-saver';
 import { OnboardingOverlay } from './OnboardingOverlay';
 
