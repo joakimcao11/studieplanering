@@ -182,27 +182,19 @@ export const SimpleSummaryStep = ({
         spacing: { after: 50 },
       }));
 
+      const logoBuffer = await loadLogoBuffer();
+      const counselorName = `${studentInfo.fornamn || ''} ${studentInfo.efternamn || ''}`.trim()
+        ? 'Studievägledare'
+        : 'Studievägledare';
+
       const doc = new Document({
         styles: { default: { document: { run: { font: FONT, size: 22 } } } },
         numbering: { config: [{ reference: 'bullets', levels: [{ level: 0, format: 'bullet' as any, text: '\u2022', alignment: AlignmentType.LEFT, style: { paragraph: { indent: { left: 720, hanging: 360 } } } }] }] },
         sections: [{
-          properties: {
-            page: { size: { width: 11906, height: 16838 }, margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 } },
-          },
+          properties: GOV_PAGE_PROPS,
           children,
-          footers: {
-            default: new Footer({
-              children: [new Paragraph({
-                children: [
-                  new TextRun({ text: 'Studie- och karriärvägledningen LTH', size: 18, font: FONT, color: '888888' }),
-                  new TextRun({ text: '\t' }),
-                  new TextRun({ text: 'Sida ', size: 18, font: FONT, color: '888888' }),
-                  new TextRun({ children: [PageNumber.CURRENT], size: 18, font: FONT, color: '888888' }),
-                ],
-                tabStops: [{ type: TabStopType.RIGHT, position: TabStopPosition.MAX }],
-              })],
-            }),
-          },
+          headers: { default: buildGovHeader({ counselorName, date: new Date().toLocaleDateString('sv-SE') }, logoBuffer) },
+          footers: { default: buildGovFooter() },
         }],
       });
 
