@@ -1,6 +1,7 @@
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType, BorderStyle, HeadingLevel, Footer, Header as DocxHeader, ImageRun, convertInchesToTwip, LineRuleType, PageNumber, TabStopType, TabStopPosition } from 'docx';
 import { saveAs } from 'file-saver';
 import { StudentInfo, TermPlan, ActionItem, calculatePeriodHP, calculateTermHP, getCounselorById } from '@/types/planning';
+import { buildGovHeader, buildGovFooter, buildGovTitle, loadLogoBuffer, GOV_PAGE_PROPS, GOV_FONT, GOV_SANS, GOV_ACCENT } from './wordTemplate';
 import { TemplateSettings } from '@/hooks/useTemplateSettings';
 
 interface ExportData {
