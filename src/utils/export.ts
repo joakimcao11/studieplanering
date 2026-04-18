@@ -197,45 +197,9 @@ export const exportToWord = async (data: ExportData) => {
     after: 60,
   };
 
-  // Header info - counselor contact
-  sections.push(
-    new Paragraph({
-      children: [new TextRun({ 
-        text: counselor?.displayName || 'STVL', 
-        bold: true, 
-        size: FONT_SIZE_NORMAL,
-        font: FONT_NAME,
-      })],
-      spacing: defaultSpacing,
-    }),
-    new Paragraph({
-      children: [new TextRun({ 
-        text: counselor?.email || '', 
-        size: FONT_SIZE_NORMAL,
-        font: FONT_NAME,
-        color: '444444',
-      })],
-      spacing: defaultSpacing,
-    }),
-    new Paragraph({ children: [], spacing: { after: 200 } }),
-  );
-
-  // Title with accent border
+  // Government-style title (header w/ counselor info is rendered via section header)
+  buildGovTitle().forEach(p => sections.push(p));
   const ACCENT = '2E75B6';
-  sections.push(
-    new Paragraph({
-      children: [new TextRun({ 
-        text: ts.document_title, 
-        bold: true, 
-        size: FONT_SIZE_HEADING1,
-        font: FONT_NAME,
-        color: ACCENT,
-      })],
-      heading: HeadingLevel.HEADING_1,
-      spacing: { before: 0, after: 300 },
-      border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: ACCENT, space: 4 } },
-    }),
-  );
 
   // Basic info section
   sections.push(
