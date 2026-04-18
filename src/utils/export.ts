@@ -1,6 +1,7 @@
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType, BorderStyle, HeadingLevel, Footer, Header as DocxHeader, ImageRun, convertInchesToTwip, LineRuleType, PageNumber, TabStopType, TabStopPosition } from 'docx';
 import { saveAs } from 'file-saver';
 import { StudentInfo, TermPlan, ActionItem, calculatePeriodHP, calculateTermHP, getCounselorById } from '@/types/planning';
+import { buildGovHeader, buildGovFooter, buildGovTitle, loadLogoBuffer, GOV_PAGE_PROPS, GOV_FONT, GOV_SANS, GOV_ACCENT } from './wordTemplate';
 import { TemplateSettings } from '@/hooks/useTemplateSettings';
 
 interface ExportData {
@@ -196,45 +197,9 @@ export const exportToWord = async (data: ExportData) => {
     after: 60,
   };
 
-  // Header info - counselor contact
-  sections.push(
-    new Paragraph({
-      children: [new TextRun({ 
-        text: counselor?.displayName || 'STVL', 
-        bold: true, 
-        size: FONT_SIZE_NORMAL,
-        font: FONT_NAME,
-      })],
-      spacing: defaultSpacing,
-    }),
-    new Paragraph({
-      children: [new TextRun({ 
-        text: counselor?.email || '', 
-        size: FONT_SIZE_NORMAL,
-        font: FONT_NAME,
-        color: '444444',
-      })],
-      spacing: defaultSpacing,
-    }),
-    new Paragraph({ children: [], spacing: { after: 200 } }),
-  );
-
-  // Title with accent border
+  // Government-style title (header w/ counselor info is rendered via section header)
+  buildGovTitle().forEach(p => sections.push(p));
   const ACCENT = '2E75B6';
-  sections.push(
-    new Paragraph({
-      children: [new TextRun({ 
-        text: ts.document_title, 
-        bold: true, 
-        size: FONT_SIZE_HEADING1,
-        font: FONT_NAME,
-        color: ACCENT,
-      })],
-      heading: HeadingLevel.HEADING_1,
-      spacing: { before: 0, after: 300 },
-      border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: ACCENT, space: 4 } },
-    }),
-  );
 
   // Basic info section
   sections.push(
@@ -492,42 +457,13 @@ export const exportToWord = async (data: ExportData) => {
     );
   });
 
-  // Fetch footer image if URL is provided
-  let footerImageRun: ImageRun | null = null;
-  if (ts.footer_image_url) {
-    try {
-      const response = await fetch(ts.footer_image_url);
-      const arrayBuffer = await response.arrayBuffer();
-      footerImageRun = new ImageRun({
-        data: arrayBuffer,
-        transformation: { width: 80, height: 40 },
-        type: 'png',
-      });
-    } catch (e) {
-      console.warn('Could not load footer image:', e);
-    }
-  }
-
-  const footerChildren: Paragraph[] = [];
-  const footerParagraphChildren = [
-    new TextRun({ text: ts.footer_text, size: FONT_SIZE_SMALL, font: FONT_NAME, color: '888888' }),
-    new TextRun({ text: '\t' }),
-  ];
-  if (footerImageRun) {
-    footerParagraphChildren.push(footerImageRun as any);
-    footerParagraphChildren.push(new TextRun({ text: '  ' }));
-  }
-  footerParagraphChildren.push(
-    new TextRun({ text: 'Sida ', size: FONT_SIZE_SMALL, font: FONT_NAME, color: '888888' }),
-    new TextRun({ children: [PageNumber.CURRENT], size: FONT_SIZE_SMALL, font: FONT_NAME, color: '888888' }),
+  // Government-style header (logo + counselor + date) and footer (LTH contact)
+  const logoBuffer = await loadLogoBuffer();
+  const govHeader = buildGovHeader(
+    { counselorName: counselor?.name || counselor?.displayName || 'Studievägledare', date: currentDate },
+    logoBuffer,
   );
-  footerChildren.push(
-    new Paragraph({
-      children: footerParagraphChildren,
-      alignment: AlignmentType.LEFT,
-      tabStops: [{ type: TabStopType.RIGHT, position: TabStopPosition.MAX }],
-    }),
-  );
+  const govFooter = buildGovFooter();
 
   const doc = new Document({
     styles: {
@@ -542,15 +478,10 @@ export const exportToWord = async (data: ExportData) => {
     },
     sections: [
       {
-        properties: {
-          page: { size: { width: 11906, height: 16838 }, margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 } },
-        },
+        properties: GOV_PAGE_PROPS,
         children: sections,
-        footers: {
-          default: new Footer({
-            children: footerChildren,
-          }),
-        },
+        headers: { default: govHeader },
+        footers: { default: govFooter },
       },
     ],
   });

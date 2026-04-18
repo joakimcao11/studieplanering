@@ -35,7 +35,7 @@ export const usePlanningState = (initialCounselorId?: string) => {
   });
   const [agenda, setAgenda] = useState('');
   const [terms, setTerms] = useState<TermPlan[]>([
-    createEmptyTerm('VT', '2026'),
+    createEmptyTerm('HT', '2026'),
   ]);
   const [notes, setNotes] = useState('');
   const [actionItems, setActionItems] = useState<ActionItem[]>([]);
@@ -133,7 +133,7 @@ export const usePlanningState = (initialCounselorId?: string) => {
   const resetPlan = useCallback(() => {
     setStudentInfo(initialStudentInfo);
     setAgenda('');
-    setTerms([createEmptyTerm('VT', '2026')]);
+    setTerms([createEmptyTerm('HT', '2026')]);
     setNotes('');
     setActionItems([]);
     setCurrentTab(1);

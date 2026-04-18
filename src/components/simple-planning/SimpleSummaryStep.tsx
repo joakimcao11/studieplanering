@@ -9,6 +9,7 @@ import { SimpleStudentInfo, SimpleRestkurs, SimpleNyKurs } from '../SimplePlanni
 import { useState } from 'react';
 import { Document, Packer, Paragraph, TextRun, AlignmentType, ImageRun, BorderStyle, Footer, PageNumber, TabStopType, TabStopPosition } from 'docx';
 import { saveAs } from 'file-saver';
+import { buildGovHeader, buildGovFooter, buildGovTitle, loadLogoBuffer, GOV_PAGE_PROPS, GOV_SANS } from '@/utils/wordTemplate';
 
 interface SimpleSummaryStepProps {
   studentInfo: SimpleStudentInfo;
@@ -78,20 +79,22 @@ export const SimpleSummaryStep = ({
 
   const exportToWord = async () => {
     try {
-      const FONT = 'Arial';
+      const FONT = GOV_SANS;
       const ACCENT = '2E75B6';
       const children: Paragraph[] = [];
 
-      // Title with accent
+      // Government title block
+      buildGovTitle().forEach(p => children.push(p));
+
+      // Document subtitle
       children.push(new Paragraph({
-        children: [new TextRun({ text: `Studieplan för ${terminLabel}`, bold: true, size: 30, font: FONT, color: ACCENT })],
+        children: [new TextRun({ text: `Studieplan för ${terminLabel}`, bold: true, size: 28, font: FONT, color: ACCENT })],
         alignment: AlignmentType.LEFT,
         spacing: { after: 100 },
-        border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: ACCENT, space: 4 } },
       }));
 
       children.push(new Paragraph({
-        children: [new TextRun({ text: `Genererat: ${new Date().toLocaleDateString('sv-SE')}`, size: 20, font: FONT, color: '888888', italics: true })],
+        children: [new TextRun({ text: `Datum: ${new Date().toLocaleDateString('sv-SE')}`, size: 20, font: FONT, color: '888888', italics: true })],
         spacing: { after: 300 },
       }));
 
@@ -179,27 +182,19 @@ export const SimpleSummaryStep = ({
         spacing: { after: 50 },
       }));
 
+      const logoBuffer = await loadLogoBuffer();
+      const counselorName = `${studentInfo.fornamn || ''} ${studentInfo.efternamn || ''}`.trim()
+        ? 'Studievägledare'
+        : 'Studievägledare';
+
       const doc = new Document({
         styles: { default: { document: { run: { font: FONT, size: 22 } } } },
         numbering: { config: [{ reference: 'bullets', levels: [{ level: 0, format: 'bullet' as any, text: '\u2022', alignment: AlignmentType.LEFT, style: { paragraph: { indent: { left: 720, hanging: 360 } } } }] }] },
         sections: [{
-          properties: {
-            page: { size: { width: 11906, height: 16838 }, margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 } },
-          },
+          properties: GOV_PAGE_PROPS,
           children,
-          footers: {
-            default: new Footer({
-              children: [new Paragraph({
-                children: [
-                  new TextRun({ text: 'Studie- och karriärvägledningen LTH', size: 18, font: FONT, color: '888888' }),
-                  new TextRun({ text: '\t' }),
-                  new TextRun({ text: 'Sida ', size: 18, font: FONT, color: '888888' }),
-                  new TextRun({ children: [PageNumber.CURRENT], size: 18, font: FONT, color: '888888' }),
-                ],
-                tabStops: [{ type: TabStopType.RIGHT, position: TabStopPosition.MAX }],
-              })],
-            }),
-          },
+          headers: { default: buildGovHeader({ counselorName, date: new Date().toLocaleDateString('sv-SE') }, logoBuffer) },
+          footers: { default: buildGovFooter() },
         }],
       });
 

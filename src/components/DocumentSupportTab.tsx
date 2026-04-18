@@ -10,6 +10,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle, Footer, Table, TableRow, TableCell, WidthType, ShadingType, PageNumber, TabStopType, TabStopPosition, ISectionOptions } from 'docx';
 import { saveAs } from 'file-saver';
+import { buildGovHeader, buildGovFooter, buildGovTitle, loadLogoBuffer, GOV_PAGE_PROPS, GOV_SANS } from '@/utils/wordTemplate';
 import { OnboardingOverlay } from './OnboardingOverlay';
 
 interface ChatMessage {
@@ -75,23 +76,24 @@ async function streamResponse(
   onDone();
 }
 
-// Professional Word export for documentation analysis
+// Professional Word export for documentation analysis (myndighetsstil)
 async function exportDocumentationWord(content: string, title: string) {
-  const FONT = 'Arial';
+  const FONT = GOV_SANS;
   const ACCENT = '2E75B6';
 
   const children: (Paragraph | Table)[] = [];
 
-  // Title with accent border
+  // Government title block "MINNESANTECKNING"
+  buildGovTitle().forEach(p => children.push(p));
+
+  // Document subtitle (e.g. Mailutkast / Sammanställning / Dokumentationsanalys)
   children.push(new Paragraph({
-    children: [new TextRun({ text: title, bold: true, size: 32, font: FONT, color: ACCENT })],
-    heading: HeadingLevel.HEADING_1,
+    children: [new TextRun({ text: title, bold: true, size: 26, font: FONT, color: ACCENT })],
     spacing: { after: 100 },
-    border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: ACCENT, space: 4 } },
   }));
 
   children.push(new Paragraph({
-    children: [new TextRun({ text: `Genererat: ${new Date().toLocaleDateString('sv-SE')}`, size: 20, font: FONT, color: '888888', italics: true })],
+    children: [new TextRun({ text: `Datum: ${new Date().toLocaleDateString('sv-SE')}`, size: 20, font: FONT, color: '888888', italics: true })],
     spacing: { after: 300 },
   }));
 
@@ -239,23 +241,10 @@ async function exportDocumentationWord(content: string, title: string) {
       }],
     },
     sections: [{
-      properties: {
-        page: { size: { width: 11906, height: 16838 }, margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 } },
-      },
+      properties: GOV_PAGE_PROPS,
       children,
-      footers: {
-        default: new Footer({
-          children: [new Paragraph({
-            children: [
-              new TextRun({ text: 'Studie- och karriärvägledningen LTH', size: 18, font: FONT, color: '888888' }),
-              new TextRun({ text: '\t' }),
-              new TextRun({ text: 'Sida ', size: 18, font: FONT, color: '888888' }),
-              new TextRun({ children: [PageNumber.CURRENT], size: 18, font: FONT, color: '888888' }),
-            ],
-            tabStops: [{ type: TabStopType.RIGHT, position: TabStopPosition.MAX }],
-          })],
-        }),
-      },
+      headers: { default: buildGovHeader({ counselorName: 'Studievägledare', date: new Date().toLocaleDateString('sv-SE') }, await loadLogoBuffer()) },
+      footers: { default: buildGovFooter() },
     }],
   });
 
