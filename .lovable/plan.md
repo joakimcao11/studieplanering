@@ -1,100 +1,110 @@
 
 
-## Plan
+## Plan: Slå ihop "Importera plan" + "Dokumentationsstöd" → "Mötesanteckning"
 
-### Update 1: HT2026 som standard i Studieplanering
-I `src/hooks/usePlanningState.ts`:
-- Ändra default från `[createEmptyTerm('VT', '2026')]` till `[createEmptyTerm('HT', '2026')]`
-- Samma ändring i `resetPlan`
-- Befintlig `addTerm`-logik ger automatiskt VT2027 som nästa termin (HT → VT, +1 år)
+Behåller all befintlig struktur, design och innehåll. Endast följande ändras enligt instruktionerna.
 
-### Update 2: Ny "Live-demo" sida på `/demo`
+### 1. Ny sammanslagen modul "Mötesanteckning"
 
-**Ny route i `src/App.tsx`:** Lägg till `<Route path="/demo" element={<LiveDemo />} />` ovanför catch-all.
+**Ny fil: `src/components/MeetingNotesTab.tsx`**
 
-**Ny fil `src/pages/LiveDemo.tsx`** — fristående demosida (inget login krävs):
+En enda flik som kombinerar all funktionalitet från `TextToTextTab` (Importera plan) och `DocumentSupportTab` (Dokumentationsstöd) i en sammanhållen vy:
 
-**Layout (nordisk, pedagogisk, inspirerande):**
-- Hero-sektion: LTH-logo, rubrik "Live-demo", undertext "Se hur verktyget fungerar på under 3 minuter"
-- Stor primär CTA-knapp "▶ Starta simulering"
-- Sekundär knapp "Spela om" (visas efter avslutad demo)
-- Stegindikator (progress bar + 5 steg: Studieplanering → Importera plan → Dokumentationsstöd → Admin → Statistik)
+**Sektion A — Grundinformation (från Importera plan)**
+- Datum, Studentens namn, Program, Årskull, Studievägledare (samma fält som idag)
+- Datum-värdet används i Word-export som det dokumentdatum AI:n också ska använda
 
-**Simuleringsmotor (intern):**
-- En timeline-baserad sequencer: array av "scener" med varaktighet i ms och callbacks som uppdaterar visuellt state
-- Total längd ~2:45 min, fördelat:
-  - Intro-overlay (5s): "Möt Student A — Datateknik 2023"
-  - Scen 1 — Studieplanering (50s): markörfärd, "klick" på programväljare D, fyller i HT2026 + VT2027 med kurser i LP1/LP2/LP3/LP4 (>15 hp/period, 30 hp/termin), highlight på HP-stapel som fylls
-  - Scen 2 — Studentinfo + Handlingsplan (25s): skriver "Student A", väljer kull 2023, lägger till två handlingspunkter ("Kontakta kursansvarig för omregistrering", "Boka uppföljningsmöte i slutet av terminen")
-  - Scen 3 — Importera plan (25s): klistrar in samtalsanteckning, AI-bubbla "genererar minnesanteckning"
-  - Scen 4 — Dokumentationsstöd (25s): drar in bild av whiteboard, visar AI-analys, chattbubbla
-  - Scen 5 — Admin & Statistik (20s): visar dashboard-kort
-  - Outro (10s): "Ladda ner underlag" → animerad PDF-modal som scrollar
-- Hela demon visas inom en mock-app-frame (inte den riktiga appen) → snabb, deterministisk, alltid lika
+**Sektion B — Ladda upp material (från Dokumentationsstöd)**
+- Drag & drop-zon för bilder, PDF, Word (max 10 MB)
+- Filchipsen med thumbnails och radera-knapp
+- Textarea för att klistra in text (samma som "Dina anteckningar" från Importera plan, döpt till "Anteckningar / klistra in text")
 
-**Visuella komponenter inuti `LiveDemo.tsx`:**
-- `<DemoCursor />` — animerad muspekare som följer en path mellan target-koordinater (CSS transform, transition: ease-out)
-- `<DemoHighlight />` — pulserande ring runt aktivt element (box-shadow + scale)
-- `<DemoTooltip />` — tooltip som följer markören med kort förklaringstext
-- Mock-skärmar: `<MockPlanering />`, `<MockImport />`, `<MockDocSupport />`, `<MockAdmin />`, `<MockStats />` — förenklade visuella kopior av riktiga skärmar (återanvänder Card, Badge, Button från ui-kit, samma färger)
-- Skärmövergångar: fade + slide (Framer-Motion-stil med CSS transitions, 300ms)
+**Sektion C — Tre AI-knappar**
+- **"Generera minnesanteckning"** (ersätter "Analysera material" + "Importera plan"-flödet)
+  - Använder förbättrad prompt som producerar **ren text utan markdown-skräp** (inga `**`, inga `"`, inga `#`)
+  - Använder studentinfo + uppladdat material + textinput tillsammans
+  - Skickar `datum`, `studentName`, `program`, `yearGroup`, `counselorName` som strukturerad kontext till AI
+- **"Skapa sammanställning"** (förbättrad — ren text, tydlig struktur, korrekt datum)
+- **"Generera mailutkast"** (förbättrad — vänligt mail som börjar "Hej [namn]," och avslutas med vägledarens namn)
 
-**Kontroller:**
-- Pause/Resume-knapp under simuleringen
-- Hoppa till nästa steg-knapp
-- Restart-knapp
-- Progress bar synkroniserad med scenen
+**Sektion D — Resultat**
+- Redigerbar Textarea (precis som i Importera plan idag) så användaren kan finjustera innan export
+- Tre knappar: **Kopiera**, **Spara ändringar**, **Exportera som Word-dokument**
+- **Ingen chatt** — borttagen helt enligt instruktion
 
-**Designtoken:** återanvänd befintlig palett (LTH marinblå, vit, ljusgrå accent #2E75B6) från `index.css`. Mjuka rundade hörn (rounded-2xl), subtila skuggor, generös padding.
+### 2. Förbättrad Word-export (städar bort markdown-skräp)
 
-### Update 3: Word-mall i myndighetsstil
+**I `MeetingNotesTab.tsx`:** Ny export-funktion som:
+- **Strippar markdown-tecken** innan rendering: tar bort `**`, `__`, `*`, `_`, `#`, `>` och konverterar till riktiga Word-formatering (fet, kursiv, rubriker)
+- **Tar bort onödiga citattecken** runt rubriker och fält
+- Använder myndighetsmallen (`buildGovHeader`, `buildGovTitle`, `buildGovFooter`, `GOV_PAGE_PROPS`) som redan finns
+- **Datum i sidhuvud = datum från Grundinformation** (inte `new Date()`)
+- **Vägledarnamn i sidhuvud = vald studievägledare** från COUNSELORS-listan
+- Filnamn: `Minnesanteckning_[StudentNamn]_[YYYY-MM-DD].docx`
 
-**Ändra `src/utils/export.ts` `exportToWord`:**
+**Hjälpfunktion `cleanMarkdownToRuns(text)`** som parsar en rad och returnerar `TextRun[]` med rätt formatering — så `**fet**` blir verklig fet text i Word, inte synliga asterisker.
 
-Ny struktur (gäller minnesanteckning från Studieplanering/Snabbplanering/Importera plan/Dokumentationsstöd):
+### 3. Förbättrade AI-prompts (edge functions)
 
-**Sidhuvud (på första sidan, högerjusterat block):**
-- LTH-logo (vänster) + textblock (höger):
-  - "Studievägledningssamtal" (fet)
-  - Vägledarens namn
-  - Datum
-- Tunn horisontell linje under sidhuvudet
+**`supabase/functions/analyze-document/index.ts` — uppdatera 3 prompts:**
 
-**Brödtext:**
-- Huvudrubrik "MINNESANTECKNING" — versaler, fet, centrerad eller vänster, stor (32pt), med blå underlinje
-- Därefter befintligt innehåll (student, program, agenda, studieplanering, handlingsplan, anteckningar) med snyggare myndighetsstil:
-  - Times New Roman / Arial 11pt brödtext
-  - 1.15 radavstånd
-  - Styckesavstånd 6pt efter
-  - Rubriker H2 i mörkblå (#003366)
+- **`analyze` / nytt mode `meeting-notes`** — Ny prompt som tar emot `studentInfo` (namn, program, kull, datum, vägledare) och returnerar en **ren, strukturerad minnesanteckning** med rubriker som vanlig text (utan `**` runt) och utan onödiga citattecken. Format:
+  ```
+  Datum: 2026-04-21
+  Student: Anna Andersson (D23)
+  Studievägledare: Joakim Cao
+  
+  Bakgrund
+  [text]
+  
+  Diskussion
+  [text]
+  
+  Handlingsplan
+  - Punkt 1
+  - Punkt 2
+  ```
+  Instruktion till AI: **"Använd ALDRIG asterisker (`*`, `**`) eller markdown-syntax. Skriv rubriker på egen rad utan tecken framför. Använd inte citattecken runt rubriker eller fältvärden."**
 
-**Sidfot (på alla sidor):**
-```
-Postadress Lunds Tekniska Högskola, Studentservice, Box 118, 221 00 Lund
-Besöksadress Klas Anshelms Väg 10
-Telefon 046-222 72 89   E-post joakim.cao@lth.lu.se
-Webbadress www.student.lth.se
-```
-- 9pt, grå (#555), centrerad
-- Tunn linje över sidfoten
-- Sidnummer "Sida X av Y" till höger
+- **`summary`** — Samma regel: ren text, tydliga rubriker, datum från användarens input, inga `**`.
 
-**Logo:** Använd `src/assets/lth-logo.png` (laddas via `fetch` + arrayBuffer som befintliga koden gör för footer-bild) i sidhuvudet på sida 1, transformation ~120x60px.
+- **`email-draft`** — Vänligt mail "Hej [förnamn]," → kort sammanfattning → kursplanering som punktlista → "Med vänliga hälsningar, [vägledare]". Inga `**`, inga onödiga citattecken.
 
-**Tillämpning:** Eftersom samma `exportToWord` redan används av Studieplanering, och `SimpleSummaryStep` + `TextToTextTab` + `DocumentSupportTab` har egna export-funktioner — uppdatera även dessa tre att kalla samma nya helper `buildGovernmentDocxSections()` så alla fyra moduler får identisk myndighetsmall.
+Body utökas med valfritt fält `studentInfo: { name, program, yearGroup, date, counselorName }` som flätas in i system-/user-prompten.
 
-### Filer som ändras
-- `src/hooks/usePlanningState.ts` — HT2026 default
-- `src/App.tsx` — `/demo` route
-- `src/utils/export.ts` — myndighetsmall + sidfot/sidhuvud
-- `src/components/TextToTextTab.tsx`, `src/components/simple-planning/SimpleSummaryStep.tsx`, `src/components/DocumentSupportTab.tsx` — synkronisera Word-export med nya mallen
+### 4. Navigering & integration
 
-### Filer som skapas
-- `src/pages/LiveDemo.tsx` — demosidan
-- `src/components/demo/DemoCursor.tsx`
-- `src/components/demo/DemoStage.tsx` (sequencer + progress)
-- `src/components/demo/MockScreens.tsx` (5 mock-skärmar)
+**`src/components/TabNavigation.tsx`:**
+- Ersätt `{ id: 4, label: 'Importera plan', icon: FileText }` och `{ id: 5, label: 'Dokumentationsstöd', icon: FileSearch }` med **en** flik:
+  - `{ id: 4, label: 'Mötesanteckning', icon: FileText }`
+- Behåll `Studieplanering (1)` och `Snabbplanering (3)` orörda
 
-### Behåller
-Allt befintligt innehåll, struktur, sidor, tabeller och logik orörd.
+**`src/components/MainApp.tsx`:**
+- Rendera `<MeetingNotesTab />` när `currentTab === 4`
+- Ta bort case för `currentTab === 5`
+- Behåll allt annat (header, footer, statistik, admin) orört
+
+**`src/components/OnboardingOverlay.tsx`:**
+- Slå ihop onboarding-content för tab 4 + 5 till **en** ny tab 4 "Mötesanteckning" med 3 steg:
+  1. "Fyll i grundinformation" (datum, student, vägledare)
+  2. "Ladda upp eller klistra in material" (bilder, PDF, text)
+  3. "Generera & exportera" (minnesanteckning / sammanställning / mailutkast → Word)
+- Behåll onboarding för tab 1 och 3 oförändrad
+- Ta bort tab 5-content
+
+### 5. Behålls oförändrat
+- `TextToTextTab.tsx` och `DocumentSupportTab.tsx` — filerna **lämnas kvar** (för bakåtkompatibilitet) men används inte längre i navigeringen
+- `generate-study-notes` edge function — lämnas kvar (kan användas av `MeetingNotesTab` för det rena text-flödet utan bilder)
+- Hela "Studieplanering", "Snabbplanering", Admin, Statistik, Live-demo, Login — orörda
+- Word-mall-helpers i `src/utils/wordTemplate.ts` — orörda (återanvänds)
+
+### Filer
+**Skapas:**
+- `src/components/MeetingNotesTab.tsx`
+
+**Ändras:**
+- `src/components/TabNavigation.tsx` (en flik istället för två)
+- `src/components/MainApp.tsx` (rendera ny tab)
+- `src/components/OnboardingOverlay.tsx` (slå ihop tab 4+5)
+- `supabase/functions/analyze-document/index.ts` (rena prompts utan markdown-skräp + studentInfo-stöd)
 
