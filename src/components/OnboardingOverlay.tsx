@@ -47,37 +47,22 @@ const onboardingContent: Record<number, { title: string; steps: OnboardingStep[]
     ],
   },
   4: {
-    title: 'Importera plan',
+    title: 'Mötesanteckning',
     steps: [
       {
-        title: 'Klistra in text',
-        description: 'Klistra in text från ett samtal, e-post eller annat dokument i textfältet.',
+        title: 'Fyll i grundinformation',
+        description: 'Ange datum, studentens namn, program, årskull och vilken studievägledare som ansvarar för samtalet.',
         icon: <FileText className="w-10 h-10 text-primary" />,
       },
       {
-        title: 'AI-genererad anteckning',
-        description: 'AI:n analyserar texten och genererar en strukturerad minnesanteckning med kurskoder, HP och läsperioder.',
-        icon: <Sparkles className="w-10 h-10 text-primary" />,
-      },
-    ],
-  },
-  5: {
-    title: 'Dokumentationsstöd',
-    steps: [
-      {
-        title: 'Ladda upp material',
-        description: 'Ladda upp bilder (t.ex. foto av whiteboard), dokument eller klistra in text som du vill analysera.',
+        title: 'Ladda upp eller klistra in material',
+        description: 'Ladda upp bilder (t.ex. whiteboard), PDF, Word-dokument eller klistra in text från samtalet.',
         icon: <FileSearch className="w-10 h-10 text-primary" />,
       },
       {
-        title: 'AI-analys',
-        description: 'AI:n transkriberar, identifierar teman och skapar strukturerade sammanfattningar med tabeller och reflektioner.',
+        title: 'Generera & exportera',
+        description: 'Välj minnesanteckning, sammanställning eller mailutkast. Redigera resultatet och exportera som Word-dokument.',
         icon: <Sparkles className="w-10 h-10 text-primary" />,
-      },
-      {
-        title: 'Interaktiv chatt',
-        description: 'Ställ följdfrågor om materialet, fördjupa analysen och exportera resultatet som Word-dokument.',
-        icon: <FileText className="w-10 h-10 text-primary" />,
       },
     ],
   },

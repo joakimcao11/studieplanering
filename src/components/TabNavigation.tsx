@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils';
-import { GraduationCap, Sparkles, FileText, FileSearch } from 'lucide-react';
+import { GraduationCap, Sparkles, FileText } from 'lucide-react';
 
 interface TabNavigationProps {
   currentTab: number;
@@ -9,8 +9,7 @@ interface TabNavigationProps {
 const tabs = [
   { id: 1, label: 'Studieplanering', icon: GraduationCap },
   { id: 3, label: 'Snabbplanering', icon: Sparkles },
-  { id: 4, label: 'Importera plan', icon: FileText },
-  { id: 5, label: 'Dokumentationsstöd', icon: FileSearch },
+  { id: 4, label: 'Mötesanteckning', icon: FileText },
 ];
 
 export const TabNavigation = ({ currentTab, onTabChange }: TabNavigationProps) => {

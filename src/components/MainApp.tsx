@@ -5,8 +5,7 @@ import { BasicInfoTab } from '@/components/BasicInfoTab';
 import { PlanningTab } from '@/components/PlanningTab';
 import { OverviewTab } from '@/components/OverviewTab';
 import { SimplePlanningTab } from '@/components/SimplePlanningTab';
-import { TextToTextTab } from '@/components/TextToTextTab';
-import { DocumentSupportTab } from '@/components/DocumentSupportTab';
+import { MeetingNotesTab } from '@/components/MeetingNotesTab';
 import { OnboardingOverlay } from '@/components/OnboardingOverlay';
 import { StatisticsPage } from '@/components/StatisticsPage';
 import { AdminPage } from '@/components/AdminPage';
@@ -233,12 +232,8 @@ export const MainApp = ({ onLogout, initialCounselorId, onCounselorIdChange }: M
         {currentTab === 4 && (
           <>
             <OnboardingOverlay tabId={4} />
-            <TextToTextTab />
+            <MeetingNotesTab />
           </>
-        )}
-        
-        {currentTab === 5 && (
-          <DocumentSupportTab />
         )}
       </main>
 

@@ -6,89 +6,159 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const FORMAT_RULES = `KRITISKA FORMATERINGSREGLER (måste följas):
+- Använd ALDRIG asterisker (* eller **) för fetstil eller markering.
+- Använd ALDRIG markdown-syntax: ingen #, ##, ###, _, __, >, ` + "`" + `, eller |.
+- Använd ALDRIG citattecken runt rubriker eller fältvärden.
+- Skriv rubriker på egen rad i vanlig text utan tecken framför.
+- Lämna en tom rad mellan rubrik och innehåll.
+- Använd "- " (bindestreck + mellanslag) för punktlistor.
+- Använd ren, lättläst svenska. Skriv professionellt och tydligt.`;
+
 const SYSTEM_PROMPTS: Record<string, string> = {
-  analyze: `Du är ett AI-stöd för studie- och karriärvägledare vid LTH (Lunds Tekniska Högskola).
-Din uppgift är att hjälpa vägledare att analysera, strukturera och dokumentera material från vägledningssamtal.
+  "meeting-notes": `Du är ett AI-stöd för studie- och karriärvägledare vid LTH (Lunds Tekniska Högskola).
+Din uppgift är att skapa en ren, strukturerad minnesanteckning från ett vägledningssamtal.
 
-Du kan:
-- Transkribera och tolka bilder (whiteboards, mindmaps, anteckningar)
-- Identifiera teman, mål, hinder och möjligheter i materialet
-- Skapa strukturerade sammanfattningar och tabeller
-- Ge reflektioner och vägledande frågor
-- Hjälpa till med kvalitativ analys av samtalsinnehåll
+${FORMAT_RULES}
 
-Formatera dina svar med markdown. Använd tabeller där det passar.
-Var professionell men lättförståelig. Skriv på svenska.
+Strukturera minnesanteckningen exakt så här (rubriker som vanlig text, inga tecken framför):
 
-När du analyserar material, strukturera svaret så här:
-1. **Sammanfattning** - Kort översikt av innehållet
-2. **Identifierade teman** - Huvudteman i materialet
-3. **Strukturerad analys** - Detaljerad genomgång med tabeller
-4. **Reflektioner** - Insikter och observationer
-5. **Förslag på nästa steg** - Konkreta åtgärdsförslag`,
+Datum: <datum>
+Student: <namn> (<årskull>)
+Program: <program>
+Studievägledare: <namn>
+
+Bakgrund
+<kort beskrivning av studentens situation>
+
+Diskussion
+<vad som togs upp under samtalet, kurser, läsperioder, HP, restkurser, omtentor>
+
+Handlingsplan
+- <konkret åtgärd 1>
+- <konkret åtgärd 2>
+
+Nästa steg
+<eventuell uppföljning eller nästa möte>
+
+Använd kurskoder och HP där det är relevant. Skriv kortfattat men fullständigt.`,
+
+  analyze: `Du är ett AI-stöd för studie- och karriärvägledare vid LTH.
+Din uppgift är att skapa en ren, strukturerad minnesanteckning från ett vägledningssamtal.
+
+${FORMAT_RULES}
+
+Strukturera så här (rubriker som vanlig text):
+
+Datum: <datum>
+Student: <namn> (<årskull>)
+Studievägledare: <namn>
+
+Bakgrund
+<text>
+
+Diskussion
+<text>
+
+Handlingsplan
+- <punkt>
+
+Nästa steg
+<text>`,
 
   "email-draft": `Du är ett AI-stöd för studie- och karriärvägledare vid LTH.
-Din uppgift är att skapa ett professionellt och vänligt mailutkast baserat på analyserat material.
+Din uppgift är att skapa ett vänligt och professionellt mailutkast till studenten som en minnesanteckning av mötet.
+
+${FORMAT_RULES}
 
 Mailet ska:
-- Vara riktat till studenten som en minnesanteckning av mötet
-- Ha en tydlig och enkel struktur
-- Sammanfatta vad som diskuterades
-- Lista eventuella kurser med kurskod, HP och läsperiod i en tydlig lista
-- Inkludera handlingsplan/nästa steg om det finns
-- Vara professionellt men varmt i tonen
-- Avslutas med kontaktinformation till vägledaren
+- Börja med "Hej <förnamn>,"
+- Vara varmt och professionellt i tonen
+- Innehålla en kort sammanfattning av vad som diskuterades
+- Lista eventuella kurser som punktlista (kurskod, namn, HP, läsperiod)
+- Inkludera handlingsplan/nästa steg som punktlista om relevant
+- Hålla det kortfattat och lättläst
+- Avslutas med "Med vänliga hälsningar," följt av studievägledarens namn på ny rad
 
-Formatera med markdown. Skriv på svenska. Håll det kortfattat och lättläst.
-Börja med "Hej [student]," och avsluta med hälsning från vägledaren.`,
+Skriv ren, flytande text utan markdown-tecken eller asterisker.`,
 
   summary: `Du är ett AI-stöd för studie- och karriärvägledare vid LTH.
-Din uppgift är att skapa en strukturerad sammanställning och minnesanteckning baserat på uppladdat material.
+Din uppgift är att skapa en strukturerad sammanställning av uppladdat material.
 
-Sammanställningen ska innehålla:
-1. **Övergripande sammanfattning** - Kort beskrivning av materialet
-2. **Huvudsakliga teman och insikter** - Identifierade nyckelpunkter
-3. **Strukturerad översikt** - Tabell med teman, beskrivningar och prioriteringar
-4. **Kartläggning** - Visuell struktur av materialet (som text)
-5. **Rekommendationer** - Förslag på åtgärder och nästa steg
-6. **Minnesanteckning** - Kompakt sammanfattning lämplig för dokumentation
+${FORMAT_RULES}
 
-Formatera med markdown och tabeller. Var professionell och tydlig. Skriv på svenska.`,
+Strukturera sammanställningen så här (rubriker som vanlig text på egen rad):
+
+Datum: <datum>
+Student: <namn>
+Studievägledare: <namn>
+
+Sammanfattning
+<övergripande beskrivning av materialet>
+
+Huvudsakliga teman
+- <tema 1>
+- <tema 2>
+
+Strukturerad översikt
+<detaljerad genomgång av innehållet>
+
+Reflektioner
+<insikter och observationer>
+
+Rekommendationer
+- <konkret förslag 1>
+- <konkret förslag 2>
+
+Skriv ren text utan asterisker, citattecken eller andra markdown-tecken.`,
 };
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { mode, content, images, messages } = await req.json();
+    const { mode, content, images, messages, studentInfo } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const systemPrompt = SYSTEM_PROMPTS[mode] || SYSTEM_PROMPTS.analyze;
+    const systemPrompt = SYSTEM_PROMPTS[mode] || SYSTEM_PROMPTS["meeting-notes"];
     const aiMessages: any[] = [{ role: "system", content: systemPrompt }];
 
-    if (mode === "analyze" || mode === "email-draft" || mode === "summary") {
+    // Build a structured studentInfo block to inject as user-context
+    const studentInfoBlock = studentInfo
+      ? `Kontext om studenten och samtalet (använd dessa exakta värden i minnesanteckningen):
+- Datum: ${studentInfo.formattedDate || studentInfo.date || ""}
+- Studentens namn: ${studentInfo.studentName || "(ej angivet)"}
+- Program: ${studentInfo.program || ""}
+- Årskull: ${studentInfo.yearGroup || ""}
+- Studievägledare: ${studentInfo.counselorName || "(ej angiven)"}
+
+`
+      : "";
+
+    if (mode === "analyze" || mode === "meeting-notes" || mode === "email-draft" || mode === "summary") {
       const userContent: any[] = [];
 
-      if (content) {
+      const baseText = content || "";
+      if (studentInfoBlock || baseText) {
         const prefix = mode === "email-draft"
           ? "Skapa ett mailutkast baserat på följande material:\n\n"
           : mode === "summary"
           ? "Skapa en strukturerad sammanställning av följande material:\n\n"
-          : "Analysera följande material:\n\n";
-        userContent.push({ type: "text", text: `${prefix}${content}` });
+          : "Skapa en strukturerad minnesanteckning baserat på följande material:\n\n";
+        userContent.push({ type: "text", text: `${studentInfoBlock}${prefix}${baseText}` });
       }
 
       if (images && images.length > 0) {
         for (const img of images) {
           userContent.push({ type: "image_url", image_url: { url: img } });
         }
-        if (!content) {
+        if (!content && !studentInfoBlock) {
           const defaultText = mode === "email-draft"
             ? "Skapa ett mailutkast baserat på innehållet i följande bild(er)."
             : mode === "summary"
             ? "Skapa en strukturerad sammanställning av innehållet i följande bild(er)."
-            : "Analysera och transkribera innehållet i följande bild(er). Identifiera struktur, teman och nyckelinsikter. Skapa en strukturerad sammanställning.";
+            : "Analysera och transkribera innehållet i följande bild(er) och skapa en strukturerad minnesanteckning.";
           userContent.unshift({ type: "text", text: defaultText });
         }
       }
