@@ -83,6 +83,7 @@ export const CourseSelector = ({ program, onAddCourse, onCourseClick }: CourseSe
       isCustom: false,
       studyPace,
       isMultiPeriod: course.isMultiPeriod,
+      periods: course.periods || [],
     };
     if (onCourseClick) {
       onCourseClick(planned);

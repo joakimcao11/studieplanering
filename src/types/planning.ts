@@ -50,6 +50,7 @@ export interface PlannedCourse {
   studyPace?: StudyPace; // 25%, 50%, 75%, or 100% (default)
   isMultiPeriod?: boolean; // Course spans multiple periods (marked with *)
   completedHP?: number; // HP already completed (restkurs)
+  periods?: string[]; // LP-periods from course catalog ('1','2','3','4')
 }
 
 export type Period = 'LP1' | 'LP2' | 'LP3' | 'LP4';
