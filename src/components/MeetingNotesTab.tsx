@@ -301,7 +301,7 @@ export const MeetingNotesTab = () => {
 
     const FONT = GOV_SANS;
     const lines = generatedText.split('\n');
-    const paragraphs: Paragraph[] = [];
+    const paragraphs: (Paragraph | Table)[] = [];
 
     // Title block
     buildGovTitle().forEach((p) => paragraphs.push(p));
@@ -317,6 +317,42 @@ export const MeetingNotesTab = () => {
         spacing: { after: 240 },
       }),
     );
+
+    // Action plan table (if any)
+    if (actionPlan.length > 0) {
+      paragraphs.push(
+        new Paragraph({
+          children: [new TextRun({ text: 'Handlingsplan – kurser', bold: true, size: 24, font: FONT, color: GOV_ACCENT })],
+          heading: HeadingLevel.HEADING_2,
+          spacing: { before: 200, after: 120 },
+        }),
+      );
+      const cellBorder = { style: BorderStyle.SINGLE, size: 4, color: 'CCCCCC' };
+      const borders = { top: cellBorder, bottom: cellBorder, left: cellBorder, right: cellBorder };
+      const headerCells = ['Kurskod', 'Namn', 'HP', 'Termin', 'Period'].map(
+        (t) =>
+          new TableCell({
+            borders,
+            shading: { fill: 'E8EEF5', type: ShadingType.CLEAR, color: 'auto' },
+            margins: { top: 80, bottom: 80, left: 120, right: 120 },
+            children: [new Paragraph({ children: [new TextRun({ text: t, bold: true, size: 20, font: FONT })] })],
+          }),
+      );
+      const rows = [new TableRow({ children: headerCells, tableHeader: true })];
+      for (const it of actionPlan) {
+        const cells = [it.code, it.name, String(it.hp), it.term, it.placement].map(
+          (txt) =>
+            new TableCell({
+              borders,
+              margins: { top: 60, bottom: 60, left: 120, right: 120 },
+              children: [new Paragraph({ children: [new TextRun({ text: txt, size: 20, font: FONT })] })],
+            }),
+        );
+        rows.push(new TableRow({ children: cells }));
+      }
+      paragraphs.push(new Table({ width: { size: 9360, type: WidthType.DXA }, rows }));
+      paragraphs.push(new Paragraph({ children: [new TextRun({ text: '' })], spacing: { after: 200 } }));
+    }
 
     for (const rawLine of lines) {
       const line = rawLine.replace(/\r$/, '');
