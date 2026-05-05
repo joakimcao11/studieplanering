@@ -1,110 +1,106 @@
+## Plan: Tab-omordning, Handlingsplan i Mötesanteckning, UX-förbättringar i Studieplanering
 
+Behåller all befintlig struktur, design, sidor och innehåll. Endast tilläggen nedan görs.
 
-## Plan: Slå ihop "Importera plan" + "Dokumentationsstöd" → "Mötesanteckning"
+---
 
-Behåller all befintlig struktur, design och innehåll. Endast följande ändras enligt instruktionerna.
+### Update 1 — Tab-ordning + namnbyte
 
-### 1. Ny sammanslagen modul "Mötesanteckning"
+**Fil: `src/components/TabNavigation.tsx`**
+Ändra `tabs`-arrayen till denna ordning (id behålls för bakåtkompatibilitet med `MainApp`):
+```
+1. Mötesanteckning   (id: 4, icon: FileText)
+2. Studieplanering   (id: 1, icon: GraduationCap)
+3. Studieplan II     (id: 3, icon: Sparkles)
+```
 
-**Ny fil: `src/components/MeetingNotesTab.tsx`**
+**Fil: `src/hooks/usePlanningState.ts`**
+Ändra default-värdet för `currentTab` (eller motsvarande initialiserare) från nuvarande till `4` så Mötesanteckning blir startflik.
 
-En enda flik som kombinerar all funktionalitet från `TextToTextTab` (Importera plan) och `DocumentSupportTab` (Dokumentationsstöd) i en sammanhållen vy:
+**Fil: `src/components/OnboardingOverlay.tsx`**
+Byt ev. textreferenser från "Snabbplanering" till "Studieplan II" i onboarding för tab 3.
 
-**Sektion A — Grundinformation (från Importera plan)**
-- Datum, Studentens namn, Program, Årskull, Studievägledare (samma fält som idag)
-- Datum-värdet används i Word-export som det dokumentdatum AI:n också ska använda
+Inga ändringar i `MainApp.tsx`-routing (id 4 = Mötesanteckning, id 1 = Studieplanering, id 3 = Studieplan II behålls).
 
-**Sektion B — Ladda upp material (från Dokumentationsstöd)**
-- Drag & drop-zon för bilder, PDF, Word (max 10 MB)
-- Filchipsen med thumbnails och radera-knapp
-- Textarea för att klistra in text (samma som "Dina anteckningar" från Importera plan, döpt till "Anteckningar / klistra in text")
+---
 
-**Sektion C — Tre AI-knappar**
-- **"Generera minnesanteckning"** (ersätter "Analysera material" + "Importera plan"-flödet)
-  - Använder förbättrad prompt som producerar **ren text utan markdown-skräp** (inga `**`, inga `"`, inga `#`)
-  - Använder studentinfo + uppladdat material + textinput tillsammans
-  - Skickar `datum`, `studentName`, `program`, `yearGroup`, `counselorName` som strukturerad kontext till AI
-- **"Skapa sammanställning"** (förbättrad — ren text, tydlig struktur, korrekt datum)
-- **"Generera mailutkast"** (förbättrad — vänligt mail som börjar "Hej [namn]," och avslutas med vägledarens namn)
+### Update 2 — "Handlingsplan" i Mötesanteckning
 
-**Sektion D — Resultat**
-- Redigerbar Textarea (precis som i Importera plan idag) så användaren kan finjustera innan export
-- Tre knappar: **Kopiera**, **Spara ändringar**, **Exportera som Word-dokument**
-- **Ingen chatt** — borttagen helt enligt instruktion
+**Fil: `src/components/MeetingNotesTab.tsx`** — lägg till en ny sektion **direkt efter** "Anteckningar / klistra in text"-textarean (i Section B, Card "Ladda upp material"), eller som ny `Card` "Handlingsplan" mellan Section B och Section C.
 
-### 2. Förbättrad Word-export (städar bort markdown-skräp)
+#### Innehåll i sektionen
+- Hämta program-/kurslistan via `useCourses(program)` (drar alla kurser från admin via Supabase-tabellen `courses`).
+- En sökbar/scrollbar lista med alla kurser för valt program: kurskod · namn · HP · LP-period(er).
+  - Använd samma filter/sökmönster som i `CourseSelector` (sök på kod/namn, filter för LP1–LP4).
+- Per kurs: knapp "Lägg till i handlingsplan" → öppnar liten dropdown/popover där användaren väljer:
+  - **Termin** (HT/VT + år, fritext-år tillåtet)
+  - **Period**: LP1, LP2, LP3, LP4, eller **Omtentamen (april/augusti)**
+- Vald kurs visas i en kompakt tabell "Handlingsplan" ovanför listan med kolumner:
+  - Kurskod | Namn | HP | Termin | Period | (X-knapp för att ta bort)
 
-**I `MeetingNotesTab.tsx`:** Ny export-funktion som:
-- **Strippar markdown-tecken** innan rendering: tar bort `**`, `__`, `*`, `_`, `#`, `>` och konverterar till riktiga Word-formatering (fet, kursiv, rubriker)
-- **Tar bort onödiga citattecken** runt rubriker och fält
-- Använder myndighetsmallen (`buildGovHeader`, `buildGovTitle`, `buildGovFooter`, `GOV_PAGE_PROPS`) som redan finns
-- **Datum i sidhuvud = datum från Grundinformation** (inte `new Date()`)
-- **Vägledarnamn i sidhuvud = vald studievägledare** från COUNSELORS-listan
-- Filnamn: `Minnesanteckning_[StudentNamn]_[YYYY-MM-DD].docx`
+#### State (lokalt i MeetingNotesTab)
+```ts
+type ActionPlanItem = {
+  id: string;
+  code: string;
+  name: string;
+  hp: number;
+  periods: string[];      // från DB, för visning
+  term: string;           // ex "HT2026"
+  placement: 'LP1'|'LP2'|'LP3'|'LP4'|'Omtentamen';
+};
+const [actionPlan, setActionPlan] = useState<ActionPlanItem[]>([]);
+```
 
-**Hjälpfunktion `cleanMarkdownToRuns(text)`** som parsar en rad och returnerar `TextRun[]` med rätt formatering — så `**fet**` blir verklig fet text i Word, inte synliga asterisker.
+#### Integration med AI och Word-export
+- Skicka `actionPlan` som del av `studentInfo` (ny nyckel `actionPlan`) till edge function `analyze-document`. Prompt för `meeting-notes`/`summary`/`email-draft` instrueras att inkludera "Handlingsplan – kurser"-block.
+- I Word-exporten: rendera handlingsplanen som en riktig docx-tabell (kolumner: Kurskod, Namn, HP, Termin, Period) **innan** den AI-genererade texten — eller efter rubrik "Handlingsplan" om sådan saknas i AI-texten.
 
-### 3. Förbättrade AI-prompts (edge functions)
+---
 
-**`supabase/functions/analyze-document/index.ts` — uppdatera 3 prompts:**
+### Update 3 — UX-förbättringar i Studieplanering (PlanningTab)
 
-- **`analyze` / nytt mode `meeting-notes`** — Ny prompt som tar emot `studentInfo` (namn, program, kull, datum, vägledare) och returnerar en **ren, strukturerad minnesanteckning** med rubriker som vanlig text (utan `**` runt) och utan onödiga citattecken. Format:
-  ```
-  Datum: 2026-04-21
-  Student: Anna Andersson (D23)
-  Studievägledare: Joakim Cao
-  
-  Bakgrund
-  [text]
-  
-  Diskussion
-  [text]
-  
-  Handlingsplan
-  - Punkt 1
-  - Punkt 2
-  ```
-  Instruktion till AI: **"Använd ALDRIG asterisker (`*`, `**`) eller markdown-syntax. Skriv rubriker på egen rad utan tecken framför. Använd inte citattecken runt rubriker eller fältvärden."**
+**Fil: `src/components/CourseSelector.tsx`**
+- Vid klick på en kurs (eller "+"-knappen): istället för dagens placerings-dialog, lägg in kursen **direkt** i den LP som matchar kursens första `period`-värde i den för tillfället valda terminen.
+  - Mappning:
+    - Kurs med period `'1'` → om vald termin är HT → `lp1`; om VT → fortfarande `lp1`-slot men labeln visas som LP3 (befintlig logik).
+    - Kurs med period `'3'` → välj automatiskt en HT-termin om den valda är VT (eller behåll vald termin men sätt `lp1`-slot, eftersom HT-LP1 = LP1, VT-LP1 = LP3 i UI).
+  - Implementation: lägg till hjälpfunktion `getRecommendedSlot(course, term)`:
+    - Om `term.semester==='HT'` → period `'1'`/`'2'` → `lp1`/`lp2`. Period `'3'`/`'4'` → varna och föreslå att byta till VT-termin (toast: "Denna kurs ges i LP3/LP4 – välj en VT-termin").
+    - Om `term.semester==='VT'` → period `'3'`/`'4'` → `lp1`/`lp2` (visas som LP3/LP4). Period `'1'`/`'2'` → toast "Denna kurs ges i HT".
+- Lägg en "Snabb-placering"-toggle (default på): när på → kursen läggs in direkt i rekommenderad LP utan dialog. När av → behåll nuvarande dialog för att ange completedHP/restkurs.
 
-- **`summary`** — Samma regel: ren text, tydliga rubriker, datum från användarens input, inga `**`.
+**Fil: `src/components/PlanningTab.tsx`**
+- Förenkla "Lägg till termin"-flödet: ersätt det nuvarande tomma year-fältet med snabbknappar "+ HT2026", "+ VT2027" baserat på senaste tillagda termin (auto-suggested next term), plus en "Egen termin..."-knapp som öppnar nuvarande formulär.
+- Visuella förbättringar:
+  - Highlight "rekommenderad LP" med subtil ring runt droppable när en kurs är vald i CourseSelector (skicka `recommendedSlot` ner till `DroppablePeriod`).
+  - Visa kursens LP-period(er) som badge i CourseSelector-listan (redan delvis gjort) — säkerställ att den syns alltid.
+- Auto-fokusera nyligen tillagd termin (scroll-to-view).
 
-- **`email-draft`** — Vänligt mail "Hej [förnamn]," → kort sammanfattning → kursplanering som punktlista → "Med vänliga hälsningar, [vägledare]". Inga `**`, inga onödiga citattecken.
+**Fil: `src/components/DroppablePeriod.tsx`**
+- Acceptera ny prop `isRecommended?: boolean` → lägg `ring-2 ring-primary/40` när true.
 
-Body utökas med valfritt fält `studentInfo: { name, program, yearGroup, date, counselorName }` som flätas in i system-/user-prompten.
+#### Rekommendationslogik (sammanfattning)
+```text
+period '1'  → HT-termin, LP1-slot
+period '2'  → HT-termin, LP2-slot
+period '3'  → VT-termin, LP1-slot (visas som LP3)
+period '4'  → VT-termin, LP2-slot (visas som LP4)
+multi (1+2) → HT, lp1 (delas över båda – nuvarande studyPace-logik)
+multi (3+4) → VT, lp1
+```
 
-### 4. Navigering & integration
+---
 
-**`src/components/TabNavigation.tsx`:**
-- Ersätt `{ id: 4, label: 'Importera plan', icon: FileText }` och `{ id: 5, label: 'Dokumentationsstöd', icon: FileSearch }` med **en** flik:
-  - `{ id: 4, label: 'Mötesanteckning', icon: FileText }`
-- Behåll `Studieplanering (1)` och `Snabbplanering (3)` orörda
+### Filer som ändras
+- `src/components/TabNavigation.tsx` (ordning + namnbyte)
+- `src/hooks/usePlanningState.ts` (default tab = 4)
+- `src/components/OnboardingOverlay.tsx` (textbyte "Snabbplanering" → "Studieplan II")
+- `src/components/MeetingNotesTab.tsx` (handlingsplan-sektion + Word-tabell + studentInfo-utökning)
+- `src/components/CourseSelector.tsx` (snabb-placering enligt kurs-period)
+- `src/components/PlanningTab.tsx` (rekommenderad slot, snabbknappar för terminer)
+- `src/components/DroppablePeriod.tsx` (ring-highlight för rekommenderad slot)
+- `supabase/functions/analyze-document/index.ts` (prompts: använd `studentInfo.actionPlan` om tillgänglig)
 
-**`src/components/MainApp.tsx`:**
-- Rendera `<MeetingNotesTab />` när `currentTab === 4`
-- Ta bort case för `currentTab === 5`
-- Behåll allt annat (header, footer, statistik, admin) orört
-
-**`src/components/OnboardingOverlay.tsx`:**
-- Slå ihop onboarding-content för tab 4 + 5 till **en** ny tab 4 "Mötesanteckning" med 3 steg:
-  1. "Fyll i grundinformation" (datum, student, vägledare)
-  2. "Ladda upp eller klistra in material" (bilder, PDF, text)
-  3. "Generera & exportera" (minnesanteckning / sammanställning / mailutkast → Word)
-- Behåll onboarding för tab 1 och 3 oförändrad
-- Ta bort tab 5-content
-
-### 5. Behålls oförändrat
-- `TextToTextTab.tsx` och `DocumentSupportTab.tsx` — filerna **lämnas kvar** (för bakåtkompatibilitet) men används inte längre i navigeringen
-- `generate-study-notes` edge function — lämnas kvar (kan användas av `MeetingNotesTab` för det rena text-flödet utan bilder)
-- Hela "Studieplanering", "Snabbplanering", Admin, Statistik, Live-demo, Login — orörda
-- Word-mall-helpers i `src/utils/wordTemplate.ts` — orörda (återanvänds)
-
-### Filer
-**Skapas:**
-- `src/components/MeetingNotesTab.tsx`
-
-**Ändras:**
-- `src/components/TabNavigation.tsx` (en flik istället för två)
-- `src/components/MainApp.tsx` (rendera ny tab)
-- `src/components/OnboardingOverlay.tsx` (slå ihop tab 4+5)
-- `supabase/functions/analyze-document/index.ts` (rena prompts utan markdown-skräp + studentInfo-stöd)
-
+### Filer som inte rörs
+Allt annat: Studieplan II (SimplePlanningTab), Admin, Statistik, Live-demo, Login, OverviewTab, BasicInfoTab, export-helpers i `wordTemplate.ts`, alla UI-komponenter i `ui/`.
