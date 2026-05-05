@@ -168,6 +168,39 @@ export const MeetingNotesTab = () => {
   const [isSaved, setIsSaved] = useState(false);
   const [copied, setCopied] = useState(false);
 
+  // Handlingsplan
+  const { courses: programCourses } = useCourses(program);
+  const [actionPlan, setActionPlan] = useState<ActionPlanItem[]>([]);
+  const [courseSearch, setCourseSearch] = useState('');
+  const [periodFilterAP, setPeriodFilterAP] = useState<'all' | '1' | '2' | '3' | '4'>('all');
+  const [apTerm, setApTerm] = useState('HT2026');
+  const [apPlacement, setApPlacement] = useState<ActionPlanItem['placement']>('LP1');
+
+  const filteredAPCourses = programCourses.filter((c) => {
+    const q = courseSearch.toLowerCase();
+    const matchSearch = !q || c.code.toLowerCase().includes(q) || c.name.toLowerCase().includes(q);
+    const matchPeriod = periodFilterAP === 'all' || (c.periods || []).includes(periodFilterAP);
+    return matchSearch && matchPeriod;
+  });
+
+  const addToActionPlan = (course: any, term: string, placement: ActionPlanItem['placement']) => {
+    setActionPlan((prev) => [
+      ...prev,
+      {
+        id: Math.random().toString(36).slice(2, 9),
+        code: course.code,
+        name: course.name,
+        hp: Number(course.hp),
+        periods: course.periods || [],
+        term,
+        placement,
+      },
+    ]);
+    toast({ title: 'Tillagd i handlingsplan', description: `${course.code} – ${term} ${placement}` });
+  };
+
+  const removeFromActionPlan = (id: string) => setActionPlan((prev) => prev.filter((i) => i.id !== id));
+
   const handleFileUpload = useCallback((files: FileList | null) => {
     if (!files) return;
     const maxSize = 10 * 1024 * 1024;
@@ -225,6 +258,7 @@ export const MeetingNotesTab = () => {
     }
 
     const studentInfo = buildStudentInfo();
+    const studentInfoFull = { ...studentInfo, actionPlan };
 
     let result = '';
     try {
@@ -233,7 +267,7 @@ export const MeetingNotesTab = () => {
           mode,
           content: content || undefined,
           images: images.length > 0 ? images : undefined,
-          studentInfo,
+          studentInfo: studentInfoFull,
         },
         (delta) => { result += delta; setGeneratedText(result); },
         () => {},
