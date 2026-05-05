@@ -319,6 +319,20 @@ export const PlanningTab = ({
               onAddCourse={handleAddCourse}
               onCourseClick={handleCourseClick}
             />
+            <Card>
+              <CardContent className="pt-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <Zap className="w-4 h-4 text-primary" />
+                    <div>
+                      <Label className="text-sm font-medium text-foreground">Snabb-placering</Label>
+                      <p className="text-xs text-muted-foreground">Placerar kursen automatiskt i rekommenderad läsperiod.</p>
+                    </div>
+                  </div>
+                  <Switch checked={quickPlacement} onCheckedChange={setQuickPlacement} />
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
           {/* Right Column - Terms and Notes */}
@@ -340,6 +354,36 @@ export const PlanningTab = ({
             {/* Add Term Section */}
             <Card className="border-dashed">
               <CardContent className="pt-4">
+                {(() => {
+                  const last = terms[terms.length - 1];
+                  if (!last) return null;
+                  const nextSem: 'HT' | 'VT' = last.semester === 'HT' ? 'VT' : 'HT';
+                  const nextYear = last.semester === 'VT' ? (parseInt(last.year) + 1).toString() : last.year;
+                  return (
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => {
+                          const newTerm: TermPlan = {
+                            id: Math.random().toString(36).substring(2, 9),
+                            semester: nextSem,
+                            year: nextYear,
+                            customYearLabel: nextYear,
+                            customSemesterLabel: '',
+                            lp1: [],
+                            lp2: [],
+                            retakeExamNotes: '',
+                          };
+                          onTermsChange([...terms, newTerm]);
+                        }}
+                      >
+                        <Plus className="w-3.5 h-3.5 mr-1" />
+                        {nextSem === 'HT' ? 'Hösttermin' : 'Vårtermin'} {nextYear}
+                      </Button>
+                    </div>
+                  );
+                })()}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
                   <div className="space-y-1">
                     <Label className="text-xs text-muted-foreground">Termin</Label>
