@@ -7,14 +7,19 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Sparkles, Loader2, Download, Save, FileText, User, Upload, FileImage,
-  X, Mail, ClipboardList, Copy, Check,
+  X, Mail, ClipboardList, Copy, Check, ListChecks, Plus, Search,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle,
+  Table, TableRow, TableCell, WidthType, ShadingType,
 } from 'docx';
 import { saveAs } from 'file-saver';
 import { COUNSELORS } from '@/types/planning';
+import { useCourses } from '@/hooks/useCourses';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Badge } from '@/components/ui/badge';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   buildGovHeader, buildGovFooter, buildGovTitle, loadLogoBuffer,
   GOV_PAGE_PROPS, GOV_SANS, GOV_ACCENT,
@@ -40,6 +45,16 @@ interface UploadedFile {
   base64: string;
   preview?: string;
 }
+
+type ActionPlanItem = {
+  id: string;
+  code: string;
+  name: string;
+  hp: number;
+  periods: string[];
+  term: string;
+  placement: 'LP1' | 'LP2' | 'LP3' | 'LP4' | 'Omtentamen';
+};
 
 const ANALYZE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analyze-document`;
 
@@ -153,6 +168,39 @@ export const MeetingNotesTab = () => {
   const [isSaved, setIsSaved] = useState(false);
   const [copied, setCopied] = useState(false);
 
+  // Handlingsplan
+  const { courses: programCourses } = useCourses(program);
+  const [actionPlan, setActionPlan] = useState<ActionPlanItem[]>([]);
+  const [courseSearch, setCourseSearch] = useState('');
+  const [periodFilterAP, setPeriodFilterAP] = useState<'all' | '1' | '2' | '3' | '4'>('all');
+  const [apTerm, setApTerm] = useState('HT2026');
+  const [apPlacement, setApPlacement] = useState<ActionPlanItem['placement']>('LP1');
+
+  const filteredAPCourses = programCourses.filter((c) => {
+    const q = courseSearch.toLowerCase();
+    const matchSearch = !q || c.code.toLowerCase().includes(q) || c.name.toLowerCase().includes(q);
+    const matchPeriod = periodFilterAP === 'all' || (c.periods || []).includes(periodFilterAP);
+    return matchSearch && matchPeriod;
+  });
+
+  const addToActionPlan = (course: any, term: string, placement: ActionPlanItem['placement']) => {
+    setActionPlan((prev) => [
+      ...prev,
+      {
+        id: Math.random().toString(36).slice(2, 9),
+        code: course.code,
+        name: course.name,
+        hp: Number(course.hp),
+        periods: course.periods || [],
+        term,
+        placement,
+      },
+    ]);
+    toast({ title: 'Tillagd i handlingsplan', description: `${course.code} – ${term} ${placement}` });
+  };
+
+  const removeFromActionPlan = (id: string) => setActionPlan((prev) => prev.filter((i) => i.id !== id));
+
   const handleFileUpload = useCallback((files: FileList | null) => {
     if (!files) return;
     const maxSize = 10 * 1024 * 1024;
@@ -210,6 +258,7 @@ export const MeetingNotesTab = () => {
     }
 
     const studentInfo = buildStudentInfo();
+    const studentInfoFull = { ...studentInfo, actionPlan };
 
     let result = '';
     try {
@@ -218,7 +267,7 @@ export const MeetingNotesTab = () => {
           mode,
           content: content || undefined,
           images: images.length > 0 ? images : undefined,
-          studentInfo,
+          studentInfo: studentInfoFull,
         },
         (delta) => { result += delta; setGeneratedText(result); },
         () => {},
@@ -252,7 +301,7 @@ export const MeetingNotesTab = () => {
 
     const FONT = GOV_SANS;
     const lines = generatedText.split('\n');
-    const paragraphs: Paragraph[] = [];
+    const paragraphs: (Paragraph | Table)[] = [];
 
     // Title block
     buildGovTitle().forEach((p) => paragraphs.push(p));
@@ -268,6 +317,42 @@ export const MeetingNotesTab = () => {
         spacing: { after: 240 },
       }),
     );
+
+    // Action plan table (if any)
+    if (actionPlan.length > 0) {
+      paragraphs.push(
+        new Paragraph({
+          children: [new TextRun({ text: 'Handlingsplan – kurser', bold: true, size: 24, font: FONT, color: GOV_ACCENT })],
+          heading: HeadingLevel.HEADING_2,
+          spacing: { before: 200, after: 120 },
+        }),
+      );
+      const cellBorder = { style: BorderStyle.SINGLE, size: 4, color: 'CCCCCC' };
+      const borders = { top: cellBorder, bottom: cellBorder, left: cellBorder, right: cellBorder };
+      const headerCells = ['Kurskod', 'Namn', 'HP', 'Termin', 'Period'].map(
+        (t) =>
+          new TableCell({
+            borders,
+            shading: { fill: 'E8EEF5', type: ShadingType.CLEAR, color: 'auto' },
+            margins: { top: 80, bottom: 80, left: 120, right: 120 },
+            children: [new Paragraph({ children: [new TextRun({ text: t, bold: true, size: 20, font: FONT })] })],
+          }),
+      );
+      const rows = [new TableRow({ children: headerCells, tableHeader: true })];
+      for (const it of actionPlan) {
+        const cells = [it.code, it.name, String(it.hp), it.term, it.placement].map(
+          (txt) =>
+            new TableCell({
+              borders,
+              margins: { top: 60, bottom: 60, left: 120, right: 120 },
+              children: [new Paragraph({ children: [new TextRun({ text: txt, size: 20, font: FONT })] })],
+            }),
+        );
+        rows.push(new TableRow({ children: cells }));
+      }
+      paragraphs.push(new Table({ width: { size: 9360, type: WidthType.DXA }, rows }));
+      paragraphs.push(new Paragraph({ children: [new TextRun({ text: '' })], spacing: { after: 200 } }));
+    }
 
     for (const rawLine of lines) {
       const line = rawLine.replace(/\r$/, '');
@@ -477,6 +562,157 @@ export const MeetingNotesTab = () => {
               className="min-h-[140px] text-sm"
             />
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Section B.5 — Handlingsplan (kurser) */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ListChecks className="w-5 h-5 text-primary" />
+            Handlingsplan
+          </CardTitle>
+          <CardDescription>
+            Lägg till kurser från {programs.find((p) => p.value === program)?.label || program}-programmet och placera i termin och läsperiod.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {actionPlan.length > 0 && (
+            <div className="border rounded-md overflow-hidden">
+              <table className="w-full text-sm">
+                <thead className="bg-muted">
+                  <tr>
+                    <th className="text-left p-2 font-medium">Kurskod</th>
+                    <th className="text-left p-2 font-medium">Namn</th>
+                    <th className="text-left p-2 font-medium">HP</th>
+                    <th className="text-left p-2 font-medium">Termin</th>
+                    <th className="text-left p-2 font-medium">Period</th>
+                    <th className="p-2 w-10"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {actionPlan.map((item) => (
+                    <tr key={item.id} className="border-t">
+                      <td className="p-2 font-mono text-xs">{item.code}</td>
+                      <td className="p-2">{item.name}</td>
+                      <td className="p-2">{item.hp}</td>
+                      <td className="p-2">{item.term}</td>
+                      <td className="p-2">
+                        <Badge variant="outline">{item.placement}</Badge>
+                      </td>
+                      <td className="p-2 text-right">
+                        <button onClick={() => removeFromActionPlan(item.id)} className="text-muted-foreground hover:text-destructive">
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Default term/placement selectors (used when adding) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label className="text-foreground font-medium">Termin (för nya rader)</Label>
+              <Input value={apTerm} onChange={(e) => setApTerm(e.target.value)} placeholder="t.ex. HT2026" />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-foreground font-medium">Period (för nya rader)</Label>
+              <Select value={apPlacement} onValueChange={(v) => setApPlacement(v as ActionPlanItem['placement'])}>
+                <SelectTrigger className="bg-background"><SelectValue /></SelectTrigger>
+                <SelectContent className="bg-popover border border-border shadow-lg z-50">
+                  <SelectItem value="LP1">LP1</SelectItem>
+                  <SelectItem value="LP2">LP2</SelectItem>
+                  <SelectItem value="LP3">LP3</SelectItem>
+                  <SelectItem value="LP4">LP4</SelectItem>
+                  <SelectItem value="Omtentamen">Omtentamen (april/augusti)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Sök kurs (kod eller namn)..."
+                value={courseSearch}
+                onChange={(e) => setCourseSearch(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Badge variant={periodFilterAP === 'all' ? 'default' : 'outline'} className="cursor-pointer" onClick={() => setPeriodFilterAP('all')}>Alla</Badge>
+              {(['1', '2', '3', '4'] as const).map((p) => (
+                <Badge key={p} variant={periodFilterAP === p ? 'default' : 'outline'} className="cursor-pointer" onClick={() => setPeriodFilterAP(p)}>LP{p}</Badge>
+              ))}
+            </div>
+          </div>
+
+          <ScrollArea className="h-72 rounded-md border">
+            <div className="p-2 space-y-1">
+              {filteredAPCourses.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">Inga kurser hittades</p>
+              ) : (
+                filteredAPCourses.map((c) => (
+                  <div key={c.id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted/50">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs font-mono text-muted-foreground">{c.code}</span>
+                        {c.periods && c.periods.length > 0 && (
+                          <span className="text-xs text-muted-foreground">LP{c.periods.join(',')}</span>
+                        )}
+                        <span className="text-xs font-semibold text-primary">{c.hp} hp</span>
+                      </div>
+                      <p className="text-sm text-foreground truncate">{c.name}</p>
+                    </div>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button size="sm" variant="outline">
+                          <Plus className="w-3.5 h-3.5 mr-1" />Lägg till
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-64 bg-popover border border-border shadow-lg z-50">
+                        <div className="space-y-3">
+                          <div className="space-y-1">
+                            <Label className="text-xs">Termin</Label>
+                            <Input defaultValue={apTerm} id={`term-${c.id}`} placeholder="HT2026" />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">Period</Label>
+                            <Select defaultValue={apPlacement} onValueChange={(v) => (document.getElementById(`placement-${c.id}`) as any)?.setAttribute('data-v', v)}>
+                              <SelectTrigger className="bg-background"><SelectValue /></SelectTrigger>
+                              <SelectContent className="bg-popover border border-border shadow-lg z-50">
+                                <SelectItem value="LP1">LP1</SelectItem>
+                                <SelectItem value="LP2">LP2</SelectItem>
+                                <SelectItem value="LP3">LP3</SelectItem>
+                                <SelectItem value="LP4">LP4</SelectItem>
+                                <SelectItem value="Omtentamen">Omtentamen</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <input type="hidden" id={`placement-${c.id}`} data-v={apPlacement} />
+                          </div>
+                          <Button
+                            size="sm"
+                            className="w-full"
+                            onClick={() => {
+                              const termVal = (document.getElementById(`term-${c.id}`) as HTMLInputElement)?.value || apTerm;
+                              const placeVal = ((document.getElementById(`placement-${c.id}`) as HTMLElement)?.getAttribute('data-v') as ActionPlanItem['placement']) || apPlacement;
+                              addToActionPlan(c, termVal, placeVal);
+                            }}
+                          >
+                            Lägg till i handlingsplan
+                          </Button>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                ))
+              )}
+            </div>
+          </ScrollArea>
         </CardContent>
       </Card>
 

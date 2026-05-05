@@ -7,7 +7,9 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Plus, FileText, ArrowRight, GraduationCap } from 'lucide-react';
+import { Plus, FileText, ArrowRight, GraduationCap, Zap } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { useToast } from '@/hooks/use-toast';
 import { TermPlan, PlannedCourse, Program } from '@/types/planning';
 import { TermCard } from './TermCard';
 import { CourseSelector } from './CourseSelector';
@@ -67,6 +69,8 @@ export const PlanningTab = ({
   const [newTermSemester, setNewTermSemester] = useState<'HT' | 'VT'>('VT');
   const [newTermYear, setNewTermYear] = useState<string>('2026');
   const [customProgramName, setCustomProgramName] = useState<string>('');
+  const [quickPlacement, setQuickPlacement] = useState(true);
+  const { toast } = useToast();
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -83,6 +87,41 @@ export const PlanningTab = ({
   }, [terms, selectedTermId]);
 
   const handleCourseClick = (course: PlannedCourse) => {
+    if (quickPlacement) {
+      // Smart placement based on course.periods
+      const periods = course.periods || [];
+      const wantsVT = periods.some((p) => p === '3' || p === '4');
+      const wantsHT = periods.some((p) => p === '1' || p === '2');
+      const desiredSemester: 'HT' | 'VT' | null = wantsVT && !wantsHT ? 'VT' : wantsHT && !wantsVT ? 'HT' : null;
+
+      let targetTerm = terms.find((t) => t.id === selectedTermId) || terms[0];
+      if (desiredSemester && targetTerm.semester !== desiredSemester) {
+        const match = terms.find((t) => t.semester === desiredSemester);
+        if (match) {
+          targetTerm = match;
+          setSelectedTermId(match.id);
+        } else {
+          toast({
+            title: `Kursen ges på ${desiredSemester}`,
+            description: `Lägg till en ${desiredSemester === 'HT' ? 'höst' : 'vår'}termin för att placera kursen i rätt läsperiod.`,
+          });
+        }
+      }
+
+      // Determine LP slot
+      let slot: 'lp1' | 'lp2' = 'lp1';
+      if (targetTerm.semester === 'HT') {
+        if (periods.includes('2') && !periods.includes('1')) slot = 'lp2';
+        else slot = 'lp1';
+      } else {
+        if (periods.includes('4') && !periods.includes('3')) slot = 'lp2';
+        else slot = 'lp1';
+      }
+      onAddCourse(targetTerm.id, slot, course);
+      const lpLabel = targetTerm.semester === 'HT' ? (slot === 'lp1' ? 'LP1' : 'LP2') : (slot === 'lp1' ? 'LP3' : 'LP4');
+      toast({ title: 'Kurs tillagd', description: `${course.code} placerad i ${lpLabel}.` });
+      return;
+    }
     setPendingCourse(course);
     setCompletedHP('');
     setShowPlacementDialog(true);
@@ -280,6 +319,20 @@ export const PlanningTab = ({
               onAddCourse={handleAddCourse}
               onCourseClick={handleCourseClick}
             />
+            <Card>
+              <CardContent className="pt-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <Zap className="w-4 h-4 text-primary" />
+                    <div>
+                      <Label className="text-sm font-medium text-foreground">Snabb-placering</Label>
+                      <p className="text-xs text-muted-foreground">Placerar kursen automatiskt i rekommenderad läsperiod.</p>
+                    </div>
+                  </div>
+                  <Switch checked={quickPlacement} onCheckedChange={setQuickPlacement} />
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
           {/* Right Column - Terms and Notes */}
@@ -301,6 +354,36 @@ export const PlanningTab = ({
             {/* Add Term Section */}
             <Card className="border-dashed">
               <CardContent className="pt-4">
+                {(() => {
+                  const last = terms[terms.length - 1];
+                  if (!last) return null;
+                  const nextSem: 'HT' | 'VT' = last.semester === 'HT' ? 'VT' : 'HT';
+                  const nextYear = last.semester === 'VT' ? (parseInt(last.year) + 1).toString() : last.year;
+                  return (
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => {
+                          const newTerm: TermPlan = {
+                            id: Math.random().toString(36).substring(2, 9),
+                            semester: nextSem,
+                            year: nextYear,
+                            customYearLabel: nextYear,
+                            customSemesterLabel: '',
+                            lp1: [],
+                            lp2: [],
+                            retakeExamNotes: '',
+                          };
+                          onTermsChange([...terms, newTerm]);
+                        }}
+                      >
+                        <Plus className="w-3.5 h-3.5 mr-1" />
+                        {nextSem === 'HT' ? 'Hösttermin' : 'Vårtermin'} {nextYear}
+                      </Button>
+                    </div>
+                  );
+                })()}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
                   <div className="space-y-1">
                     <Label className="text-xs text-muted-foreground">Termin</Label>

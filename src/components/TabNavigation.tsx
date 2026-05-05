@@ -7,9 +7,9 @@ interface TabNavigationProps {
 }
 
 const tabs = [
-  { id: 1, label: 'Studieplanering', icon: GraduationCap },
-  { id: 3, label: 'Snabbplanering', icon: Sparkles },
   { id: 4, label: 'Mötesanteckning', icon: FileText },
+  { id: 1, label: 'Studieplanering', icon: GraduationCap },
+  { id: 3, label: 'Studieplan II', icon: Sparkles },
 ];
 
 export const TabNavigation = ({ currentTab, onTabChange }: TabNavigationProps) => {
