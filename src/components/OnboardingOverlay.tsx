@@ -32,11 +32,11 @@ const onboardingContent: Record<number, { title: string; steps: OnboardingStep[]
     ],
   },
   3: {
-    title: 'Snabbplanering',
+    title: 'Studieplan II',
     steps: [
       {
         title: 'Steg-för-steg planering',
-        description: 'Snabbplaneringen guidar dig genom 4 enkla steg: personlig info, nya kurser, restkurser och sammanfattning.',
+        description: 'Studieplan II guidar dig genom 4 enkla steg: personlig info, nya kurser, restkurser och sammanfattning.',
         icon: <Sparkles className="w-10 h-10 text-primary" />,
       },
       {
