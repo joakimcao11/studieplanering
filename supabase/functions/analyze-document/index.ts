@@ -133,6 +133,15 @@ serve(async (req) => {
 - Årskull: ${studentInfo.yearGroup || ""}
 - Studievägledare: ${studentInfo.counselorName || "(ej angiven)"}
 
+${
+  Array.isArray(studentInfo.actionPlan) && studentInfo.actionPlan.length > 0
+    ? `\nHandlingsplan – kurser som ska planeras in (inkludera dessa under en rubrik "Handlingsplan – kurser" som lista):\n` +
+      studentInfo.actionPlan
+        .map((c: any) => `- ${c.code} ${c.name} (${c.hp} hp) – ${c.term} ${c.placement}`)
+        .join("\n") +
+      `\n`
+    : ""
+}
 `
       : "";
 
