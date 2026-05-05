@@ -7,14 +7,19 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Sparkles, Loader2, Download, Save, FileText, User, Upload, FileImage,
-  X, Mail, ClipboardList, Copy, Check,
+  X, Mail, ClipboardList, Copy, Check, ListChecks, Plus, Search,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle,
+  Table, TableRow, TableCell, WidthType, ShadingType,
 } from 'docx';
 import { saveAs } from 'file-saver';
 import { COUNSELORS } from '@/types/planning';
+import { useCourses } from '@/hooks/useCourses';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Badge } from '@/components/ui/badge';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   buildGovHeader, buildGovFooter, buildGovTitle, loadLogoBuffer,
   GOV_PAGE_PROPS, GOV_SANS, GOV_ACCENT,
@@ -40,6 +45,16 @@ interface UploadedFile {
   base64: string;
   preview?: string;
 }
+
+type ActionPlanItem = {
+  id: string;
+  code: string;
+  name: string;
+  hp: number;
+  periods: string[];
+  term: string;
+  placement: 'LP1' | 'LP2' | 'LP3' | 'LP4' | 'Omtentamen';
+};
 
 const ANALYZE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analyze-document`;
 
