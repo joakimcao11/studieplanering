@@ -96,22 +96,6 @@ function cleanLine(line: string): string {
     .trim();
 }
 
-/** Parse a line and return TextRun[] preserving bold from **...** segments. */
-function parseRuns(line: string, baseOpts: any): TextRun[] {
-  const cleaned = line
-    .replace(/^#+\s*/, '')
-    .replace(/^>\s*/, '')
-    .replace(/^"(.+)"$/, '$1');
-  const parts = cleaned.split(/(\*\*.+?\*\*|__.+?__)/g).filter(p => p !== '');
-  if (parts.length === 0) return [new TextRun({ text: '', ...baseOpts })];
-  return parts.map(p => {
-    if ((p.startsWith('**') && p.endsWith('**')) || (p.startsWith('__') && p.endsWith('__'))) {
-      return new TextRun({ text: p.slice(2, -2), bold: true, ...baseOpts });
-    }
-    return new TextRun({ text: p, ...baseOpts });
-  });
-}
-
 const HEADING_KEYWORDS = [
   'datum', 'student', 'studievägledare', 'program', 'årskull',
   'bakgrund', 'diskussion', 'sammanfattning', 'minnesanteckning',
