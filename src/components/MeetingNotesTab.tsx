@@ -422,16 +422,6 @@ export const MeetingNotesTab = () => {
         </CardContent>
       </Card>
 
-      {/* Stöd i studieplanering */}
-      <StudyPlanCanvas
-        program={program}
-        actionPlan={actionPlan}
-        setActionPlan={setActionPlan}
-        studyPlanText={studyPlanText}
-        setStudyPlanText={setStudyPlanText}
-        onExport={handleExportStudyPlan}
-      />
-
       {/* Section C — AI-knappar */}
       <Card>
         <CardHeader>
@@ -522,6 +512,29 @@ export const MeetingNotesTab = () => {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* Stöd i studieplanering — längst ner */}
+      <StudyPlanCanvas
+        program={program}
+        actionPlan={actionPlan}
+        setActionPlan={setActionPlan}
+        studyPlanText={studyPlanText}
+        setStudyPlanText={setStudyPlanText}
+        onExport={handleExportStudyPlan}
+      />
+
+      {/* Export-förhandsgranskning (LTH/LU-mall) */}
+      {exportPayload && (
+        <ExportPreviewDialog
+          open={!!exportPayload}
+          onClose={() => setExportPayload(null)}
+          documentName={exportPayload.documentName}
+          fileBaseName={exportPayload.fileBaseName}
+          counselorName={COUNSELORS.find((c) => c.id === counselor)?.name || ''}
+          date={datum}
+          sections={exportPayload.sections}
+        />
       )}
     </div>
   );
