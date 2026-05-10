@@ -13,20 +13,12 @@ import { useToast } from '@/hooks/use-toast';
 import { COUNSELORS } from '@/types/planning';
 import { StudyPlanCanvas, ActionPlanItem } from './meeting/StudyPlanCanvas';
 import { ExportPreviewDialog, DocSection } from './export/ExportPreviewDialog';
+import { usePrograms } from '@/hooks/usePrograms';
 
-const programs = [
+const FALLBACK_PROGRAMS = [
   { value: 'D', label: 'Datateknik (D)' },
   { value: 'C', label: 'Infocom (C)' },
 ];
-
-const generateYearGroups = () => {
-  const groups: string[] = [];
-  for (let year = 15; year <= 30; year++) {
-    groups.push(`D${year}`, `C${year}`);
-  }
-  return groups.sort();
-};
-const yearGroups = generateYearGroups();
 
 interface UploadedFile {
   name: string;
@@ -112,6 +104,20 @@ function isHeading(line: string): boolean {
 export const MeetingNotesTab = () => {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { programs: dbPrograms } = usePrograms();
+
+  const programs = dbPrograms.length > 0
+    ? dbPrograms.map((p) => ({ value: p.code, label: `${p.name} (${p.code})` }))
+    : FALLBACK_PROGRAMS;
+
+  const yearGroups = (() => {
+    const codes = programs.map((p) => p.value);
+    const groups: string[] = [];
+    codes.forEach((code) => {
+      for (let year = 15; year <= 30; year++) groups.push(`${code}${year}`);
+    });
+    return groups.sort();
+  })();
 
   // Section A — Grundinformation
   const [datum, setDatum] = useState(new Date().toISOString().split('T')[0]);
