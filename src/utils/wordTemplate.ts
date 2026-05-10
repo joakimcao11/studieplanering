@@ -24,7 +24,28 @@ export const GOV_MUTED = '555555';
 export interface GovHeaderInfo {
   counselorName: string;
   date: string; // formatted Swedish date
+  documentName?: string;
+  institution?: string;
+  unit?: string;
+  handler?: string;
+  recipient?: string;
 }
+
+export interface GovFooterInfo {
+  postalAddress?: string;
+  visitAddress?: string;
+  phone?: string;
+  email?: string;
+  web?: string;
+}
+
+export const GOV_DEFAULT_FOOTER: Required<GovFooterInfo> = {
+  postalAddress: 'Lunds Tekniska Högskola, Studentservice, Box 118, 221 00 Lund',
+  visitAddress: 'Klas Anshelms Väg 10',
+  phone: '046-222 72 89',
+  email: 'joakim.cao@lth.lu.se',
+  web: 'www.student.lth.se',
+};
 
 /** Loads the LTH logo as ArrayBuffer for embedding in docx. */
 export async function loadLogoBuffer(): Promise<ArrayBuffer | null> {
@@ -83,7 +104,8 @@ export function buildGovHeader(info: GovHeaderInfo, logoBuffer: ArrayBuffer | nu
  * Standard LTH footer with postal/visit/phone/email/web information,
  * a thin top border, and right-aligned page number.
  */
-export function buildGovFooter(): Footer {
+export function buildGovFooter(info: GovFooterInfo = {}): Footer {
+  const f = { ...GOV_DEFAULT_FOOTER, ...info };
   const small = (text: string, opts: any = {}) =>
     new TextRun({ text, size: 16, font: GOV_SANS, color: GOV_MUTED, ...opts });
 
@@ -92,7 +114,7 @@ export function buildGovFooter(): Footer {
       new Paragraph({
         children: [
           small('Postadress ', { bold: true }),
-          small('Lunds Tekniska Högskola, Studentservice, Box 118, 221 00 Lund'),
+          small(f.postalAddress),
         ],
         alignment: AlignmentType.LEFT,
         spacing: { before: 60, after: 0 },
@@ -101,23 +123,23 @@ export function buildGovFooter(): Footer {
       new Paragraph({
         children: [
           small('Besöksadress ', { bold: true }),
-          small('Klas Anshelms Väg 10'),
+          small(f.visitAddress),
         ],
         spacing: { after: 0 },
       }),
       new Paragraph({
         children: [
           small('Telefon ', { bold: true }),
-          small('046-222 72 89   '),
+          small(f.phone + '   '),
           small('E-post ', { bold: true }),
-          small('joakim.cao@lth.lu.se'),
+          small(f.email),
         ],
         spacing: { after: 0 },
       }),
       new Paragraph({
         children: [
           small('Webbadress ', { bold: true }),
-          small('www.student.lth.se'),
+          small(f.web),
           new TextRun({ text: '\t' }),
           small('Sida '),
           new TextRun({ children: [PageNumber.CURRENT], size: 16, font: GOV_SANS, color: GOV_MUTED }),

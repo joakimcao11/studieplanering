@@ -10,7 +10,9 @@ import {
   TabStopType,
   TabStopPosition,
   PageNumber,
+  ImageRun,
 } from 'docx';
+import luLogo from '@/assets/lu-logo.png';
 
 export const LU_BODY_FONT = 'Times New Roman';
 export const LU_SANS = 'Arial';
@@ -43,19 +45,37 @@ export const LU_DEFAULTS: LuHeaderInfo = {
   web: 'www.student.lth.se',
 };
 
-export function buildLuHeader(info: LuHeaderInfo): DocxHeader {
+export async function loadLuLogoBuffer(): Promise<ArrayBuffer | null> {
+  try {
+    const resp = await fetch(luLogo);
+    return await resp.arrayBuffer();
+  } catch {
+    return null;
+  }
+}
+
+export function buildLuHeader(info: LuHeaderInfo, logoBuffer: ArrayBuffer | null = null): DocxHeader {
   const small = (text: string, opts: any = {}) =>
     new TextRun({ text, size: 16, font: LU_SANS, italics: true, color: '444444', ...opts });
 
+  const titleRowChildren: any[] = [];
+  if (logoBuffer) {
+    titleRowChildren.push(new ImageRun({
+      type: 'png',
+      data: logoBuffer,
+      transformation: { width: 60, height: 72 },
+      altText: { title: 'LU', description: 'Lunds universitet', name: 'LU-logo' },
+    } as any));
+  } else {
+    titleRowChildren.push(new TextRun({ text: 'LUNDS UNIVERSITET', bold: true, size: 22, font: LU_SANS }));
+  }
+  titleRowChildren.push(new TextRun({ text: '\t' }));
+  titleRowChildren.push(new TextRun({ text: info.institution, size: 18, font: LU_SANS }));
+
   return new DocxHeader({
     children: [
-      // Three-line institution block (right-aligned beside imaginary logo space)
       new Paragraph({
-        children: [
-          new TextRun({ text: 'LUNDS UNIVERSITET', bold: true, size: 22, font: LU_SANS }),
-          new TextRun({ text: '\t' }),
-          new TextRun({ text: info.institution, size: 18, font: LU_SANS }),
-        ],
+        children: titleRowChildren,
         tabStops: [{ type: TabStopType.RIGHT, position: TabStopPosition.MAX }],
         spacing: { after: 0 },
       }),
