@@ -463,14 +463,29 @@ export const StudyPlanCanvas = ({
           )}>
             {PLACEMENT_ORDER.map((p) => {
               const items = actionPlan.filter((i) => i.term === t && i.placement === p);
+              // Ghost blocks: multi-period courses whose anchor is in another LP but spans this one.
+              const ghosts = actionPlan.filter((i) => {
+                if (i.term !== t) return false;
+                if (i.placement === p) return false;
+                if (!i.periods || i.periods.length < 2) return false;
+                if (p === 'OmtentamenI' || p === 'OmtentamenII') return false;
+                const lpNum = p.replace('LP', '');
+                return i.periods.includes(lpNum);
+              });
               return (
                 <DroppableCell
                   key={p}
                   term={t}
                   placement={p}
                   items={items}
+                  ghosts={ghosts}
                   onAdd={() => openAddDialog(t, p)}
                   onRemove={removeItem}
+                  onUpdatePeriods={(id, periods) => {
+                    const sorted = [...periods].sort();
+                    const minLp = sorted[0];
+                    updateItem(id, { periods: sorted, ...(minLp ? { placement: `LP${minLp}` as Placement } : {}) });
+                  }}
                   fullscreen={variant === 'fullscreen'}
                 />
               );
