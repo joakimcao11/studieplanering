@@ -15,7 +15,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import {
   Plus, Trash2, ChevronLeft, ChevronRight, ExternalLink, Download, GraduationCap,
   CalendarDays, ListChecks, Search, Sparkles, Maximize2, Minimize2, Home, Wrench,
-  Settings, Briefcase, ChevronsRight, ChevronsLeft, GripVertical,
+  Settings, Briefcase, ChevronsRight, ChevronsLeft, GripVertical, MoreVertical,
 } from 'lucide-react';
 import {
   DndContext, DragEndEvent, PointerSensor, useSensor, useSensors,
@@ -92,10 +92,20 @@ interface Props {
 
 /* ============================== Draggable course block ============================== */
 const DraggableCourseBlock = ({
-  it, onRemove, fullscreen,
-}: { it: ActionPlanItem; onRemove: () => void; fullscreen?: boolean }) => {
+  it, onRemove, fullscreen, onUpdatePeriods,
+}: {
+  it: ActionPlanItem;
+  onRemove: () => void;
+  fullscreen?: boolean;
+  onUpdatePeriods: (periods: string[]) => void;
+}) => {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: it.id });
   const style = { transform: CSS.Translate.toString(transform), opacity: isDragging ? 0.4 : 1 };
+  const isMulti = (it.periods?.length || 0) > 1;
+  const totalHp = effectiveHP(it);
+  const perLp = isMulti ? totalHp / it.periods.length : totalHp;
+  const [editOpen, setEditOpen] = useState(false);
+  const [draftPeriods, setDraftPeriods] = useState<string[]>(it.periods || []);
   return (
     <div
       ref={setNodeRef}
@@ -103,6 +113,7 @@ const DraggableCourseBlock = ({
       className={cn(
         'group relative bg-background border rounded px-1.5 py-1 cursor-grab active:cursor-grabbing',
         fullscreen ? 'text-xs' : 'text-[11px]',
+        isMulti && 'bg-warning/15 border-l-4 border-l-warning',
       )}
     >
       <div className="flex items-start gap-1">
@@ -113,12 +124,43 @@ const DraggableCourseBlock = ({
           <div className={cn('font-mono text-muted-foreground', fullscreen ? 'text-[11px]' : 'text-[10px]')}>{it.code}</div>
           <div className="truncate" title={it.name}>{it.name}</div>
           <div className={cn('text-primary', fullscreen ? 'text-[11px]' : 'text-[10px]')}>
-            {effectiveHP(it).toFixed(1).replace(/\.0$/, '')} hp
+            {totalHp.toFixed(1).replace(/\.0$/, '')} hp
+            {isMulti && ` · ${perLp.toFixed(1).replace(/\.0$/, '')} hp/LP`}
             {it.studyPace && it.studyPace !== 100 ? ` (${it.studyPace}%)` : ''}
-            {it.periods?.length > 1 && ` · LP${it.periods.join('+')}`}
+            {isMulti && ` · LP${it.periods.join('+')}`}
           </div>
         </div>
       </div>
+      <Popover open={editOpen} onOpenChange={(o) => { setEditOpen(o); if (o) setDraftPeriods(it.periods || []); }}>
+        <PopoverTrigger asChild>
+          <button
+            className="absolute top-0.5 right-5 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground"
+            title="Redigera flerperiod"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <MoreVertical className="w-3 h-3" />
+          </button>
+        </PopoverTrigger>
+        <PopoverContent className="w-56 z-[60]" align="end" onClick={(e) => e.stopPropagation()}>
+          <div className="space-y-2">
+            <div className="text-xs font-medium">Läsperioder (flerperiod)</div>
+            <div className="grid grid-cols-4 gap-1">
+              {(['1','2','3','4'] as const).map((p) => (
+                <label key={p} className="flex items-center gap-1 text-xs cursor-pointer">
+                  <Checkbox
+                    checked={draftPeriods.includes(p)}
+                    onCheckedChange={(v) => setDraftPeriods((prev) => v === true ? [...prev, p].sort() : prev.filter((x) => x !== p))}
+                  />
+                  LP{p}
+                </label>
+              ))}
+            </div>
+            <Button size="sm" className="w-full" onClick={() => { onUpdatePeriods(draftPeriods); setEditOpen(false); }}>
+              Spara
+            </Button>
+          </div>
+        </PopoverContent>
+      </Popover>
       <button
         onClick={onRemove}
         className="absolute top-0.5 right-0.5 opacity-0 group-hover:opacity-100 text-destructive"
@@ -130,15 +172,38 @@ const DraggableCourseBlock = ({
   );
 };
 
+/* ============================== Ghost (read-only) span block ============================== */
+const GhostBlock = ({ it, fullscreen }: { it: ActionPlanItem; fullscreen?: boolean }) => {
+  const totalHp = effectiveHP(it);
+  const perLp = totalHp / (it.periods.length || 1);
+  return (
+    <div
+      className={cn(
+        'relative border border-dashed border-warning/60 bg-warning/10 rounded px-1.5 py-1 text-muted-foreground',
+        fullscreen ? 'text-xs' : 'text-[11px]',
+      )}
+      title={`${it.code} – flerperiodskurs (LP${it.periods.join('+')})`}
+    >
+      <div className={cn('font-mono', fullscreen ? 'text-[11px]' : 'text-[10px]')}>{it.code}</div>
+      <div className="truncate italic" title={it.name}>↳ {it.name}</div>
+      <div className={cn('text-primary/80', fullscreen ? 'text-[11px]' : 'text-[10px]')}>
+        {perLp.toFixed(1).replace(/\.0$/, '')} hp · av {totalHp.toFixed(1).replace(/\.0$/, '')} totalt
+      </div>
+    </div>
+  );
+};
+
 /* ============================== Droppable LP cell ============================== */
 const DroppableCell = ({
-  term, placement, items, onAdd, onRemove, fullscreen,
+  term, placement, items, ghosts, onAdd, onRemove, onUpdatePeriods, fullscreen,
 }: {
   term: string;
   placement: Placement;
   items: ActionPlanItem[];
+  ghosts: ActionPlanItem[];
   onAdd: () => void;
   onRemove: (id: string) => void;
+  onUpdatePeriods: (id: string, periods: string[]) => void;
   fullscreen?: boolean;
 }) => {
   const { setNodeRef, isOver } = useDroppable({ id: `${term}|${placement}` });
@@ -159,7 +224,16 @@ const DroppableCell = ({
       </div>
       <div className="space-y-1">
         {items.map((it) => (
-          <DraggableCourseBlock key={it.id} it={it} onRemove={() => onRemove(it.id)} fullscreen={fullscreen} />
+          <DraggableCourseBlock
+            key={it.id}
+            it={it}
+            onRemove={() => onRemove(it.id)}
+            onUpdatePeriods={(periods) => onUpdatePeriods(it.id, periods)}
+            fullscreen={fullscreen}
+          />
+        ))}
+        {ghosts.map((it) => (
+          <GhostBlock key={`ghost-${it.id}`} it={it} fullscreen={fullscreen} />
         ))}
         <button
           onClick={onAdd}
