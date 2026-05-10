@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { LogOut, User, BarChart3, Settings, Menu, X } from 'lucide-react';
+import { LogOut, User, BarChart3, Settings, Menu, X, LayoutGrid } from 'lucide-react';
 import lthLogo from '@/assets/lth-logo.png';
 import { COUNSELORS, getCounselorById } from '@/types/planning';
 import { useCounselorProfiles } from '@/hooks/useCourses';
@@ -13,9 +13,10 @@ interface HeaderProps {
   onShowStats: () => void;
   onShowAdmin?: () => void;
   isAdmin?: boolean;
+  onToggleAltView?: () => void;
 }
 
-export const Header = ({ onLogout, counselorId, onCounselorChange, onShowStats, onShowAdmin, isAdmin }: HeaderProps) => {
+export const Header = ({ onLogout, counselorId, onCounselorChange, onShowStats, onShowAdmin, isAdmin, onToggleAltView }: HeaderProps) => {
   const currentCounselor = getCounselorById(counselorId);
   const { profiles } = useCounselorProfiles();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -63,6 +64,18 @@ export const Header = ({ onLogout, counselorId, onCounselorChange, onShowStats, 
             <BarChart3 className="w-4 h-4 mr-1" />
             Statistik
           </Button>
+          {onToggleAltView && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onToggleAltView}
+              className="text-primary-foreground hover:bg-primary-foreground/10"
+              title="Växla till alternativ vy med vänstermeny"
+            >
+              <LayoutGrid className="w-4 h-4 mr-1" />
+              Alt-vy
+            </Button>
+          )}
           {isAdmin && onShowAdmin && (
             <Button
               variant="ghost"

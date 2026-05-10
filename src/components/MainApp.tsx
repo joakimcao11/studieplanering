@@ -9,6 +9,7 @@ import { MeetingNotesTab } from '@/components/MeetingNotesTab';
 import { OnboardingOverlay } from '@/components/OnboardingOverlay';
 import { StatisticsPage } from '@/components/StatisticsPage';
 import { AdminPage } from '@/components/AdminPage';
+import { AppShell, ShellSection } from '@/components/AppShell';
 import { usePlanningState } from '@/hooks/usePlanningState';
 import { useCounselorProfiles } from '@/hooks/useCourses';
 import { Button } from '@/components/ui/button';
@@ -37,6 +38,16 @@ export const MainApp = ({ onLogout, initialCounselorId, onCounselorIdChange }: M
   const [showStats, setShowStats] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [useAltView, setUseAltView] = useState<boolean>(() => {
+    try { return localStorage.getItem('useAltView') === '1'; } catch { return false; }
+  });
+  const toggleAltView = () => {
+    setUseAltView((v) => {
+      const next = !v;
+      try { localStorage.setItem('useAltView', next ? '1' : '0'); } catch { /* noop */ }
+      return next;
+    });
+  };
   const { profiles } = useCounselorProfiles();
   
   // Check if current counselor is admin
@@ -83,6 +94,106 @@ export const MainApp = ({ onLogout, initialCounselorId, onCounselorIdChange }: M
     return lastSaved.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
   };
 
+  /* ------------- Shared section content (used by both standard and alt views) ------------- */
+  const renderSection = () => {
+    if (showAdmin && isAdmin) return <AdminPage onBack={() => setShowAdmin(false)} />;
+    if (showStats) return <StatisticsPage onBack={() => setShowStats(false)} />;
+    if (currentTab === 1) {
+      return (
+        <>
+          <OnboardingOverlay tabId={1} />
+          <PlanningTab
+            program={studentInfo.program}
+            terms={terms}
+            notes={notes}
+            onAddTerm={addTerm}
+            onRemoveTerm={removeTerm}
+            onAddCourse={addCourseToTerm}
+            onRemoveCourse={removeCourseFromTerm}
+            onUpdateTerm={updateTerm}
+            onNotesChange={setNotes}
+            onTermsChange={setTerms}
+            onNextTab={() => setCurrentTab(0)}
+            onProgramChange={(program) => updateStudentInfo({ program })}
+          />
+        </>
+      );
+    }
+    if (currentTab === 0) {
+      return (
+        <BasicInfoTab
+          studentInfo={studentInfo}
+          actionItems={actionItems}
+          onStudentInfoChange={updateStudentInfo}
+          onActionItemsChange={{ add: addActionItem, update: updateActionItem, remove: removeActionItem }}
+          onNextTab={() => setCurrentTab(2)}
+          onPrevTab={() => setCurrentTab(1)}
+        />
+      );
+    }
+    if (currentTab === 2) {
+      return (
+        <OverviewTab
+          studentInfo={studentInfo}
+          agenda={agenda}
+          terms={terms}
+          notes={notes}
+          actionItems={actionItems}
+          onAgendaChange={setAgenda}
+          onNotesChange={setNotes}
+          onTermsChange={setTerms}
+          onStudentInfoChange={updateStudentInfo}
+          onPrevTab={() => setCurrentTab(0)}
+        />
+      );
+    }
+    if (currentTab === 3) {
+      return (
+        <>
+          <OnboardingOverlay tabId={3} />
+          <SimplePlanningTab />
+        </>
+      );
+    }
+    if (currentTab === 4) {
+      return (
+        <>
+          <OnboardingOverlay tabId={4} />
+          <MeetingNotesTab />
+        </>
+      );
+    }
+    return null;
+  };
+
+  /* ------------- Alt view (left sidebar shell) ------------- */
+  if (useAltView) {
+    const tabToSection: Record<number, ShellSection> = { 4: 'meeting', 1: 'planning', 3: 'simple', 0: 'meeting', 2: 'meeting' };
+    const currentShellSection: ShellSection = showAdmin ? 'admin' : showStats ? 'stats' : (tabToSection[currentTab] ?? 'meeting');
+    const handleSectionChange = (s: ShellSection) => {
+      setShowAdmin(false);
+      setShowStats(false);
+      if (s === 'admin') setShowAdmin(true);
+      else if (s === 'stats') setShowStats(true);
+      else if (s === 'meeting') setCurrentTab(4);
+      else if (s === 'planning') setCurrentTab(1);
+      else if (s === 'simple') setCurrentTab(3);
+    };
+    return (
+      <AppShell
+        section={currentShellSection}
+        onSectionChange={handleSectionChange}
+        isAdmin={isAdmin}
+        counselorId={studentInfo.counselorId}
+        onCounselorChange={handleCounselorChange}
+        onLogout={onLogout}
+        onExitAltView={toggleAltView}
+      >
+        {renderSection()}
+      </AppShell>
+    );
+  }
+
   if (showAdmin && isAdmin) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
@@ -93,6 +204,7 @@ export const MainApp = ({ onLogout, initialCounselorId, onCounselorIdChange }: M
           onShowStats={() => { setShowAdmin(false); setShowStats(true); }}
           onShowAdmin={() => setShowAdmin(true)}
           isAdmin={isAdmin}
+          onToggleAltView={toggleAltView}
         />
         <main className="flex-1 container mx-auto px-4 py-6">
           <AdminPage onBack={() => setShowAdmin(false)} />
@@ -111,6 +223,7 @@ export const MainApp = ({ onLogout, initialCounselorId, onCounselorIdChange }: M
           onShowStats={() => setShowStats(true)}
           onShowAdmin={() => { setShowStats(false); setShowAdmin(true); }}
           isAdmin={isAdmin}
+          onToggleAltView={toggleAltView}
         />
         <main className="flex-1 container mx-auto px-4 py-6">
           <StatisticsPage onBack={() => setShowStats(false)} />
@@ -128,6 +241,7 @@ export const MainApp = ({ onLogout, initialCounselorId, onCounselorIdChange }: M
           onShowStats={() => setShowStats(true)}
           onShowAdmin={() => setShowAdmin(true)}
           isAdmin={isAdmin}
+          onToggleAltView={toggleAltView}
         />
       <TabNavigation currentTab={currentTab} onTabChange={setCurrentTab} />
       
