@@ -15,13 +15,14 @@ import { saveAs } from 'file-saver';
 import { Download, FileText } from 'lucide-react';
 import {
   buildGovHeader, buildGovFooter, buildGovTitle, loadLogoBuffer,
-  GOV_PAGE_PROPS, GOV_SANS, GOV_ACCENT,
+  GOV_PAGE_PROPS, GOV_SANS, GOV_ACCENT, GOV_DEFAULT_FOOTER,
 } from '@/utils/wordTemplate';
 import {
-  buildLuHeader, buildLuFooter, buildLuTitle,
+  buildLuHeader, buildLuFooter, buildLuTitle, loadLuLogoBuffer,
   LU_PAGE_PROPS, LU_BODY_FONT, LU_DEFAULTS, LuHeaderInfo,
 } from '@/utils/wordTemplateLU';
 import lthLogo from '@/assets/lth-logo.png';
+import luLogo from '@/assets/lu-logo.png';
 
 export type DocSection =
   | { type: 'paragraph'; heading?: string; body: string }
@@ -48,7 +49,18 @@ export const ExportPreviewDialog = ({
   const [docDate, setDocDate] = useState(date);
 
   // LTH meta
-  const [lthCounselor, setLthCounselor] = useState(counselorName);
+  const [lth, setLth] = useState({
+    counselor: counselorName,
+    institution: 'Lunds Tekniska Högskola',
+    unit: 'Studie- och karriärvägledningen',
+    handler: 'Studievägledare',
+    postalAddress: GOV_DEFAULT_FOOTER.postalAddress,
+    visitAddress: GOV_DEFAULT_FOOTER.visitAddress,
+    phone: GOV_DEFAULT_FOOTER.phone,
+    email: GOV_DEFAULT_FOOTER.email,
+    web: GOV_DEFAULT_FOOTER.web,
+    recipient: '',
+  });
 
   // LU meta
   const [lu, setLu] = useState<LuHeaderInfo & { recipient: string; documentName: string }>({
@@ -63,7 +75,7 @@ export const ExportPreviewDialog = ({
       setSections(initialSections);
       setDocName(documentName);
       setDocDate(date);
-      setLthCounselor(counselorName);
+      setLth((prev) => ({ ...prev, counselor: counselorName || prev.counselor }));
       setLu((prev) => ({ ...prev, handler: counselorName || prev.handler, documentName }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -151,13 +163,20 @@ export const ExportPreviewDialog = ({
 
     let header, footer, pageProps;
     if (template === 'LU') {
-      header = buildLuHeader(lu);
+      const luLogoBuf = await loadLuLogoBuffer();
+      header = buildLuHeader(lu, luLogoBuf);
       footer = buildLuFooter();
       pageProps = LU_PAGE_PROPS;
     } else {
       const logoBuffer = await loadLogoBuffer();
-      header = buildGovHeader({ counselorName: lthCounselor || 'Studievägledare', date: docDate }, logoBuffer);
-      footer = buildGovFooter();
+      header = buildGovHeader({ counselorName: lth.counselor || 'Studievägledare', date: docDate }, logoBuffer);
+      footer = buildGovFooter({
+        postalAddress: lth.postalAddress,
+        visitAddress: lth.visitAddress,
+        phone: lth.phone,
+        email: lth.email,
+        web: lth.web,
+      });
       pageProps = GOV_PAGE_PROPS;
     }
 
@@ -194,7 +213,7 @@ export const ExportPreviewDialog = ({
         {isLu ? (
           <>
             <div className="flex items-start justify-between border-b border-gray-400 pb-2 mb-3">
-              <div className="font-bold text-[14px]">LUNDS UNIVERSITET</div>
+              <img src={luLogo} alt="LU" className="h-14" />
               <div className="text-right text-[11px]">
                 <div>{lu.institution}</div>
                 <div>{lu.unit}</div>
@@ -214,13 +233,18 @@ export const ExportPreviewDialog = ({
             <div className="flex items-center justify-between border-b-2 pb-2 mb-3" style={{ borderColor: '#2E75B6' }}>
               <img src={lthLogo} alt="LTH" className="h-10" />
               <div className="text-right">
-                <div className="font-bold text-[#003366]">Studievägledningssamtal</div>
-                <div className="text-[11px]">{lthCounselor}</div>
+                <div className="font-bold text-[#003366]">{lth.unit}</div>
+                <div className="text-[11px]">{lth.handler} · {lth.counselor}</div>
                 <div className="text-[10px] text-gray-600">{docDate}</div>
               </div>
             </div>
             <div className="font-bold text-[20px] text-[#003366] border-b-2 border-[#2E75B6] pb-1">MINNESANTECKNING</div>
             <div className="font-bold mt-2 text-[#003366]">{docName}</div>
+            {lth.recipient && <pre className="whitespace-pre-wrap mt-2 text-[11px]">{lth.recipient}</pre>}
+            <div className="text-[9px] italic text-gray-600 mt-3 border-t pt-2">
+              <b>Postadress</b> {lth.postalAddress} &nbsp; <b>Besöksadress</b> {lth.visitAddress}<br />
+              <b>Telefon</b> {lth.phone} &nbsp; <b>E-post</b> {lth.email} &nbsp; <b>Webb</b> {lth.web}
+            </div>
           </>
         )}
 
@@ -247,7 +271,7 @@ export const ExportPreviewDialog = ({
         ))}
       </div>
     );
-  }, [template, sections, docName, docDate, lthCounselor, lu]);
+  }, [template, sections, docName, docDate, lth, lu]);
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
@@ -287,9 +311,47 @@ export const ExportPreviewDialog = ({
               </div>
 
               {template === 'LTH' ? (
-                <div className="space-y-1">
-                  <Label className="text-xs">Studievägledare</Label>
-                  <Input value={lthCounselor} onChange={(e) => setLthCounselor(e.target.value)} />
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1 col-span-2">
+                    <Label className="text-xs">Institution / Avdelning</Label>
+                    <Input value={lth.institution} onChange={(e) => setLth({ ...lth, institution: e.target.value })} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Enhet</Label>
+                    <Input value={lth.unit} onChange={(e) => setLth({ ...lth, unit: e.target.value })} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Handläggare/Titel</Label>
+                    <Input value={lth.handler} onChange={(e) => setLth({ ...lth, handler: e.target.value })} />
+                  </div>
+                  <div className="space-y-1 col-span-2">
+                    <Label className="text-xs">Studievägledare</Label>
+                    <Input value={lth.counselor} onChange={(e) => setLth({ ...lth, counselor: e.target.value })} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Postadress</Label>
+                    <Input value={lth.postalAddress} onChange={(e) => setLth({ ...lth, postalAddress: e.target.value })} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Besöksadress</Label>
+                    <Input value={lth.visitAddress} onChange={(e) => setLth({ ...lth, visitAddress: e.target.value })} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Telefon</Label>
+                    <Input value={lth.phone} onChange={(e) => setLth({ ...lth, phone: e.target.value })} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">E-post</Label>
+                    <Input value={lth.email} onChange={(e) => setLth({ ...lth, email: e.target.value })} />
+                  </div>
+                  <div className="space-y-1 col-span-2">
+                    <Label className="text-xs">Webbadress</Label>
+                    <Input value={lth.web} onChange={(e) => setLth({ ...lth, web: e.target.value })} />
+                  </div>
+                  <div className="space-y-1 col-span-2">
+                    <Label className="text-xs">Adressat (valfritt)</Label>
+                    <Textarea rows={3} value={lth.recipient} onChange={(e) => setLth({ ...lth, recipient: e.target.value })} />
+                  </div>
                 </div>
               ) : (
                 <div className="grid grid-cols-2 gap-2">
