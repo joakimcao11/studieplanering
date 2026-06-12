@@ -43,7 +43,7 @@ export const ExportPreviewDialog = ({
   open, onClose, defaultTemplate = 'LTH',
   documentName, fileBaseName, counselorName, date, sections: initialSections,
 }: ExportPreviewProps) => {
-  const [template, setTemplate] = useState<'LTH' | 'LU'>(defaultTemplate);
+  const [template, setTemplate] = useState<'LTH' | 'LU' | 'CUSTOM'>(defaultTemplate);
   const [sections, setSections] = useState<DocSection[]>(initialSections);
   const [docName, setDocName] = useState(documentName);
   const [docDate, setDocDate] = useState(date);
@@ -70,6 +70,34 @@ export const ExportPreviewDialog = ({
     documentName: documentName,
   });
 
+  // Custom template state (persists in localStorage)
+  const CUSTOM_KEY = 'customTemplateSettings';
+  const loadCustom = () => {
+    try {
+      const raw = localStorage.getItem(CUSTOM_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch {}
+    return null;
+  };
+  const defaultCustom = {
+    counselor: counselorName,
+    institution: 'Min organisation',
+    unit: 'Min avdelning',
+    handler: 'Handläggare',
+    postalAddress: '',
+    visitAddress: '',
+    phone: '',
+    email: '',
+    web: '',
+    recipient: '',
+    logoDataUrl: '' as string,
+    documentTitle: 'MINNESANTECKNING',
+  };
+  const [custom, setCustom] = useState(() => ({ ...defaultCustom, ...(loadCustom() || {}) }));
+  useEffect(() => {
+    try { localStorage.setItem(CUSTOM_KEY, JSON.stringify(custom)); } catch {}
+  }, [custom]);
+
   useEffect(() => {
     if (open) {
       setSections(initialSections);
@@ -77,6 +105,7 @@ export const ExportPreviewDialog = ({
       setDocDate(date);
       setLth((prev) => ({ ...prev, counselor: counselorName || prev.counselor }));
       setLu((prev) => ({ ...prev, handler: counselorName || prev.handler, documentName }));
+      setCustom((prev) => ({ ...prev, counselor: counselorName || prev.counselor }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
@@ -167,6 +196,19 @@ export const ExportPreviewDialog = ({
       header = buildLuHeader(lu, luLogoBuf);
       footer = buildLuFooter();
       pageProps = LU_PAGE_PROPS;
+    } else if (template === 'CUSTOM') {
+      const logoBuf = custom.logoDataUrl
+        ? dataUrlToArrayBuffer(custom.logoDataUrl)
+        : await loadLogoBuffer();
+      header = buildGovHeader({ counselorName: custom.counselor || 'Handläggare', date: docDate }, logoBuf);
+      footer = buildGovFooter({
+        postalAddress: custom.postalAddress,
+        visitAddress: custom.visitAddress,
+        phone: custom.phone,
+        email: custom.email,
+        web: custom.web,
+      });
+      pageProps = GOV_PAGE_PROPS;
     } else {
       const logoBuffer = await loadLogoBuffer();
       header = buildGovHeader({ counselorName: lth.counselor || 'Studievägledare', date: docDate }, logoBuffer);
@@ -200,7 +242,7 @@ export const ExportPreviewDialog = ({
       }],
     });
     const blob = await Packer.toBlob(doc);
-    const suffix = template === 'LU' ? '_LU' : '_LTH';
+    const suffix = template === 'LU' ? '_LU' : template === 'CUSTOM' ? '_CUSTOM' : '_LTH';
     saveAs(blob, `${fileBaseName}${suffix}.docx`);
     onClose();
   };
@@ -208,6 +250,7 @@ export const ExportPreviewDialog = ({
   // Live HTML preview
   const preview = useMemo(() => {
     const isLu = template === 'LU';
+    const isCustom = template === 'CUSTOM';
     return (
       <div className={`p-6 bg-white text-black text-[12px] leading-snug min-h-full ${isLu ? 'font-serif' : ''}`}>
         {isLu ? (
@@ -227,6 +270,28 @@ export const ExportPreviewDialog = ({
             <div className="font-bold uppercase text-[16px]">{docName}</div>
             <div className="italic text-gray-700 mb-3">Datum {docDate}</div>
             {lu.recipient && <pre className="whitespace-pre-wrap mb-3">{lu.recipient}</pre>}
+          </>
+        ) : isCustom ? (
+          <>
+            <div className="flex items-center justify-between border-b-2 pb-2 mb-3" style={{ borderColor: '#2E75B6' }}>
+              {custom.logoDataUrl ? (
+                <img src={custom.logoDataUrl} alt="Logo" className="h-12 object-contain" />
+              ) : (
+                <div className="h-12 w-32 border border-dashed border-gray-300 flex items-center justify-center text-[10px] text-gray-400">Logo</div>
+              )}
+              <div className="text-right">
+                <div className="font-bold text-[#003366]">{custom.unit}</div>
+                <div className="text-[11px]">{custom.handler} · {custom.counselor}</div>
+                <div className="text-[10px] text-gray-600">{docDate}</div>
+              </div>
+            </div>
+            <div className="font-bold text-[20px] text-[#003366] border-b-2 border-[#2E75B6] pb-1">{custom.documentTitle}</div>
+            <div className="font-bold mt-2 text-[#003366]">{docName}</div>
+            {custom.recipient && <pre className="whitespace-pre-wrap mt-2 text-[11px]">{custom.recipient}</pre>}
+            <div className="text-[9px] italic text-gray-600 mt-3 border-t pt-2">
+              <b>Postadress</b> {custom.postalAddress} &nbsp; <b>Besöksadress</b> {custom.visitAddress}<br />
+              <b>Telefon</b> {custom.phone} &nbsp; <b>E-post</b> {custom.email} &nbsp; <b>Webb</b> {custom.web}
+            </div>
           </>
         ) : (
           <>
@@ -271,7 +336,7 @@ export const ExportPreviewDialog = ({
         ))}
       </div>
     );
-  }, [template, sections, docName, docDate, lth, lu]);
+  }, [template, sections, docName, docDate, lth, lu, custom]);
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
@@ -289,12 +354,15 @@ export const ExportPreviewDialog = ({
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label className="font-medium">Mall</Label>
-                <RadioGroup value={template} onValueChange={(v) => setTemplate(v as 'LTH' | 'LU')} className="flex gap-4">
+                <RadioGroup value={template} onValueChange={(v) => setTemplate(v as 'LTH' | 'LU' | 'CUSTOM')} className="flex gap-4 flex-wrap">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <RadioGroupItem value="LTH" /> LTH-mall
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer">
                     <RadioGroupItem value="LU" /> LU-mall
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <RadioGroupItem value="CUSTOM" /> Anpassad mall
                   </label>
                 </RadioGroup>
               </div>
