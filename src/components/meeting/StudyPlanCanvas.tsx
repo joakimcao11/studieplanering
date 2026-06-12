@@ -296,6 +296,9 @@ export const StudyPlanCanvas = ({
   const [pendingCourseId, setPendingCourseId] = useState<string | null>(null);
   const [pendingChoice, setPendingChoice] = useState<string>('single:LP1');
 
+  // Selected course inside Add-dialog (inline placement flow)
+  const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
+
   const openAddDialog = (term: string, placement: Placement) => {
     setAddTerm(term);
     setAddPlacement(placement);
@@ -306,6 +309,7 @@ export const StudyPlanCanvas = ({
     else setPeriodChecks({ '1': false, '2': false, '3': false, '4': false });
     setSearch('');
     setPendingChoice(`single:${placement}`);
+    setSelectedCourseId(null);
     setAddOpen(true);
   };
 
@@ -345,6 +349,27 @@ export const StudyPlanCanvas = ({
     ]);
     setPendingCourseId(null);
     toast({ title: 'Tillagd', description: `${c.code} – ${addTerm} ${placementShort(placement)}` });
+  };
+
+  const smartDefaultChoice = (c: any): string => {
+    const ps: string[] = c?.periods || [];
+    if (ps.length === 2 && ps.includes('1') && ps.includes('2')) return 'between:LP1|1,2';
+    if (ps.length === 2 && ps.includes('3') && ps.includes('4')) return 'between:LP3|3,4';
+    if (ps.length === 1) return `single:LP${ps[0]}`;
+    return `single:${addPlacement}`;
+  };
+
+  const handleSelectCourse = (c: any) => {
+    setSelectedCourseId(c.id);
+    setPendingChoice(smartDefaultChoice(c));
+  };
+
+  const handleConfirmAdd = () => {
+    const c = filteredCourses.find((x) => x.id === selectedCourseId) ?? courses.find((x) => x.id === selectedCourseId);
+    if (!c) return;
+    addCourseWithChoice(c, pendingChoice);
+    setAddOpen(false);
+    setSelectedCourseId(null);
   };
 
   const addCustomCourse = () => {
