@@ -15,7 +15,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import {
   Plus, Trash2, ChevronLeft, ChevronRight, ExternalLink, Download, GraduationCap,
   CalendarDays, ListChecks, Search, Sparkles, Maximize2, Minimize2, Home, Wrench,
-  Settings, Briefcase, ChevronsRight, ChevronsLeft, GripVertical, MoreVertical,
+  Settings, Briefcase, ChevronsRight, ChevronsLeft, GripVertical, MoreVertical, Check,
 } from 'lucide-react';
 import {
   DndContext, DragEndEvent, PointerSensor, useSensor, useSensors,
