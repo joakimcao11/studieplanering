@@ -24,6 +24,15 @@ import {
 import lthLogo from '@/assets/lth-logo.png';
 import luLogo from '@/assets/lu-logo.png';
 
+function dataUrlToArrayBuffer(dataUrl: string): ArrayBuffer {
+  const base64 = dataUrl.split(',')[1] || '';
+  const bin = atob(base64);
+  const buf = new ArrayBuffer(bin.length);
+  const view = new Uint8Array(buf);
+  for (let i = 0; i < bin.length; i++) view[i] = bin.charCodeAt(i);
+  return buf;
+}
+
 export type DocSection =
   | { type: 'paragraph'; heading?: string; body: string }
   | { type: 'table'; heading?: string; columns: string[]; rows: string[][] };
@@ -421,7 +430,7 @@ export const ExportPreviewDialog = ({
                     <Textarea rows={3} value={lth.recipient} onChange={(e) => setLth({ ...lth, recipient: e.target.value })} />
                   </div>
                 </div>
-              ) : (
+              ) : template === 'LU' ? (
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1 col-span-2">
                     <Label className="text-xs">Institution / Avdelning</Label>
@@ -458,6 +467,78 @@ export const ExportPreviewDialog = ({
                   <div className="space-y-1 col-span-2">
                     <Label className="text-xs">Adressat (valfritt)</Label>
                     <Textarea rows={3} value={lu.recipient} onChange={(e) => setLu({ ...lu, recipient: e.target.value })} />
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1 col-span-2">
+                    <Label className="text-xs">Logo (PNG/JPG rekommenderas)</Label>
+                    <div className="flex items-center gap-2">
+                      {custom.logoDataUrl && (
+                        <img src={custom.logoDataUrl} alt="Logo" className="h-10 border rounded p-1 bg-white object-contain" />
+                      )}
+                      <Input
+                        type="file"
+                        accept="image/png,image/jpeg,image/svg+xml"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          const reader = new FileReader();
+                          reader.onload = () => setCustom({ ...custom, logoDataUrl: String(reader.result || '') });
+                          reader.readAsDataURL(file);
+                        }}
+                        className="text-xs"
+                      />
+                      {custom.logoDataUrl && (
+                        <Button size="sm" variant="outline" onClick={() => setCustom({ ...custom, logoDataUrl: '' })}>
+                          Ta bort
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="space-y-1 col-span-2">
+                    <Label className="text-xs">Dokumenttitel (stor rubrik)</Label>
+                    <Input value={custom.documentTitle} onChange={(e) => setCustom({ ...custom, documentTitle: e.target.value })} />
+                  </div>
+                  <div className="space-y-1 col-span-2">
+                    <Label className="text-xs">Institution / Organisation</Label>
+                    <Input value={custom.institution} onChange={(e) => setCustom({ ...custom, institution: e.target.value })} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Enhet / Avdelning</Label>
+                    <Input value={custom.unit} onChange={(e) => setCustom({ ...custom, unit: e.target.value })} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Handläggare/Titel</Label>
+                    <Input value={custom.handler} onChange={(e) => setCustom({ ...custom, handler: e.target.value })} />
+                  </div>
+                  <div className="space-y-1 col-span-2">
+                    <Label className="text-xs">Namn (handläggare)</Label>
+                    <Input value={custom.counselor} onChange={(e) => setCustom({ ...custom, counselor: e.target.value })} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Postadress</Label>
+                    <Input value={custom.postalAddress} onChange={(e) => setCustom({ ...custom, postalAddress: e.target.value })} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Besöksadress</Label>
+                    <Input value={custom.visitAddress} onChange={(e) => setCustom({ ...custom, visitAddress: e.target.value })} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Telefon</Label>
+                    <Input value={custom.phone} onChange={(e) => setCustom({ ...custom, phone: e.target.value })} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">E-post</Label>
+                    <Input value={custom.email} onChange={(e) => setCustom({ ...custom, email: e.target.value })} />
+                  </div>
+                  <div className="space-y-1 col-span-2">
+                    <Label className="text-xs">Webbadress</Label>
+                    <Input value={custom.web} onChange={(e) => setCustom({ ...custom, web: e.target.value })} />
+                  </div>
+                  <div className="space-y-1 col-span-2">
+                    <Label className="text-xs">Adressat (valfritt)</Label>
+                    <Textarea rows={3} value={custom.recipient} onChange={(e) => setCustom({ ...custom, recipient: e.target.value })} />
                   </div>
                 </div>
               )}
