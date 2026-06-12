@@ -141,7 +141,13 @@ const DraggableCourseBlock = ({
             <MoreVertical className="w-3 h-3" />
           </button>
         </PopoverTrigger>
-        <PopoverContent className="w-56 z-[60]" align="end" onClick={(e) => e.stopPropagation()}>
+        <PopoverContent
+          className="w-56 z-[60]"
+          align="end"
+          collisionPadding={16}
+          sideOffset={8}
+          onClick={(e) => e.stopPropagation()}
+        >
           <div className="space-y-2">
             <div className="text-xs font-medium">Läsperioder (flerperiod)</div>
             <div className="grid grid-cols-4 gap-1">
@@ -705,8 +711,16 @@ export const StudyPlanCanvas = ({
                         <PopoverTrigger asChild>
                           <Button size="sm" variant="outline">Lägg till</Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-80 z-[60]" align="end">
-                          <div className="space-y-3">
+                        <PopoverContent
+                          className="w-80 z-[60] p-0 flex flex-col"
+                          align="end"
+                          side="bottom"
+                          sideOffset={8}
+                          collisionPadding={16}
+                          avoidCollisions
+                          style={{ maxHeight: 'calc(100vh - 32px)' }}
+                        >
+                          <div className="overflow-y-auto p-4 space-y-3 flex-1 min-h-0">
                             <div className="text-xs font-medium">Var ska kursen placeras?</div>
                             <RadioGroup value={pendingChoice} onValueChange={setPendingChoice} className="space-y-1">
                               {PLACEMENT_CHOICES.map((opt) => {
@@ -725,6 +739,8 @@ export const StudyPlanCanvas = ({
                               <Label className="text-xs">Termin</Label>
                               <Input value={addTerm} onChange={(e) => setAddTerm(e.target.value)} className="h-7 text-xs" />
                             </div>
+                          </div>
+                          <div className="sticky bottom-0 bg-popover border-t p-3">
                             <Button size="sm" className="w-full" onClick={() => addCourseWithChoice(c, pendingChoice)}>
                               Bekräfta
                             </Button>

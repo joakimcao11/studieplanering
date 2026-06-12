@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { LogOut, User, BarChart3, Settings, Menu, X, LayoutGrid } from 'lucide-react';
-import lthLogo from '@/assets/lth-logo.png';
 import { COUNSELORS, getCounselorById } from '@/types/planning';
 import { useCounselorProfiles } from '@/hooks/useCourses';
 
@@ -25,12 +24,7 @@ export const Header = ({ onLogout, counselorId, onCounselorChange, onShowStats, 
     <header className="bg-primary text-primary-foreground shadow-md">
       <div className="container mx-auto px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3 md:gap-4 min-w-0">
-          <img 
-            src={lthLogo} 
-            alt="LTH" 
-            className="h-10 md:h-12 bg-white rounded px-2 py-1 shrink-0"
-          />
-          <div className="min-w-0 hidden sm:block">
+          <div className="min-w-0">
             <h1 className="text-base md:text-lg font-semibold truncate">Studieplaneringsverktyg</h1>
             <p className="text-xs md:text-sm text-primary-foreground/80 truncate">
               Studie- och karriärvägledningen
