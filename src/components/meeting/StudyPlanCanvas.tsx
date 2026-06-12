@@ -15,7 +15,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import {
   Plus, Trash2, ChevronLeft, ChevronRight, ExternalLink, Download, GraduationCap,
   CalendarDays, ListChecks, Search, Sparkles, Maximize2, Minimize2, Home, Wrench,
-  Settings, Briefcase, ChevronsRight, ChevronsLeft, GripVertical, MoreVertical,
+  Settings, Briefcase, ChevronsRight, ChevronsLeft, GripVertical, MoreVertical, Check,
 } from 'lucide-react';
 import {
   DndContext, DragEndEvent, PointerSensor, useSensor, useSensors,
@@ -296,6 +296,9 @@ export const StudyPlanCanvas = ({
   const [pendingCourseId, setPendingCourseId] = useState<string | null>(null);
   const [pendingChoice, setPendingChoice] = useState<string>('single:LP1');
 
+  // Selected course inside Add-dialog (inline placement flow)
+  const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
+
   const openAddDialog = (term: string, placement: Placement) => {
     setAddTerm(term);
     setAddPlacement(placement);
@@ -306,6 +309,7 @@ export const StudyPlanCanvas = ({
     else setPeriodChecks({ '1': false, '2': false, '3': false, '4': false });
     setSearch('');
     setPendingChoice(`single:${placement}`);
+    setSelectedCourseId(null);
     setAddOpen(true);
   };
 
@@ -345,6 +349,27 @@ export const StudyPlanCanvas = ({
     ]);
     setPendingCourseId(null);
     toast({ title: 'Tillagd', description: `${c.code} – ${addTerm} ${placementShort(placement)}` });
+  };
+
+  const smartDefaultChoice = (c: any): string => {
+    const ps: string[] = c?.periods || [];
+    if (ps.length === 2 && ps.includes('1') && ps.includes('2')) return 'between:LP1|1,2';
+    if (ps.length === 2 && ps.includes('3') && ps.includes('4')) return 'between:LP3|3,4';
+    if (ps.length === 1) return `single:LP${ps[0]}`;
+    return `single:${addPlacement}`;
+  };
+
+  const handleSelectCourse = (c: any) => {
+    setSelectedCourseId(c.id);
+    setPendingChoice(smartDefaultChoice(c));
+  };
+
+  const handleConfirmAdd = () => {
+    const c = filteredCourses.find((x) => x.id === selectedCourseId) ?? courses.find((x) => x.id === selectedCourseId);
+    if (!c) return;
+    addCourseWithChoice(c, pendingChoice);
+    setAddOpen(false);
+    setSelectedCourseId(null);
   };
 
   const addCustomCourse = () => {
@@ -636,127 +661,120 @@ export const StudyPlanCanvas = ({
     <>
       {/* Add course dialog */}
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-3">
+        <DialogContent className="max-w-4xl p-0 gap-0 flex flex-col max-h-[90vh]">
+          <DialogHeader className="px-6 pt-6 pb-4 border-b shrink-0">
+            <DialogTitle className="flex items-center gap-3 flex-wrap">
               <span>Lägg till kurs</span>
-              <div className="flex items-center gap-1">
-                <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => {
-                  const idx = PLACEMENT_ORDER.indexOf(addPlacement);
-                  setAddPlacement(PLACEMENT_ORDER[Math.max(0, idx - 1)]);
-                }}><ChevronLeft className="w-4 h-4" /></Button>
-                <Badge variant="secondary" className="text-sm px-3 py-1">{placementLabel(addPlacement)}</Badge>
-                <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => {
-                  const idx = PLACEMENT_ORDER.indexOf(addPlacement);
-                  setAddPlacement(PLACEMENT_ORDER[Math.min(PLACEMENT_ORDER.length - 1, idx + 1)]);
-                }}><ChevronRight className="w-4 h-4" /></Button>
-              </div>
+              <ChevronRight className="w-4 h-4 text-muted-foreground" />
+              <Badge variant="secondary" className="text-sm px-3 py-1">{placementLabel(addPlacement)}</Badge>
+              <ChevronRight className="w-4 h-4 text-muted-foreground" />
               <Badge variant="outline">{addTerm}</Badge>
             </DialogTitle>
           </DialogHeader>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-3">
-              <div className="relative">
-                <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Sök efter kurser..." className="pl-8" />
-              </div>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                {(['1', '2', '3', '4'] as const).map((p) => (
-                  <label key={p} className="flex items-center gap-2 cursor-pointer">
-                    <Checkbox checked={periodChecks[p]} onCheckedChange={(v) => setPeriodChecks((s) => ({ ...s, [p]: v === true }))} />
-                    LP{p}
-                  </label>
-                ))}
-              </div>
-              <Button variant="secondary" size="sm" className="w-full" onClick={() => setCustomOpen(true)}>
-                <Plus className="w-4 h-4 mr-1" /> Skapa egen kurs
-              </Button>
-            </div>
-
-            <div className="md:col-span-2">
-              <ScrollArea className="h-80 border rounded">
-                <div className="p-1">
-                  {filteredCourses.length === 0 && (
-                    <p className="text-sm text-muted-foreground p-4 text-center">Inga kurser hittades</p>
-                  )}
-                  {filteredCourses.map((c) => (
-                    <div key={c.id} className="flex items-center justify-between p-2 hover:bg-muted/50 rounded">
-                      <div className="min-w-0 flex-1">
-                        <div className="flex gap-2 items-center flex-wrap">
-                          <span className="font-mono text-xs font-semibold">{c.code}</span>
-                          <span className="text-xs text-primary">{c.hp} hp</span>
-                          {c.periods?.length > 0 && (
-                            <Badge variant="outline" className="text-[10px]">LP{c.periods.join(',')}</Badge>
-                          )}
-                        </div>
-                        <p className="text-sm truncate">{c.name}</p>
-                      </div>
-                      <Popover
-                        open={pendingCourseId === c.id}
-                        onOpenChange={(o) => {
-                          if (o) {
-                            setPendingCourseId(c.id);
-                            // Smart default: prefer multi-period if course has 2 periods
-                            const ps = c.periods || [];
-                            if (ps.length === 2 && ps.includes('1') && ps.includes('2')) setPendingChoice('between:LP1|1,2');
-                            else if (ps.length === 2 && ps.includes('3') && ps.includes('4')) setPendingChoice('between:LP3|3,4');
-                            else if (ps.length === 1) setPendingChoice(`single:LP${ps[0]}`);
-                            else setPendingChoice(`single:${addPlacement}`);
-                          } else {
-                            setPendingCourseId(null);
-                          }
-                        }}
-                      >
-                        <PopoverTrigger asChild>
-                          <Button size="sm" variant="outline">Lägg till</Button>
-                        </PopoverTrigger>
-                        <PopoverContent
-                          className="w-80 z-[60] p-0 flex flex-col"
-                          align="end"
-                          side="bottom"
-                          sideOffset={8}
-                          collisionPadding={16}
-                          avoidCollisions
-                          style={{ maxHeight: 'calc(100vh - 32px)' }}
-                        >
-                          <div className="overflow-y-auto p-4 space-y-3 flex-1 min-h-0">
-                            <div className="text-xs font-medium">Var ska kursen placeras?</div>
-                            <RadioGroup value={pendingChoice} onValueChange={setPendingChoice} className="space-y-1">
-                              {PLACEMENT_CHOICES.map((opt) => {
-                                const key = opt.kind === 'between'
-                                  ? `between:${opt.placement}|${opt.periods.join(',')}`
-                                  : `single:${opt.placement}`;
-                                return (
-                                  <label key={key} className="flex items-center gap-2 text-sm cursor-pointer">
-                                    <RadioGroupItem value={key} />
-                                    {opt.label}
-                                  </label>
-                                );
-                              })}
-                            </RadioGroup>
-                            <div className="flex items-center gap-2 pt-1 border-t">
-                              <Label className="text-xs">Termin</Label>
-                              <Input value={addTerm} onChange={(e) => setAddTerm(e.target.value)} className="h-7 text-xs" />
-                            </div>
-                          </div>
-                          <div className="sticky bottom-0 bg-popover border-t p-3">
-                            <Button size="sm" className="w-full" onClick={() => addCourseWithChoice(c, pendingChoice)}>
-                              Bekräfta
-                            </Button>
-                          </div>
-                        </PopoverContent>
-                      </Popover>
-                    </div>
+          <div className="flex-1 min-h-0 overflow-y-auto px-6 py-4 space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Left: search + filters */}
+              <div className="space-y-3">
+                <div className="relative">
+                  <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Sök efter kurser..." className="pl-8" />
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  {(['1', '2', '3', '4'] as const).map((p) => (
+                    <label key={p} className="flex items-center gap-2 cursor-pointer">
+                      <Checkbox checked={periodChecks[p]} onCheckedChange={(v) => setPeriodChecks((s) => ({ ...s, [p]: v === true }))} />
+                      LP{p}
+                    </label>
                   ))}
                 </div>
-              </ScrollArea>
+                <Button variant="secondary" size="sm" className="w-full" onClick={() => setCustomOpen(true)}>
+                  <Plus className="w-4 h-4 mr-1" /> Skapa egen kurs
+                </Button>
+              </div>
+
+              {/* Right: course list */}
+              <div className="md:col-span-2">
+                <div className="max-h-80 overflow-y-auto border rounded">
+                  <div className="p-1">
+                    {filteredCourses.length === 0 && (
+                      <p className="text-sm text-muted-foreground p-4 text-center">Inga kurser hittades</p>
+                    )}
+                    {filteredCourses.map((c) => {
+                      const isSelected = selectedCourseId === c.id;
+                      return (
+                        <div
+                          key={c.id}
+                          className={`flex items-center justify-between gap-2 p-2 rounded transition-colors ${
+                            isSelected ? 'bg-emerald-50 dark:bg-emerald-950/30' : 'hover:bg-muted/50'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            {isSelected && <Check className="w-4 h-4 text-emerald-600 shrink-0" />}
+                            <div className="min-w-0 flex-1">
+                              <div className="flex gap-2 items-center flex-wrap">
+                                <span className="font-mono text-xs font-semibold">{c.code}</span>
+                                <span className="text-xs text-primary">{c.hp} hp</span>
+                                {c.periods?.length > 0 && (
+                                  <Badge variant="outline" className="text-[10px]">LP{c.periods.join(',')}</Badge>
+                                )}
+                              </div>
+                              <p className="text-sm truncate">{c.name}</p>
+                            </div>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant={isSelected ? 'outline' : 'outline'}
+                            className={isSelected ? 'border-emerald-600 text-emerald-700 hover:bg-emerald-50' : ''}
+                            onClick={() => handleSelectCourse(c)}
+                          >
+                            {isSelected ? (<><Check className="w-3.5 h-3.5 mr-1" />Vald</>) : 'Lägg till'}
+                          </Button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Placement section — inline, always visible below the course list */}
+            <div className="rounded-lg border p-4 space-y-3 bg-muted/20">
+              <div className="text-sm font-semibold">Var ska kursen placeras?</div>
+              <RadioGroup
+                value={pendingChoice}
+                onValueChange={setPendingChoice}
+                className="grid grid-cols-1 sm:grid-cols-3 gap-x-4 gap-y-2"
+              >
+                {PLACEMENT_CHOICES.map((opt) => {
+                  const key = opt.kind === 'between'
+                    ? `between:${opt.placement}|${opt.periods.join(',')}`
+                    : `single:${opt.placement}`;
+                  return (
+                    <label key={key} className="flex items-center gap-2 text-sm cursor-pointer">
+                      <RadioGroupItem value={key} id={`pl-${key}`} />
+                      <span>{opt.label}</span>
+                    </label>
+                  );
+                })}
+              </RadioGroup>
+              <div className="flex items-center gap-2 pt-2 border-t">
+                <Label className="text-xs">Termin</Label>
+                <Input value={addTerm} onChange={(e) => setAddTerm(e.target.value)} className="h-8 text-xs max-w-[160px]" />
+              </div>
             </div>
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setAddOpen(false)}>Stäng</Button>
-          </DialogFooter>
+          <div className="border-t px-6 py-4 shrink-0 bg-background">
+            <Button
+              className="w-full"
+              size="lg"
+              disabled={!selectedCourseId || !pendingChoice}
+              onClick={handleConfirmAdd}
+            >
+              <Plus className="w-4 h-4 mr-1" /> Lägg till och klar
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 
