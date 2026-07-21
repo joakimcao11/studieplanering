@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { GraduationCap, Sparkles, ListChecks, Download, ChevronLeft, ChevronRight } from 'lucide-react';
+import { GraduationCap, Sparkles, ListChecks, Download, ChevronLeft, ChevronRight, Wand2 } from 'lucide-react';
 
 const STORAGE_KEY = 'student_onboarding_seen_v1';
 
@@ -29,7 +29,13 @@ const steps = [
   },
 ];
 
-export const StudentOnboarding = ({ forceOpen, onClose }: { forceOpen?: boolean; onClose?: () => void }) => {
+export const StudentOnboarding = ({
+  forceOpen, onClose, onLoadExample,
+}: {
+  forceOpen?: boolean;
+  onClose?: () => void;
+  onLoadExample?: () => void;
+}) => {
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(0);
   const [dontShow, setDontShow] = useState(false);
@@ -64,6 +70,24 @@ export const StudentOnboarding = ({ forceOpen, onClose }: { forceOpen?: boolean;
           {s.icon}
           <h3 className="font-semibold text-base">{s.title}</h3>
           <p className="text-sm text-muted-foreground">{s.desc}</p>
+          {isLast && onLoadExample && (
+            <div className="w-full mt-2 rounded-md border bg-muted/30 p-3 text-left space-y-2">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <Wand2 className="w-4 h-4 text-primary" /> Vill du testa med en exempelplan?
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Fyller i ett exempel med kurser i HT2026 (LP1–LP2) och VT2027 (LP3–LP4) så du snabbt ser hur det fungerar.
+              </p>
+              <Button
+                size="sm"
+                variant="secondary"
+                className="w-full"
+                onClick={() => { onLoadExample(); finish(); }}
+              >
+                <Wand2 className="w-4 h-4 mr-1" /> Ladda exempelplan
+              </Button>
+            </div>
+          )}
         </div>
         <div className="flex justify-center gap-1.5">
           {steps.map((_, i) => (
