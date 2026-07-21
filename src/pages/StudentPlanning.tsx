@@ -4,12 +4,18 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { GraduationCap, Home, ListChecks, Info, HelpCircle } from 'lucide-react';
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
+import {
+  GraduationCap, Home, ListChecks, Info, HelpCircle, FileText, FileType2, FileDown, Wand2,
+} from 'lucide-react';
 import { StudyPlanCanvas, ActionPlanItem } from '@/components/meeting/StudyPlanCanvas';
 import { ExportPreviewDialog, DocSection } from '@/components/export/ExportPreviewDialog';
 import { StudentOnboarding } from '@/components/student/StudentOnboarding';
 import { usePrograms } from '@/hooks/usePrograms';
 import { useToast } from '@/hooks/use-toast';
+import { exportSectionsAsPdf, exportSectionsAsTxt } from '@/utils/studentExport';
 import lthLogo from '@/assets/lth-logo.png';
 
 const StudentPlanning = () => {
@@ -25,7 +31,7 @@ const StudentPlanning = () => {
     sections: DocSection[]; documentName: string; fileBaseName: string;
   } | null>(null);
 
-  const handleExport = () => {
+  const buildPayload = () => {
     const sections: DocSection[] = [];
     if (actionPlan.length > 0) {
       sections.push({
@@ -41,17 +47,81 @@ const StudentPlanning = () => {
     if (studyPlanText.trim()) {
       sections.push({ type: 'paragraph', heading: 'Anteckningar', body: studyPlanText });
     }
-    if (sections.length === 0) {
-      toast({ title: 'Inget att exportera', description: 'Lägg till minst en kurs eller skriv anteckningar först.', variant: 'destructive' });
-      return;
-    }
     const safe = (studentName || 'student').replace(/[^a-zA-Z0-9_-]/g, '_');
     const today = new Date().toISOString().slice(0, 10);
-    setExportPayload({
+    return {
       sections,
-      documentName: 'Min studieplanering',
       fileBaseName: `Studieplanering_${safe}_${today}`,
+      today,
+    };
+  };
+
+  const notifyEmpty = () => {
+    toast({
+      title: 'Inget att exportera',
+      description: 'Lägg till minst en kurs eller skriv anteckningar först.',
+      variant: 'destructive',
     });
+  };
+
+  const handleExportWord = () => {
+    const p = buildPayload();
+    if (p.sections.length === 0) return notifyEmpty();
+    setExportPayload({
+      sections: p.sections,
+      documentName: 'Min studieplanering',
+      fileBaseName: p.fileBaseName,
+    });
+  };
+
+  const handleExportPdf = () => {
+    const p = buildPayload();
+    if (p.sections.length === 0) return notifyEmpty();
+    const programName = programs.find((x) => x.code === program)?.name;
+    exportSectionsAsPdf(p.sections, p.fileBaseName, {
+      title: 'Min studieplanering',
+      studentName: studentName || undefined,
+      program: programName ? `${program} – ${programName}` : program || undefined,
+      date: p.today,
+    });
+    toast({ title: 'PDF exporterad', description: `${p.fileBaseName}.pdf` });
+  };
+
+  const handleExportTxt = () => {
+    const p = buildPayload();
+    if (p.sections.length === 0) return notifyEmpty();
+    const programName = programs.find((x) => x.code === program)?.name;
+    exportSectionsAsTxt(p.sections, p.fileBaseName, {
+      title: 'Min studieplanering',
+      studentName: studentName || undefined,
+      program: programName ? `${program} – ${programName}` : program || undefined,
+      date: p.today,
+    });
+    toast({ title: 'Textfil exporterad', description: `${p.fileBaseName}.txt` });
+  };
+
+  const loadExamplePlan = () => {
+    // Pick first available program if none chosen
+    if (!program && programs.length > 0) setProgram(programs[0].code);
+    const id = () => Math.random().toString(36).slice(2, 9);
+    const example: ActionPlanItem[] = [
+      { id: id(), code: 'EXEM01', name: 'Exempelkurs – Matematik',      hp: 7.5, periods: ['1'], term: 'HT2026', placement: 'LP1', studyPace: 100, isCustom: true },
+      { id: id(), code: 'EXEM02', name: 'Exempelkurs – Programmering',  hp: 7.5, periods: ['1'], term: 'HT2026', placement: 'LP1', studyPace: 100, isCustom: true },
+      { id: id(), code: 'EXEM03', name: 'Exempelkurs – Fysik',          hp: 7.5, periods: ['2'], term: 'HT2026', placement: 'LP2', studyPace: 100, isCustom: true },
+      { id: id(), code: 'EXEM04', name: 'Exempelkurs – Statistik',      hp: 7.5, periods: ['2'], term: 'HT2026', placement: 'LP2', studyPace: 100, isCustom: true },
+      { id: id(), code: 'EXEM05', name: 'Exempelkurs – Linjär algebra', hp: 7.5, periods: ['3'], term: 'VT2027', placement: 'LP3', studyPace: 100, isCustom: true },
+      { id: id(), code: 'EXEM06', name: 'Exempelkurs – Datastrukturer', hp: 7.5, periods: ['3'], term: 'VT2027', placement: 'LP3', studyPace: 100, isCustom: true },
+      { id: id(), code: 'EXEM07', name: 'Exempelkurs – Databasteknik',  hp: 7.5, periods: ['4'], term: 'VT2027', placement: 'LP4', studyPace: 100, isCustom: true },
+      { id: id(), code: 'EXEM08', name: 'Exempelkurs – Projekt',        hp: 7.5, periods: ['4'], term: 'VT2027', placement: 'LP4', studyPace: 100, isCustom: true },
+    ];
+    setActionPlan(example);
+    setStudyPlanText(
+      'Exempelplan: två terminer med 30 hp per termin (100% studietakt).\n' +
+      '• HT2026: LP1 och LP2, 15 hp per läsperiod\n' +
+      '• VT2027: LP3 och LP4, 15 hp per läsperiod\n\n' +
+      'Byt ut exempelkurserna mot dina riktiga kurser via "Lägg till kurs".',
+    );
+    toast({ title: 'Exempelplan inläst', description: 'Redigera eller ersätt kurserna för att göra planen till din egen.' });
   };
 
   return (
@@ -129,26 +199,57 @@ const StudentPlanning = () => {
                 <Info className="w-4 h-4 mt-0.5 shrink-0" />
                 <span>Ingen inloggning krävs. Din studieplanering sparas endast i din webbläsare och kan när som helst exporteras som Word-dokument.</span>
               </div>
-              <Button variant="outline" onClick={() => setShowOnboarding(true)}>
-                <ListChecks className="w-4 h-4 mr-1" /> Visa guide igen
-              </Button>
+              <div className="flex flex-wrap gap-2 justify-center">
+                <Button variant="outline" onClick={() => setShowOnboarding(true)}>
+                  <ListChecks className="w-4 h-4 mr-1" /> Visa guide igen
+                </Button>
+                <Button variant="secondary" onClick={loadExamplePlan}>
+                  <Wand2 className="w-4 h-4 mr-1" /> Ladda exempelplan
+                </Button>
+              </div>
             </div>
           ) : (
             <div className="max-w-[1400px] mx-auto">
+              <div className="mb-3 flex justify-end">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button size="sm">
+                      <FileDown className="w-4 h-4 mr-1" /> Exportera sammanställning
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="bg-popover z-50">
+                    <DropdownMenuLabel>Välj format</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleExportWord}>
+                      <FileText className="w-4 h-4 mr-2" /> Word-dokument (.docx)
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleExportPdf}>
+                      <FileType2 className="w-4 h-4 mr-2" /> PDF (.pdf)
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleExportTxt}>
+                      <FileText className="w-4 h-4 mr-2" /> Textfil (.txt)
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
               <StudyPlanCanvas
                 program={program}
                 actionPlan={actionPlan}
                 setActionPlan={setActionPlan}
                 studyPlanText={studyPlanText}
                 setStudyPlanText={setStudyPlanText}
-                onExport={handleExport}
+                onExport={handleExportWord}
               />
             </div>
           )}
         </main>
       </div>
 
-      <StudentOnboarding forceOpen={showOnboarding} onClose={() => setShowOnboarding(false)} />
+      <StudentOnboarding
+        forceOpen={showOnboarding}
+        onClose={() => setShowOnboarding(false)}
+        onLoadExample={loadExamplePlan}
+      />
 
       {exportPayload && (
         <ExportPreviewDialog
