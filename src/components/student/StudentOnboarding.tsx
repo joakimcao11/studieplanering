@@ -27,6 +27,11 @@ const steps = [
     title: '3. Exportera din plan',
     desc: 'När du är klar kan du ladda ner din studieplanering som Word-dokument.',
   },
+  {
+    icon: <Sparkles className="w-10 h-10 text-primary" />,
+    title: '4. Autospar & återställning',
+    desc: 'Dina ändringar sparas automatiskt lokalt i webbläsaren. Du kan när som helst rensa exempelkurser eller använda "Återställ plan" för att börja om.',
+  },
 ];
 
 export const StudentOnboarding = ({

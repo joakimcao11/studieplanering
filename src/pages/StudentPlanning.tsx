@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,11 +8,21 @@ import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import {
-  GraduationCap, Home, ListChecks, Info, HelpCircle, FileText, FileType2, FileDown, Wand2,
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  GraduationCap, Home, ListChecks, Info, HelpCircle, FileText, FileType2, FileDown, Wand2, RotateCcw, Trash2, Sparkles,
 } from 'lucide-react';
 import { StudyPlanCanvas, ActionPlanItem } from '@/components/meeting/StudyPlanCanvas';
 import { ExportPreviewDialog, DocSection } from '@/components/export/ExportPreviewDialog';
 import { StudentOnboarding } from '@/components/student/StudentOnboarding';
+import { StudentAiPanel } from '@/components/student/StudentAiPanel';
+import {
+  loadStudentPlan, clearStudentPlan, useDebouncedStudentPlanSave,
+  type StudentActionPlanItem,
+} from '@/hooks/useStudentPlanStorage';
 import { usePrograms } from '@/hooks/usePrograms';
 import { useToast } from '@/hooks/use-toast';
 import { exportSectionsAsPdf, exportSectionsAsTxt } from '@/utils/studentExport';
@@ -22,14 +32,73 @@ const StudentPlanning = () => {
   const { programs } = usePrograms();
   const { toast } = useToast();
 
-  const [studentName, setStudentName] = useState('');
-  const [program, setProgram] = useState<string>('');
-  const [actionPlan, setActionPlan] = useState<ActionPlanItem[]>([]);
-  const [studyPlanText, setStudyPlanText] = useState('');
+  const initial = useMemo(() => loadStudentPlan(), []);
+  const [hydrated, setHydrated] = useState(false);
+  const [studentName, setStudentName] = useState(initial?.studentName ?? '');
+  const [program, setProgram] = useState<string>(initial?.program ?? '');
+  const [actionPlan, setActionPlan] = useState<StudentActionPlanItem[]>(initial?.actionPlan ?? []);
+  const [studyPlanText, setStudyPlanText] = useState(initial?.studyPlanText ?? '');
+  const [notes, setNotes] = useState(initial?.notes ?? '');
+  const [aiDraft, setAiDraft] = useState(initial?.aiDraft ?? '');
+  const [aiMode, setAiMode] = useState<'meeting-notes' | 'summary' | 'email-draft'>(initial?.aiMode ?? 'meeting-notes');
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [resetOpen, setResetOpen] = useState(false);
+  const [alsoClearProfile, setAlsoClearProfile] = useState(false);
   const [exportPayload, setExportPayload] = useState<{
     sections: DocSection[]; documentName: string; fileBaseName: string;
   } | null>(null);
+
+  useEffect(() => { setHydrated(true); }, []);
+
+  const savedAt = useDebouncedStudentPlanSave(
+    { studentName, program, actionPlan, studyPlanText, notes, aiDraft, aiMode },
+    hydrated,
+  );
+
+  // Auto-clear the `isExample` flag as soon as a user edits a row (name/hp/etc.)
+  const setActionPlanTracked: React.Dispatch<React.SetStateAction<ActionPlanItem[]>> = (updater) => {
+    setActionPlan((prev) => {
+      const next = typeof updater === 'function' ? (updater as (p: ActionPlanItem[]) => ActionPlanItem[])(prev) : updater;
+      const prevById = new Map(prev.map((it) => [it.id, it as StudentActionPlanItem]));
+      return next.map((it) => {
+        const before = prevById.get(it.id);
+        if (!before?.isExample) return it as StudentActionPlanItem;
+        const changed =
+          before.code !== it.code || before.name !== it.name || before.hp !== it.hp ||
+          before.studyPace !== it.studyPace || before.term !== it.term || before.placement !== it.placement;
+        return changed ? { ...(it as StudentActionPlanItem), isExample: false } : (it as StudentActionPlanItem);
+      });
+    });
+  };
+
+  const exampleCount = actionPlan.filter((it) => it.isExample).length;
+  const clearExamples = () => {
+    setActionPlan((prev) => prev.filter((it) => !it.isExample));
+    toast({ title: 'Exempelkurser borttagna', description: `${exampleCount} rad(er) rensades.` });
+  };
+
+  const resetPlan = () => {
+    setActionPlan([]);
+    setStudyPlanText('');
+    setNotes('');
+    setAiDraft('');
+    setAiMode('meeting-notes');
+    if (alsoClearProfile) {
+      setStudentName('');
+      setProgram('');
+    }
+    clearStudentPlan();
+    setResetOpen(false);
+    setAlsoClearProfile(false);
+    toast({ title: 'Planen är återställd', description: 'Du kan börja om från början.' });
+  };
+
+  const appendAiToNotes = () => {
+    if (!aiDraft.trim()) return;
+    const stamp = new Date().toLocaleString('sv-SE');
+    setStudyPlanText((prev) => (prev ? `${prev}\n\n— ${stamp} —\n${aiDraft}` : `— ${stamp} —\n${aiDraft}`));
+    toast({ title: 'Tillagt', description: 'AI-texten är tillagd i dina studieplaneringsanteckningar.' });
+  };
 
   const buildPayload = () => {
     const sections: DocSection[] = [];
@@ -46,6 +115,10 @@ const StudentPlanning = () => {
     }
     if (studyPlanText.trim()) {
       sections.push({ type: 'paragraph', heading: 'Anteckningar', body: studyPlanText });
+    }
+    if (aiDraft.trim()) {
+      const label = aiMode === 'email-draft' ? 'Mailutkast' : aiMode === 'summary' ? 'Sammanställning' : 'Minnesanteckning';
+      sections.push({ type: 'paragraph', heading: label, body: aiDraft });
     }
     const safe = (studentName || 'student').replace(/[^a-zA-Z0-9_-]/g, '_');
     const today = new Date().toISOString().slice(0, 10);
@@ -104,15 +177,15 @@ const StudentPlanning = () => {
     // Pick first available program if none chosen
     if (!program && programs.length > 0) setProgram(programs[0].code);
     const id = () => Math.random().toString(36).slice(2, 9);
-    const example: ActionPlanItem[] = [
-      { id: id(), code: 'EXEM01', name: 'Exempelkurs – Matematik',      hp: 7.5, periods: ['1'], term: 'HT2026', placement: 'LP1', studyPace: 100, isCustom: true },
-      { id: id(), code: 'EXEM02', name: 'Exempelkurs – Programmering',  hp: 7.5, periods: ['1'], term: 'HT2026', placement: 'LP1', studyPace: 100, isCustom: true },
-      { id: id(), code: 'EXEM03', name: 'Exempelkurs – Fysik',          hp: 7.5, periods: ['2'], term: 'HT2026', placement: 'LP2', studyPace: 100, isCustom: true },
-      { id: id(), code: 'EXEM04', name: 'Exempelkurs – Statistik',      hp: 7.5, periods: ['2'], term: 'HT2026', placement: 'LP2', studyPace: 100, isCustom: true },
-      { id: id(), code: 'EXEM05', name: 'Exempelkurs – Linjär algebra', hp: 7.5, periods: ['3'], term: 'VT2027', placement: 'LP3', studyPace: 100, isCustom: true },
-      { id: id(), code: 'EXEM06', name: 'Exempelkurs – Datastrukturer', hp: 7.5, periods: ['3'], term: 'VT2027', placement: 'LP3', studyPace: 100, isCustom: true },
-      { id: id(), code: 'EXEM07', name: 'Exempelkurs – Databasteknik',  hp: 7.5, periods: ['4'], term: 'VT2027', placement: 'LP4', studyPace: 100, isCustom: true },
-      { id: id(), code: 'EXEM08', name: 'Exempelkurs – Projekt',        hp: 7.5, periods: ['4'], term: 'VT2027', placement: 'LP4', studyPace: 100, isCustom: true },
+    const example: StudentActionPlanItem[] = [
+      { id: id(), code: 'EXEM01', name: 'Exempelkurs – Matematik',      hp: 7.5, periods: ['1'], term: 'HT2026', placement: 'LP1', studyPace: 100, isCustom: true, isExample: true },
+      { id: id(), code: 'EXEM02', name: 'Exempelkurs – Programmering',  hp: 7.5, periods: ['1'], term: 'HT2026', placement: 'LP1', studyPace: 100, isCustom: true, isExample: true },
+      { id: id(), code: 'EXEM03', name: 'Exempelkurs – Fysik',          hp: 7.5, periods: ['2'], term: 'HT2026', placement: 'LP2', studyPace: 100, isCustom: true, isExample: true },
+      { id: id(), code: 'EXEM04', name: 'Exempelkurs – Statistik',      hp: 7.5, periods: ['2'], term: 'HT2026', placement: 'LP2', studyPace: 100, isCustom: true, isExample: true },
+      { id: id(), code: 'EXEM05', name: 'Exempelkurs – Linjär algebra', hp: 7.5, periods: ['3'], term: 'VT2027', placement: 'LP3', studyPace: 100, isCustom: true, isExample: true },
+      { id: id(), code: 'EXEM06', name: 'Exempelkurs – Datastrukturer', hp: 7.5, periods: ['3'], term: 'VT2027', placement: 'LP3', studyPace: 100, isCustom: true, isExample: true },
+      { id: id(), code: 'EXEM07', name: 'Exempelkurs – Databasteknik',  hp: 7.5, periods: ['4'], term: 'VT2027', placement: 'LP4', studyPace: 100, isCustom: true, isExample: true },
+      { id: id(), code: 'EXEM08', name: 'Exempelkurs – Projekt',        hp: 7.5, periods: ['4'], term: 'VT2027', placement: 'LP4', studyPace: 100, isCustom: true, isExample: true },
     ];
     setActionPlan(example);
     setStudyPlanText(
@@ -158,6 +231,11 @@ const StudentPlanning = () => {
               <p className="text-xs text-muted-foreground">Planera dina kurser själv – utan inloggning. Din data sparas endast lokalt i denna webbläsare.</p>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
+              {savedAt && (
+                <span className="text-[11px] text-muted-foreground hidden md:inline">
+                  Sparat {new Date(savedAt).toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' })}
+                </span>
+              )}
               <div className="flex items-center gap-2">
                 <Label htmlFor="stud-name" className="text-xs text-muted-foreground">Ditt namn</Label>
                 <Input
@@ -210,7 +288,42 @@ const StudentPlanning = () => {
             </div>
           ) : (
             <div className="max-w-[1400px] mx-auto">
-              <div className="mb-3 flex justify-end">
+              <div className="mb-3 flex items-center justify-between gap-2 flex-wrap">
+                <div className="flex items-center gap-2 flex-wrap">
+                  {exampleCount > 0 && (
+                    <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-900 rounded px-2 py-1 text-xs">
+                      <Info className="w-3.5 h-3.5" />
+                      <span>{exampleCount} exempelkurs{exampleCount === 1 ? '' : 'er'} kvar – redigera eller ta bort.</span>
+                      <Button size="sm" variant="ghost" className="h-6 px-2 text-amber-900 hover:bg-amber-100" onClick={clearExamples}>
+                        <Trash2 className="w-3.5 h-3.5 mr-1" /> Rensa exempel
+                      </Button>
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                <AlertDialog open={resetOpen} onOpenChange={setResetOpen}>
+                  <AlertDialogTrigger asChild>
+                    <Button size="sm" variant="outline">
+                      <RotateCcw className="w-4 h-4 mr-1" /> Återställ plan
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Återställa hela planen?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Alla kurser, anteckningar och AI-utkast rensas. Detta kan inte ångras.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <label className="flex items-center gap-2 text-sm">
+                      <Checkbox checked={alsoClearProfile} onCheckedChange={(v) => setAlsoClearProfile(v === true)} />
+                      Rensa även namn och program
+                    </label>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Avbryt</AlertDialogCancel>
+                      <AlertDialogAction onClick={resetPlan}>Ja, återställ</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button size="sm">
@@ -231,15 +344,31 @@ const StudentPlanning = () => {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
+                </div>
               </div>
               <StudyPlanCanvas
                 program={program}
                 actionPlan={actionPlan}
-                setActionPlan={setActionPlan}
+                setActionPlan={setActionPlanTracked}
                 studyPlanText={studyPlanText}
                 setStudyPlanText={setStudyPlanText}
                 onExport={handleExportWord}
               />
+
+              <div className="mt-6">
+                <StudentAiPanel
+                  studentName={studentName}
+                  program={program}
+                  actionPlan={actionPlan}
+                  notes={notes}
+                  setNotes={setNotes}
+                  aiDraft={aiDraft}
+                  setAiDraft={setAiDraft}
+                  aiMode={aiMode}
+                  setAiMode={setAiMode}
+                  onAppendToNotes={appendAiToNotes}
+                />
+              </div>
             </div>
           )}
         </main>
