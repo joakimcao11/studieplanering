@@ -1,44 +1,75 @@
-## Update 1 — Ta bort LTH-loggan från headern
+# /student: AI-anteckningar, autospar och återställ
 
-**Fil:** `src/components/Header.tsx`
-- Ta bort `<img src={lthLogo} ... />` (rad 28–32) och importen av `lthLogo`.
-- Behåll titel/undertitel i samma flex-container så layouten inte hoppar.
+## 1. AI-anteckningar för studenten
+Lägg till en "Anteckningar & AI"-panel på `/student` (ovanför eller bredvid `StudyPlanCanvas`).
 
-## Update 2 — Fixa popovern "Var ska kursen placeras?"
+- Textarea för fria anteckningar (kopplas till befintlig `studyPlanText`, eller egen `studentNotes` – se Tekniskt).
+- Tre knappar med samma AI-flöden som i `MeetingNotesTab`:
+  - **Generera minnesanteckning**
+  - **Skapa sammanställning**
+  - **Generera mailutkast**
+- Anropar befintliga edge functions (`generate-study-notes`, `generate-email-draft`) med student-anpassade prompts (ingen STVL/counselor-kontext, tonen riktad till studenten själv, inkluderar aktuell `actionPlan` som kurslista).
+- Resultat visas i ett redigerbart fält under knapparna och skrivs (efter bekräftelse) tillbaka till anteckningsfältet så det följer med i export.
+- Laddningsindikator + toast för fel (rate limit / credits).
 
-**Fil:** `src/components/meeting/StudyPlanCanvas.tsx` (raderna 708–732)
+## 2. Autospar i webbläsaren
+Persistera hela student-planen i `localStorage` under nyckeln `lth_student_plan_v1`.
 
-Uppdatera `<PopoverContent>` för placeringsväljaren:
-- Lägg till `collisionPadding={16}`, `sideOffset={8}`, `side="bottom"`, `avoidCollisions` (Radix-default men explicit).
-- Sätt `style={{ maxHeight: 'calc(100vh - 32px)' }}` och gör inre layout till en flex-kolumn: scrollbart innehållsområde + sticky footer.
-- Strukturera innehållet:
-  - **Scrollbar sektion** (`overflow-y: auto`, `flex-1`) med rubrik, `RadioGroup`, och termin-input.
-  - **Sticky footer** (`position: sticky; bottom: 0; bg-popover border-t pt-2 -mx-4 px-4 -mb-4 pb-3`) med "Bekräfta"-knappen så den alltid syns.
+Sparat innehåll:
+- `studentName`, `program`
+- `actionPlan` (kurser + placeringar)
+- `studyPlanText` (anteckningar)
+- ev. AI-genererat utkast
+- `updatedAt` (ISO-tid)
 
-Samma collision-fix tillämpas på den lilla flerperiod-popovern i `DraggableCourseBlock` (rad 144) för konsistens.
+Beteende:
+- Läses in en gång vid mount (om finns → hoppa över onboarding-autoöppning).
+- Skrivs debounced (~400 ms) vid varje ändring via en liten `useLocalStoragePlan`-hook.
+- Diskret "Sparat kl HH:MM"-text i headern.
 
-**Föräldra-container (dialogen):** `DialogContent` har redan max-höjd; säkerställ att add-course dialogen inte klipper popovern. Popovers renderas via `PopoverPrimitive.Portal` (se `src/components/ui/popover.tsx`) så de är redan utanför dialogens overflow — ingen ändring krävs där.
+## 3. Enklare hantering av exempelrader
+Gör exempelkurserna tydligt urskiljbara och massanterbara:
 
-## Update 3 — Ny "Anpassad mall" i Export
+- Märk exempelrader med `isExample: true` (utökar `ActionPlanItem` lokalt i `StudentPlanning`).
+- I `StudyPlanCanvas`-listan visas en liten "Exempel"-badge på dessa rader (kräver liten prop-genomsläpp, eller så filtrerar vi i student-vyn utan att röra canvas – se Tekniskt).
+- Ny knapp **"Rensa exempelkurser"** ovanför canvas, synlig endast när minst en `isExample`-rad finns. Tar bort alla exempelrader men behåller egna.
+- När användaren redigerar en exempelrad tas `isExample`-flaggan bort automatiskt (raden räknas då som "egen").
 
-**Fil:** `src/components/export/ExportPreviewDialog.tsx`
+## 4. Återställ plan
+Knapp **"Återställ plan"** i headern (bredvid export-menyn) med bekräftelsedialog (`AlertDialog`).
 
-- Lägg till tredje val i `RadioGroup`: `LTH | LU | Custom` (etikett "Anpassad mall").
-- Skapa ny `custom`-state-objekt med samma fält som LTH (institution, enhet, handläggare, counselor, postadress, besöksadress, telefon, e-post, web, recipient) + `logoDataUrl: string | null` och `documentTitle: string`.
-- Persistera `custom`-inställningar i `localStorage` (key: `customTemplateSettings`) så användaren slipper fylla i på nytt.
-- UI för Custom-fliken:
-  - Alla LTH-fält (samma layout).
-  - **Logo-uppladdning**: `<Input type="file" accept="image/png,image/jpeg,image/svg+xml">` som läser fil med `FileReader.readAsDataURL` → sparar i `custom.logoDataUrl`. Visa förhandsbild + "Ta bort logo"-knapp.
-- HTML-preview använder samma struktur som LTH-previewen men med uppladdad logo (eller placeholder om saknas).
-- Word-export: återanvänd `buildGovHeader/buildGovFooter/buildGovTitle` från `wordTemplate.ts`. För loggan: konvertera `dataUrl` → `ArrayBuffer` (base64-decode) och skicka till `buildGovHeader` istället för `loadLogoBuffer()`. Använd suffix `_CUSTOM` på filnamnet.
+Vid bekräftelse:
+- Nollställ `actionPlan`, `studyPlanText`, ev. AI-utkast.
+- Behåll `studentName` och `program` som default (går att avmarkera i dialogen: "Rensa även namn och program").
+- Radera `localStorage`-nyckeln.
+- Toast: "Planen är återställd".
 
-**Liten utvidgning i `wordTemplate.ts`:** `buildGovHeader` accepterar redan `logoBuffer`-parameter — ingen ändring behövs där. Lägg ev. till hjälpare `dataUrlToArrayBuffer(url)` i ExportPreviewDialog.
+---
 
-## Filer som ändras
-- `src/components/Header.tsx`
-- `src/components/meeting/StudyPlanCanvas.tsx`
-- `src/components/export/ExportPreviewDialog.tsx`
+## Tekniskt
 
-## Risker
-- Sticky footer i Radix `PopoverContent` kräver att `padding` på containern inte bryter sticky-positionering — lös via negativa marginaler som matchar `p-4`.
-- Custom-logga som SVG: Word-`ImageRun` stödjer inte alla SVG-features; rekommendera PNG/JPG i UI-hjälptext.
+**Filer som ändras/skapas**
+- `src/pages/StudentPlanning.tsx` – ny AI-panel, autospar-hook, "Rensa exempel"- och "Återställ"-knappar, `isExample`-taggning i `loadExamplePlan`.
+- `src/hooks/useStudentPlanStorage.ts` (ny) – debounced load/save mot `localStorage`.
+- `src/components/student/StudentAiPanel.tsx` (ny) – textarea + tre AI-knappar, anropar edge functions via `supabase.functions.invoke`.
+- `src/components/student/StudentOnboarding.tsx` – litet tillägg: nämn autospar + återställning i sista steget.
+- `supabase/functions/generate-study-notes/index.ts` och `generate-email-draft/index.ts` – *ingen ändring krävs*; vi skickar student-anpassad prompt/kontext från klienten. (Om prompten är hårdkodad server-side lägger vi till en valfri `audience: 'student'`-parameter – kontrolleras vid implementation.)
+
+**Datamodell**
+```ts
+type StudentActionPlanItem = ActionPlanItem & { isExample?: boolean };
+type PersistedStudentPlan = {
+  studentName: string;
+  program: string;
+  actionPlan: StudentActionPlanItem[];
+  studyPlanText: string;
+  aiDraft?: string;
+  updatedAt: string;
+};
+```
+
+**Exempel-badge utan att röra `StudyPlanCanvas`**
+Enklaste vägen: håll `isExample` bara i `StudentPlanning` och rendera badge/rensning i ett litet infoband ovanför canvas ("3 exempelkurser kvar — [Rensa exempelkurser]"). Då slipper vi ändra den delade komponenten. Om vi senare vill ha badge direkt på raden kan vi lägga till en valfri `renderRowBadge`-prop.
+
+**AI-anrop**
+Återanvänd samma `supabase.functions.invoke("generate-study-notes", { body: { notes, courses, audience: "student", mode: "minnesanteckning" | "sammanstallning" } })`-mönster som `MeetingNotesTab`. Mailutkast går mot `generate-email-draft`. Ingen counselor-data skickas.
