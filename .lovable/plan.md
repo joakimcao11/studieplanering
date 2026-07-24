@@ -1,75 +1,64 @@
-# /student: AI-anteckningar, autospar och återställ
+## 1. Ångra senaste ändring på /student
 
-## 1. AI-anteckningar för studenten
-Lägg till en "Anteckningar & AI"-panel på `/student` (ovanför eller bredvid `StudyPlanCanvas`).
+Lägg till en enkel undo-stack för `actionPlan` i `StudentPlanning.tsx`.
 
-- Textarea för fria anteckningar (kopplas till befintlig `studyPlanText`, eller egen `studentNotes` – se Tekniskt).
-- Tre knappar med samma AI-flöden som i `MeetingNotesTab`:
-  - **Generera minnesanteckning**
-  - **Skapa sammanställning**
-  - **Generera mailutkast**
-- Anropar befintliga edge functions (`generate-study-notes`, `generate-email-draft`) med student-anpassade prompts (ingen STVL/counselor-kontext, tonen riktad till studenten själv, inkluderar aktuell `actionPlan` som kurslista).
-- Resultat visas i ett redigerbart fält under knapparna och skrivs (efter bekräftelse) tillbaka till anteckningsfältet så det följer med i export.
-- Laddningsindikator + toast för fel (rate limit / credits).
+- Ny `useUndoableActionPlan`-hook (eller inline `useRef<StudentActionPlanItem[][]>`) som pushar föregående state varje gång `actionPlan` ändras via användaråtgärd (lägg till, ta bort, flytta, ändra hp/takt, rensa exempel, ladda exempel, återställ).
+- Maxdjup: 20 steg (räcker för typisk sessionsanvändning, undviker minnesläckor).
+- Ny **"Ångra"**-knapp i headern (bredvid "Återställ plan") med `Undo2`-ikon från lucide.
+  - Inaktiverad när stacken är tom.
+  - Tooltip: "Ångra senaste ändring".
+  - Kortkommando: `Cmd/Ctrl+Z` (globalt på sidan, ignoreras om fokus ligger i textarea/input).
+- Toast på undo: "Ångrade senaste ändring".
+- Autospar körs vidare som vanligt efter undo (skriver det återställda state:t till localStorage).
 
-## 2. Autospar i webbläsaren
-Persistera hela student-planen i `localStorage` under nyckeln `lth_student_plan_v1`.
+Notera: undo påverkar endast `actionPlan` (kursrader). Anteckningstext och AI-utkast omfattas inte — de har inbyggd textredigering i webbläsaren.
 
-Sparat innehåll:
-- `studentName`, `program`
-- `actionPlan` (kurser + placeringar)
-- `studyPlanText` (anteckningar)
-- ev. AI-genererat utkast
-- `updatedAt` (ISO-tid)
+## 2. AI-mallar och förhandsvisning i AI-panelen
 
-Beteende:
-- Läses in en gång vid mount (om finns → hoppa över onboarding-autoöppning).
-- Skrivs debounced (~400 ms) vid varje ändring via en liten `useLocalStoragePlan`-hook.
-- Diskret "Sparat kl HH:MM"-text i headern.
+Utöka `StudentAiPanel.tsx` med mallval och tydlig förhandsvisning.
 
-## 3. Enklare hantering av exempelrader
-Gör exempelkurserna tydligt urskiljbara och massanterbara:
+**Mallväljare (per läge):**
+Segmented control ovanför de tre AI-knapparna som styr *ton och stil*:
+- **Kort** – punktlista, max ~150 ord, rakt på sak.
+- **Standard** – balanserad prosa + punktlistor (nuvarande beteende).
+- **Utförlig** – fylligare, förklarande text med resonemang.
 
-- Märk exempelrader med `isExample: true` (utökar `ActionPlanItem` lokalt i `StudentPlanning`).
-- I `StudyPlanCanvas`-listan visas en liten "Exempel"-badge på dessa rader (kräver liten prop-genomsläpp, eller så filtrerar vi i student-vyn utan att röra canvas – se Tekniskt).
-- Ny knapp **"Rensa exempelkurser"** ovanför canvas, synlig endast när minst en `isExample`-rad finns. Tar bort alla exempelrader men behåller egna.
-- När användaren redigerar en exempelrad tas `isExample`-flaggan bort automatiskt (raden räknas då som "egen").
+Valet skickas till `analyze-document` som ett nytt fält `styleTemplate: 'short' | 'standard' | 'detailed'` i `studentInfo`. Servern lägger till en kort stil-instruktion i systemprompten baserat på värdet. Övriga befintliga prompts påverkas inte.
 
-## 4. Återställ plan
-Knapp **"Återställ plan"** i headern (bredvid export-menyn) med bekräftelsedialog (`AlertDialog`).
+**Förhandsvisning:**
+Ersätt nuvarande `Textarea`-resultat med en flikad vy:
+- **Förhandsvisning** (default): renderad HTML med tydlig typografi
+  - Rubriker (rader som matchar `Datum:`, `Student:`, `Bakgrund`, `Diskussion`, `Handlingsplan`, `Nästa steg`, `Sammanfattning`, etc.) → `<h3>` med LTH-navy färg och bottenborder.
+  - Fält på formen `Nyckel: värde` → definition-list style (fet nyckel).
+  - `- `-rader → `<ul><li>`.
+  - Övrigt → `<p>` med `whitespace-pre-line`.
+  - Använder befintlig rensningslogik (samma som `cleanLine` i `MeetingNotesTab`) för att ta bort ev. markdown-tecken.
+- **Redigera**: nuvarande textarea (så användaren fortfarande kan finjustera innan kopiering / append).
 
-Vid bekräftelse:
-- Nollställ `actionPlan`, `studyPlanText`, ev. AI-utkast.
-- Behåll `studentName` och `program` som default (går att avmarkera i dialogen: "Rensa även namn och program").
-- Radera `localStorage`-nyckeln.
-- Toast: "Planen är återställd".
-
----
+**Övrigt:**
+- Behåll knapparna "Kopiera" och "Lägg till i anteckningar" — de opererar på råtexten.
+- Mall-val och senaste flik persisteras via befintlig `useStudentPlanStorage` (utöka `PersistedStudentPlan` med `aiStyleTemplate` och `aiPreviewTab`).
 
 ## Tekniskt
 
-**Filer som ändras/skapas**
-- `src/pages/StudentPlanning.tsx` – ny AI-panel, autospar-hook, "Rensa exempel"- och "Återställ"-knappar, `isExample`-taggning i `loadExamplePlan`.
-- `src/hooks/useStudentPlanStorage.ts` (ny) – debounced load/save mot `localStorage`.
-- `src/components/student/StudentAiPanel.tsx` (ny) – textarea + tre AI-knappar, anropar edge functions via `supabase.functions.invoke`.
-- `src/components/student/StudentOnboarding.tsx` – litet tillägg: nämn autospar + återställning i sista steget.
-- `supabase/functions/generate-study-notes/index.ts` och `generate-email-draft/index.ts` – *ingen ändring krävs*; vi skickar student-anpassad prompt/kontext från klienten. (Om prompten är hårdkodad server-side lägger vi till en valfri `audience: 'student'`-parameter – kontrolleras vid implementation.)
+**Filer**
+- `src/pages/StudentPlanning.tsx` – undo-stack, "Ångra"-knapp, Cmd/Ctrl+Z-lyssnare, wrapper runt `setActionPlan` som pushar historik.
+- `src/components/student/StudentAiPanel.tsx` – mallväljare (`ToggleGroup`), Tabs (Förhandsvisning / Redigera), formatterad HTML-render, skicka `styleTemplate` i request.
+- `src/hooks/useStudentPlanStorage.ts` – lägg till `aiStyleTemplate?: 'short' | 'standard' | 'detailed'` i `PersistedStudentPlan`.
+- `supabase/functions/analyze-document/index.ts` – läs `studentInfo.styleTemplate` och append:a en stil-instruktion till systemprompten (t.ex. "Håll svaret kort: max 150 ord, punktlista."). Inga breaking changes; default = "standard".
 
-**Datamodell**
+**Undo-strategi (kort)**
 ```ts
-type StudentActionPlanItem = ActionPlanItem & { isExample?: boolean };
-type PersistedStudentPlan = {
-  studentName: string;
-  program: string;
-  actionPlan: StudentActionPlanItem[];
-  studyPlanText: string;
-  aiDraft?: string;
-  updatedAt: string;
+const historyRef = useRef<StudentActionPlanItem[][]>([]);
+const applyPlan = (next: StudentActionPlanItem[] | ((p: ...) => ...)) => {
+  setActionPlan(prev => {
+    historyRef.current = [...historyRef.current.slice(-19), prev];
+    return typeof next === 'function' ? next(prev) : next;
+  });
+};
+const undo = () => {
+  const last = historyRef.current.pop();
+  if (last) setActionPlan(last);
 };
 ```
-
-**Exempel-badge utan att röra `StudyPlanCanvas`**
-Enklaste vägen: håll `isExample` bara i `StudentPlanning` och rendera badge/rensning i ett litet infoband ovanför canvas ("3 exempelkurser kvar — [Rensa exempelkurser]"). Då slipper vi ändra den delade komponenten. Om vi senare vill ha badge direkt på raden kan vi lägga till en valfri `renderRowBadge`-prop.
-
-**AI-anrop**
-Återanvänd samma `supabase.functions.invoke("generate-study-notes", { body: { notes, courses, audience: "student", mode: "minnesanteckning" | "sammanstallning" } })`-mönster som `MeetingNotesTab`. Mailutkast går mot `generate-email-draft`. Ingen counselor-data skickas.
+Alla nuvarande `setActionPlan`-anrop i `StudentPlanning.tsx` byts till `applyPlan`.

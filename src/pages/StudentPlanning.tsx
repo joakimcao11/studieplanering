@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
-  GraduationCap, Home, ListChecks, Info, HelpCircle, FileText, FileType2, FileDown, Wand2, RotateCcw, Trash2, Sparkles,
+  GraduationCap, Home, ListChecks, Info, HelpCircle, FileText, FileType2, FileDown, Wand2, RotateCcw, Trash2, Sparkles, Undo2,
 } from 'lucide-react';
 import { StudyPlanCanvas, ActionPlanItem } from '@/components/meeting/StudyPlanCanvas';
 import { ExportPreviewDialog, DocSection } from '@/components/export/ExportPreviewDialog';
@@ -41,6 +41,8 @@ const StudentPlanning = () => {
   const [notes, setNotes] = useState(initial?.notes ?? '');
   const [aiDraft, setAiDraft] = useState(initial?.aiDraft ?? '');
   const [aiMode, setAiMode] = useState<'meeting-notes' | 'summary' | 'email-draft'>(initial?.aiMode ?? 'meeting-notes');
+  const [aiStyleTemplate, setAiStyleTemplate] = useState<'short' | 'standard' | 'detailed'>(initial?.aiStyleTemplate ?? 'standard');
+  const [aiPreviewTab, setAiPreviewTab] = useState<'preview' | 'edit'>(initial?.aiPreviewTab ?? 'preview');
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
   const [alsoClearProfile, setAlsoClearProfile] = useState(false);
@@ -51,13 +53,55 @@ const StudentPlanning = () => {
   useEffect(() => { setHydrated(true); }, []);
 
   const savedAt = useDebouncedStudentPlanSave(
-    { studentName, program, actionPlan, studyPlanText, notes, aiDraft, aiMode },
+    { studentName, program, actionPlan, studyPlanText, notes, aiDraft, aiMode, aiStyleTemplate, aiPreviewTab },
     hydrated,
   );
 
+  // Undo history for the course action plan (max 20 steps).
+  const historyRef = useRef<StudentActionPlanItem[][]>([]);
+  const [undoTick, setUndoTick] = useState(0);
+  const pushHistory = (snapshot: StudentActionPlanItem[]) => {
+    historyRef.current = [...historyRef.current.slice(-19), snapshot];
+    setUndoTick((t) => t + 1);
+  };
+  const applyPlan = useCallback(
+    (updater: React.SetStateAction<StudentActionPlanItem[]>) => {
+      setActionPlan((prev) => {
+        const next = typeof updater === 'function'
+          ? (updater as (p: StudentActionPlanItem[]) => StudentActionPlanItem[])(prev)
+          : updater;
+        // Skip pushing history when the plan is unchanged (avoids no-op undo entries).
+        if (JSON.stringify(next) !== JSON.stringify(prev)) pushHistory(prev);
+        return next;
+      });
+    },
+    [],
+  );
+  const undo = useCallback(() => {
+    const last = historyRef.current[historyRef.current.length - 1];
+    if (!last) return;
+    historyRef.current = historyRef.current.slice(0, -1);
+    setActionPlan(last);
+    setUndoTick((t) => t + 1);
+    toast({ title: 'Ångrade senaste ändring' });
+  }, [toast]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.metaKey || e.ctrlKey) || e.key.toLowerCase() !== 'z' || e.shiftKey) return;
+      const t = e.target as HTMLElement | null;
+      const tag = t?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || t?.isContentEditable) return;
+      e.preventDefault();
+      undo();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [undo]);
+
   // Auto-clear the `isExample` flag as soon as a user edits a row (name/hp/etc.)
   const setActionPlanTracked: React.Dispatch<React.SetStateAction<ActionPlanItem[]>> = (updater) => {
-    setActionPlan((prev) => {
+    applyPlan((prev) => {
       const next = typeof updater === 'function' ? (updater as (p: ActionPlanItem[]) => ActionPlanItem[])(prev) : updater;
       const prevById = new Map(prev.map((it) => [it.id, it as StudentActionPlanItem]));
       return next.map((it) => {
@@ -73,12 +117,12 @@ const StudentPlanning = () => {
 
   const exampleCount = actionPlan.filter((it) => it.isExample).length;
   const clearExamples = () => {
-    setActionPlan((prev) => prev.filter((it) => !it.isExample));
+    applyPlan((prev) => prev.filter((it) => !it.isExample));
     toast({ title: 'Exempelkurser borttagna', description: `${exampleCount} rad(er) rensades.` });
   };
 
   const resetPlan = () => {
-    setActionPlan([]);
+    applyPlan(() => []);
     setStudyPlanText('');
     setNotes('');
     setAiDraft('');
@@ -187,7 +231,7 @@ const StudentPlanning = () => {
       { id: id(), code: 'EXEM07', name: 'Exempelkurs – Databasteknik',  hp: 7.5, periods: ['4'], term: 'VT2027', placement: 'LP4', studyPace: 100, isCustom: true, isExample: true },
       { id: id(), code: 'EXEM08', name: 'Exempelkurs – Projekt',        hp: 7.5, periods: ['4'], term: 'VT2027', placement: 'LP4', studyPace: 100, isCustom: true, isExample: true },
     ];
-    setActionPlan(example);
+    applyPlan(() => example);
     setStudyPlanText(
       'Exempelplan: två terminer med 30 hp per termin (100% studietakt).\n' +
       '• HT2026: LP1 och LP2, 15 hp per läsperiod\n' +
@@ -301,6 +345,15 @@ const StudentPlanning = () => {
                   )}
                 </div>
                 <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={undo}
+                  disabled={undoTick === 0 && historyRef.current.length === 0}
+                  title="Ångra senaste ändring (Ctrl/Cmd+Z)"
+                >
+                  <Undo2 className="w-4 h-4 mr-1" /> Ångra
+                </Button>
                 <AlertDialog open={resetOpen} onOpenChange={setResetOpen}>
                   <AlertDialogTrigger asChild>
                     <Button size="sm" variant="outline">
@@ -367,6 +420,10 @@ const StudentPlanning = () => {
                   aiMode={aiMode}
                   setAiMode={setAiMode}
                   onAppendToNotes={appendAiToNotes}
+                  styleTemplate={aiStyleTemplate}
+                  setStyleTemplate={setAiStyleTemplate}
+                  previewTab={aiPreviewTab}
+                  setPreviewTab={setAiPreviewTab}
                 />
               </div>
             </div>
