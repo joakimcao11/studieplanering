@@ -334,15 +334,6 @@ const StudentPlanning = () => {
             <div className="max-w-[1400px] mx-auto">
               <div className="mb-3 flex items-center justify-between gap-2 flex-wrap">
                 <div className="flex items-center gap-2 flex-wrap">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={undo}
-                disabled={historyRef.current.length === 0}
-                title="Ångra senaste ändring (Ctrl/Cmd+Z)"
-              >
-                <Undo2 className="w-4 h-4 mr-1" /> Ångra
-              </Button>
                   {exampleCount > 0 && (
                     <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-900 rounded px-2 py-1 text-xs">
                       <Info className="w-3.5 h-3.5" />
@@ -354,6 +345,15 @@ const StudentPlanning = () => {
                   )}
                 </div>
                 <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={undo}
+                  disabled={undoTick === 0 && historyRef.current.length === 0}
+                  title="Ångra senaste ändring (Ctrl/Cmd+Z)"
+                >
+                  <Undo2 className="w-4 h-4 mr-1" /> Ångra
+                </Button>
                 <AlertDialog open={resetOpen} onOpenChange={setResetOpen}>
                   <AlertDialogTrigger asChild>
                     <Button size="sm" variant="outline">
