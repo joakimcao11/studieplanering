@@ -11,6 +11,8 @@ export interface PersistedStudentPlan {
   aiDraft?: string;
   aiMode?: 'meeting-notes' | 'summary' | 'email-draft';
   notes?: string;
+  aiStyleTemplate?: 'short' | 'standard' | 'detailed';
+  aiPreviewTab?: 'preview' | 'edit';
   updatedAt: string;
 }
 
