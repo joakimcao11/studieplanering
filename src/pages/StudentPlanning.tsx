@@ -420,6 +420,10 @@ const StudentPlanning = () => {
                   aiMode={aiMode}
                   setAiMode={setAiMode}
                   onAppendToNotes={appendAiToNotes}
+                  styleTemplate={aiStyleTemplate}
+                  setStyleTemplate={setAiStyleTemplate}
+                  previewTab={aiPreviewTab}
+                  setPreviewTab={setAiPreviewTab}
                 />
               </div>
             </div>
