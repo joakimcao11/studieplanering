@@ -122,7 +122,16 @@ serve(async (req) => {
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
     const systemPrompt = SYSTEM_PROMPTS[mode] || SYSTEM_PROMPTS["meeting-notes"];
-    const aiMessages: any[] = [{ role: "system", content: systemPrompt }];
+
+    const styleTemplate = studentInfo?.styleTemplate as "short" | "standard" | "detailed" | undefined;
+    const styleAppendix =
+      styleTemplate === "short"
+        ? "\n\nSTILINSTRUKTION: Håll svaret mycket kort (max ca 150 ord). Använd punktlistor och skriv rakt på sak. Utelämna långa förklaringar."
+        : styleTemplate === "detailed"
+        ? "\n\nSTILINSTRUKTION: Skriv utförligt och förklarande. Motivera resonemang och ge kontext under varje rubrik. Balansera prosa med punktlistor där det passar."
+        : "";
+
+    const aiMessages: any[] = [{ role: "system", content: systemPrompt + styleAppendix }];
 
     // Build a structured studentInfo block to inject as user-context
     const studentInfoBlock = studentInfo
