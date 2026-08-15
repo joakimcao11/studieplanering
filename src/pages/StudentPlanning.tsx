@@ -494,7 +494,10 @@ const StudentPlanning = () => {
                 </div>
               </div>
               <StudyPlanCanvas
-                program={program}
+                program={isOwnProgram ? OWN_PROGRAM : program}
+                variant="student"
+                supplements={supplements}
+                setSupplements={setSupplements}
                 actionPlan={actionPlan}
                 setActionPlan={setActionPlanTracked}
                 studyPlanText={studyPlanText}
@@ -540,6 +543,9 @@ const StudentPlanning = () => {
           counselorName={studentName}
           date={new Date().toISOString().slice(0, 10)}
           sections={exportPayload.sections}
+          variant="student"
+          studentProgram={programLabel}
+          studentYear={yearGroup}
         />
       )}
     </div>
