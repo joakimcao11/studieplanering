@@ -331,9 +331,18 @@ const StudentPlanning = () => {
                     {programs.map((p) => (
                       <SelectItem key={p.id} value={p.code}>{p.code} – {p.name}</SelectItem>
                     ))}
+                    <SelectItem value={OWN_PROGRAM}>Eget program</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+              {isOwnProgram && (
+                <Input
+                  value={customProgramName}
+                  onChange={(e) => setCustomProgramName(e.target.value)}
+                  placeholder="Namn på ditt program"
+                  className="h-9 w-48 text-sm"
+                />
+              )}
             </div>
           </div>
         </header>
