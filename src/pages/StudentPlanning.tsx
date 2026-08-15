@@ -15,7 +15,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import {
   GraduationCap, Home, ListChecks, Info, HelpCircle, FileText, FileType2, FileDown, Wand2, RotateCcw, Trash2, Sparkles, Undo2,
 } from 'lucide-react';
-import { StudyPlanCanvas, ActionPlanItem } from '@/components/meeting/StudyPlanCanvas';
+import { StudyPlanCanvas, ActionPlanItem, SupplementItem } from '@/components/meeting/StudyPlanCanvas';
 import { ExportPreviewDialog, DocSection } from '@/components/export/ExportPreviewDialog';
 import { StudentOnboarding } from '@/components/student/StudentOnboarding';
 import { StudentAiPanel } from '@/components/student/StudentAiPanel';
@@ -28,6 +28,8 @@ import { useToast } from '@/hooks/use-toast';
 import { exportSectionsAsPdf, exportSectionsAsTxt } from '@/utils/studentExport';
 import lthLogo from '@/assets/lth-logo.png';
 
+const OWN_PROGRAM = '__EGET__';
+
 const StudentPlanning = () => {
   const { programs } = usePrograms();
   const { toast } = useToast();
@@ -36,6 +38,9 @@ const StudentPlanning = () => {
   const [hydrated, setHydrated] = useState(false);
   const [studentName, setStudentName] = useState(initial?.studentName ?? '');
   const [program, setProgram] = useState<string>(initial?.program ?? '');
+  const [customProgramName, setCustomProgramName] = useState(initial?.customProgramName ?? '');
+  const [yearGroup, setYearGroup] = useState(initial?.yearGroup ?? '');
+  const [supplements, setSupplements] = useState<SupplementItem[]>(initial?.supplements ?? []);
   const [actionPlan, setActionPlan] = useState<StudentActionPlanItem[]>(initial?.actionPlan ?? []);
   const [studyPlanText, setStudyPlanText] = useState(initial?.studyPlanText ?? '');
   const [notes, setNotes] = useState(initial?.notes ?? '');
@@ -53,7 +58,10 @@ const StudentPlanning = () => {
   useEffect(() => { setHydrated(true); }, []);
 
   const savedAt = useDebouncedStudentPlanSave(
-    { studentName, program, actionPlan, studyPlanText, notes, aiDraft, aiMode, aiStyleTemplate, aiPreviewTab },
+    {
+      studentName, program, customProgramName, yearGroup, supplements,
+      actionPlan, studyPlanText, notes, aiDraft, aiMode, aiStyleTemplate, aiPreviewTab,
+    },
     hydrated,
   );
 
@@ -123,6 +131,7 @@ const StudentPlanning = () => {
 
   const resetPlan = () => {
     applyPlan(() => []);
+    setSupplements([]);
     setStudyPlanText('');
     setNotes('');
     setAiDraft('');
@@ -130,6 +139,8 @@ const StudentPlanning = () => {
     if (alsoClearProfile) {
       setStudentName('');
       setProgram('');
+      setCustomProgramName('');
+      setYearGroup('');
     }
     clearStudentPlan();
     setResetOpen(false);
@@ -153,7 +164,18 @@ const StudentPlanning = () => {
         columns: ['Kurskod', 'Namn', 'HP', 'Studietakt', 'Termin', 'Period'],
         rows: actionPlan.map((it) => [
           it.code, it.name, String(it.hp),
-          `${it.studyPace ?? 100}%`, it.term, it.placement,
+          `${it.studyPace ?? 100}%`, it.term,
+          (it.periods?.length ?? 0) > 1 ? `LP${it.periods.join('+')}` : it.placement,
+        ]),
+      });
+    }
+    if (supplements.length > 0) {
+      sections.push({
+        type: 'table',
+        heading: 'Komplettering',
+        columns: ['Typ', 'Kurs', 'Vad saknas', 'Termin', 'Läsperiod', 'Status'],
+        rows: supplements.map((s) => [
+          s.type, s.courseCode, s.description, s.term, s.placement, s.done ? 'Klar' : 'Kvarstår',
         ]),
       });
     }

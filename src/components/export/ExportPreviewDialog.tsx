@@ -46,16 +46,29 @@ export interface ExportPreviewProps {
   counselorName: string;
   date: string;                  // formatted ISO YYYY-MM-DD
   sections: DocSection[];        // initial content
+  /** 'student' visar ett förenklat formulär för /student, 'counselor' full myndighetsmall för /svl. */
+  variant?: 'counselor' | 'student';
+  studentProgram?: string;
+  studentYear?: string;
 }
 
 export const ExportPreviewDialog = ({
   open, onClose, defaultTemplate = 'LTH',
   documentName, fileBaseName, counselorName, date, sections: initialSections,
+  variant = 'counselor', studentProgram = '', studentYear = '',
 }: ExportPreviewProps) => {
+  const isStudent = variant === 'student';
   const [template, setTemplate] = useState<'LTH' | 'LU' | 'CUSTOM'>(defaultTemplate);
   const [sections, setSections] = useState<DocSection[]>(initialSections);
   const [docName, setDocName] = useState(documentName);
   const [docDate, setDocDate] = useState(date);
+
+  // Studentversionens fält (används i stället för myndighetsuppgifterna)
+  const [stud, setStud] = useState({
+    name: counselorName,
+    program: studentProgram,
+    year: studentYear,
+  });
 
   // LTH meta
   const [lth, setLth] = useState({
@@ -115,6 +128,8 @@ export const ExportPreviewDialog = ({
       setLth((prev) => ({ ...prev, counselor: counselorName || prev.counselor }));
       setLu((prev) => ({ ...prev, handler: counselorName || prev.handler, documentName }));
       setCustom((prev) => ({ ...prev, counselor: counselorName || prev.counselor }));
+      setStud({ name: counselorName, program: studentProgram, year: studentYear });
+      if (isStudent) setTemplate('LTH');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
@@ -135,6 +150,19 @@ export const ExportPreviewDialog = ({
       children.push(new Paragraph({
         children: [new TextRun({ text: docName, bold: true, size: 24, font: FONT, color: ACCENT })],
         spacing: { after: 200 },
+      }));
+    }
+
+    if (isStudent) {
+      const meta = [
+        stud.name ? `Namn: ${stud.name}` : '',
+        stud.program ? `Program: ${stud.program}` : '',
+        stud.year ? `Årskurs: ${stud.year}` : '',
+        `Datum: ${docDate}`,
+      ].filter(Boolean).join('   ·   ');
+      children.push(new Paragraph({
+        children: [new TextRun({ text: meta, size: 20, font: FONT })],
+        spacing: { after: 240 },
       }));
     }
 
@@ -220,8 +248,17 @@ export const ExportPreviewDialog = ({
       pageProps = GOV_PAGE_PROPS;
     } else {
       const logoBuffer = await loadLogoBuffer();
-      header = buildGovHeader({ counselorName: lth.counselor || 'Studievägledare', date: docDate }, logoBuffer);
-      footer = buildGovFooter({
+      header = buildGovHeader(
+        { counselorName: isStudent ? (stud.name || 'Student') : (lth.counselor || 'Studievägledare'), date: docDate },
+        logoBuffer,
+      );
+      footer = isStudent ? buildGovFooter({
+        postalAddress: '',
+        visitAddress: '',
+        phone: '',
+        email: '',
+        web: 'lth.se',
+      }) : buildGovFooter({
         postalAddress: lth.postalAddress,
         visitAddress: lth.visitAddress,
         phone: lth.phone,
@@ -262,7 +299,23 @@ export const ExportPreviewDialog = ({
     const isCustom = template === 'CUSTOM';
     return (
       <div className={`p-6 bg-white text-black text-[12px] leading-snug min-h-full ${isLu ? 'font-serif' : ''}`}>
-        {isLu ? (
+        {isStudent ? (
+          <>
+            <div className="flex items-center justify-between border-b-2 pb-2 mb-3" style={{ borderColor: '#2E75B6' }}>
+              <img src={lthLogo} alt="LTH" className="h-10" />
+              <div className="text-right text-[11px]">
+                <div className="font-bold text-[#003366]">Studieplanering</div>
+                <div className="text-gray-600">{docDate}</div>
+              </div>
+            </div>
+            <div className="font-bold text-[20px] text-[#003366] border-b-2 border-[#2E75B6] pb-1">{docName}</div>
+            <div className="text-[11px] mt-2">
+              {stud.name && <>Namn: <b>{stud.name}</b> &nbsp;·&nbsp; </>}
+              {stud.program && <>Program: <b>{stud.program}</b> &nbsp;·&nbsp; </>}
+              {stud.year && <>Årskurs: <b>{stud.year}</b></>}
+            </div>
+          </>
+        ) : isLu ? (
           <>
             <div className="flex items-start justify-between border-b border-gray-400 pb-2 mb-3">
               <img src={luLogo} alt="LU" className="h-14" />
@@ -345,7 +398,7 @@ export const ExportPreviewDialog = ({
         ))}
       </div>
     );
-  }, [template, sections, docName, docDate, lth, lu, custom]);
+  }, [template, sections, docName, docDate, lth, lu, custom, isStudent, stud]);
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
@@ -361,6 +414,7 @@ export const ExportPreviewDialog = ({
           {/* Left: editor */}
           <ScrollArea className="h-[70vh] pr-2">
             <div className="space-y-4">
+              {!isStudent && (
               <div className="space-y-2">
                 <Label className="font-medium">Mall</Label>
                 <RadioGroup value={template} onValueChange={(v) => setTemplate(v as 'LTH' | 'LU' | 'CUSTOM')} className="flex gap-4 flex-wrap">
@@ -375,6 +429,7 @@ export const ExportPreviewDialog = ({
                   </label>
                 </RadioGroup>
               </div>
+              )}
 
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
@@ -387,7 +442,25 @@ export const ExportPreviewDialog = ({
                 </div>
               </div>
 
-              {template === 'LTH' ? (
+              {isStudent ? (
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1 col-span-2">
+                    <Label className="text-xs">Ditt namn</Label>
+                    <Input value={stud.name} onChange={(e) => setStud({ ...stud, name: e.target.value })} placeholder="Förnamn Efternamn" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Program</Label>
+                    <Input value={stud.program} onChange={(e) => setStud({ ...stud, program: e.target.value })} placeholder="t.ex. D – Datateknik" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Årskurs</Label>
+                    <Input value={stud.year} onChange={(e) => setStud({ ...stud, year: e.target.value })} placeholder="t.ex. 2" />
+                  </div>
+                  <p className="col-span-2 text-[11px] text-muted-foreground">
+                    Dokumentet skapas som en personlig studieplanering. Du kan ändra rubriker och text i sektionerna nedan innan du laddar ner.
+                  </p>
+                </div>
+              ) : template === 'LTH' ? (
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1 col-span-2">
                     <Label className="text-xs">Institution / Avdelning</Label>

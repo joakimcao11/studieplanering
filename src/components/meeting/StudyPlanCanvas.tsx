@@ -15,7 +15,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import {
   Plus, Trash2, ChevronLeft, ChevronRight, ExternalLink, Download, GraduationCap,
   CalendarDays, ListChecks, Search, Sparkles, Maximize2, Minimize2, Home, Wrench,
-  Settings, Briefcase, ChevronsRight, ChevronsLeft, GripVertical, MoreVertical, Check,
+  Settings, Briefcase, ChevronsRight, ChevronsLeft, GripVertical, MoreVertical, Check, ClipboardList,
 } from 'lucide-react';
 import {
   DndContext, DragEndEvent, PointerSensor, useSensor, useSensors,
@@ -38,6 +38,22 @@ export type ActionPlanItem = {
   placement: Placement;
   studyPace?: 25 | 50 | 75 | 100;
   isCustom?: boolean;
+};
+
+export type SupplementType = 'Inlämningsuppgift' | 'Laboration' | 'Projekt' | 'Övrig examination';
+
+export const SUPPLEMENT_TYPES: SupplementType[] = [
+  'Inlämningsuppgift', 'Laboration', 'Projekt', 'Övrig examination',
+];
+
+export type SupplementItem = {
+  id: string;
+  type: SupplementType;
+  courseCode: string;
+  description: string;
+  term: string;
+  placement: 'LP1' | 'LP2' | 'LP3' | 'LP4';
+  done?: boolean;
 };
 
 const PLACEMENT_ORDER: Placement[] = ['LP1', 'LP2', 'LP3', 'LP4', 'OmtentamenI', 'OmtentamenII'];
@@ -76,6 +92,7 @@ const PLACEMENT_CHOICES: PlacementChoice[] = [
   { kind: 'single', placement: 'LP3', label: 'LP3' },
   { kind: 'single', placement: 'LP4', label: 'LP4' },
   { kind: 'between', placement: 'LP1', periods: ['1', '2'], label: 'Mellan LP1–LP2 (flerperiod)' },
+  { kind: 'between', placement: 'LP2', periods: ['2', '3'], label: 'Mellan LP2–LP3 (flerperiod)' },
   { kind: 'between', placement: 'LP3', periods: ['3', '4'], label: 'Mellan LP3–LP4 (flerperiod)' },
   { kind: 'single', placement: 'OmtentamenI', label: 'Omtentamen I (april)' },
   { kind: 'single', placement: 'OmtentamenII', label: 'Omtentamen II (augusti)' },
@@ -88,6 +105,10 @@ interface Props {
   studyPlanText: string;
   setStudyPlanText: (s: string) => void;
   onExport: () => void;
+  /** Anpassar rubriker och hjälptexter för student- respektive vägledarvyn. */
+  variant?: 'student' | 'counselor';
+  supplements?: SupplementItem[];
+  setSupplements?: React.Dispatch<React.SetStateAction<SupplementItem[]>>;
 }
 
 /* ============================== Draggable course block ============================== */
@@ -201,12 +222,13 @@ const GhostBlock = ({ it, fullscreen }: { it: ActionPlanItem; fullscreen?: boole
 
 /* ============================== Droppable LP cell ============================== */
 const DroppableCell = ({
-  term, placement, items, ghosts, onAdd, onRemove, onUpdatePeriods, fullscreen,
+  term, placement, items, ghosts, supplements = [], onAdd, onRemove, onUpdatePeriods, fullscreen,
 }: {
   term: string;
   placement: Placement;
   items: ActionPlanItem[];
   ghosts: ActionPlanItem[];
+  supplements?: SupplementItem[];
   onAdd: () => void;
   onRemove: (id: string) => void;
   onUpdatePeriods: (id: string, periods: string[]) => void;
@@ -241,6 +263,21 @@ const DroppableCell = ({
         {ghosts.map((it) => (
           <GhostBlock key={`ghost-${it.id}`} it={it} fullscreen={fullscreen} />
         ))}
+        {supplements.map((s) => (
+          <div
+            key={`sup-${s.id}`}
+            className={cn(
+              'rounded border border-dashed border-primary/50 bg-primary/5 px-1.5 py-1',
+              fullscreen ? 'text-[11px]' : 'text-[10px]',
+            )}
+            title={`${s.type}${s.courseCode ? ` – ${s.courseCode}` : ''}: ${s.description}`}
+          >
+            <div className="font-medium text-primary">{s.type}</div>
+            <div className="truncate text-muted-foreground">
+              {s.courseCode ? `${s.courseCode} · ` : ''}{s.description || 'Komplettering'}
+            </div>
+          </div>
+        ))}
         <button
           onClick={onAdd}
           className={cn(
@@ -258,10 +295,17 @@ const DroppableCell = ({
 /* ============================== Main component ============================== */
 export const StudyPlanCanvas = ({
   program, actionPlan, setActionPlan, studyPlanText, setStudyPlanText, onExport,
+  variant = 'counselor', supplements: supplementsProp, setSupplements: setSupplementsProp,
 }: Props) => {
   const { toast } = useToast();
   const { courses } = useCourses(program);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
+  const isStudent = variant === 'student';
+
+  // Kompletteringar: styrs utifrån om props skickas in, annars lokalt state.
+  const [localSupplements, setLocalSupplements] = useState<SupplementItem[]>([]);
+  const supplements = supplementsProp ?? localSupplements;
+  const setSupplements = setSupplementsProp ?? setLocalSupplements;
 
   const [fullscreen, setFullscreen] = useState(false);
   const [showSummary, setShowSummary] = useState(true);
@@ -298,6 +342,8 @@ export const StudyPlanCanvas = ({
 
   // Selected course inside Add-dialog (inline placement flow)
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
+  // "Ange själv" – fria läsperioder i placeringsvalet
+  const [manualPeriods, setManualPeriods] = useState<string[]>([]);
 
   const openAddDialog = (term: string, placement: Placement) => {
     setAddTerm(term);
@@ -309,6 +355,7 @@ export const StudyPlanCanvas = ({
     else setPeriodChecks({ '1': false, '2': false, '3': false, '4': false });
     setSearch('');
     setPendingChoice(`single:${placement}`);
+    setManualPeriods(placement.startsWith('LP') ? [placement.replace('LP', '')] : []);
     setSelectedCourseId(null);
     setAddOpen(true);
   };
@@ -325,6 +372,11 @@ export const StudyPlanCanvas = ({
 
   const placementChoiceFromKey = (key: string): { placement: Placement; periods?: string[] } => {
     const [kind, val] = key.split(':');
+    if (kind === 'manual') {
+      const sorted = [...manualPeriods].sort();
+      if (sorted.length === 0) return { placement: addPlacement };
+      return { placement: `LP${sorted[0]}` as Placement, periods: sorted };
+    }
     if (kind === 'between') {
       const [pl, periods] = val.split('|');
       return { placement: pl as Placement, periods: periods.split(',') };
@@ -354,8 +406,10 @@ export const StudyPlanCanvas = ({
   const smartDefaultChoice = (c: any): string => {
     const ps: string[] = c?.periods || [];
     if (ps.length === 2 && ps.includes('1') && ps.includes('2')) return 'between:LP1|1,2';
+    if (ps.length === 2 && ps.includes('2') && ps.includes('3')) return 'between:LP2|2,3';
     if (ps.length === 2 && ps.includes('3') && ps.includes('4')) return 'between:LP3|3,4';
     if (ps.length === 1) return `single:LP${ps[0]}`;
+    if (ps.length > 2) { setManualPeriods([...ps].sort()); return 'manual:custom'; }
     return `single:${addPlacement}`;
   };
 
@@ -377,6 +431,9 @@ export const StudyPlanCanvas = ({
       toast({ title: 'Saknar uppgifter', description: 'Kurskod och namn krävs.', variant: 'destructive' });
       return;
     }
+    const periods = [...customPeriods].sort();
+    // Flerperiodskurs: ankras i första valda läsperioden, hp fördelas jämnt över perioderna.
+    const placement: Placement = periods.length > 0 ? (`LP${periods[0]}` as Placement) : addPlacement;
     setActionPlan((prev) => [
       ...prev,
       {
@@ -384,16 +441,21 @@ export const StudyPlanCanvas = ({
         code: customCode.trim(),
         name: customName.trim(),
         hp: parseFloat(customHp) || 0,
-        periods: customPeriods,
+        periods,
         term: addTerm,
-        placement: addPlacement,
+        placement,
         studyPace: customPace,
         isCustom: true,
       },
     ]);
     setCustomOpen(false);
     setCustomCode(''); setCustomName(''); setCustomHp('7.5'); setCustomPeriods([]); setCustomPace(100);
-    toast({ title: 'Egen kurs tillagd', description: `${customCode} – ${addTerm} ${placementShort(addPlacement)}` });
+    toast({
+      title: 'Egen kurs tillagd',
+      description: periods.length > 1
+        ? `${customCode} – ${addTerm} LP${periods.join('+')} (hp fördelas per läsperiod)`
+        : `${customCode} – ${addTerm} ${placementShort(placement)}`,
+    });
   };
 
   const updateItem = (id: string, patch: Partial<ActionPlanItem>) => {
@@ -510,6 +572,7 @@ export const StudyPlanCanvas = ({
                   placement={p}
                   items={items}
                   ghosts={ghosts}
+                  supplements={supplements.filter((s) => s.term === t && s.placement === (p as any))}
                   onAdd={() => openAddDialog(t, p)}
                   onRemove={removeItem}
                   onUpdatePeriods={(id, periods) => {
@@ -584,8 +647,118 @@ export const StudyPlanCanvas = ({
         <div className="text-[10px] text-muted-foreground pt-2 border-t">
           Mål: 30 hp/termin (≈15 hp per LP)
         </div>
+        {supplements.length > 0 && (
+          <div className="text-[10px] text-muted-foreground pt-2 border-t space-y-1">
+            <div className="font-medium text-foreground">Kompletteringar</div>
+            {terms.map((t) => {
+              const n = supplements.filter((s) => s.term === t).length;
+              if (n === 0) return null;
+              return <div key={t}>{t}: {n} st ({supplements.filter((s) => s.term === t && s.done).length} klara)</div>;
+            })}
+          </div>
+        )}
       </CardContent>
     </Card>
+  );
+
+  /* ---------------- Komplettering ---------------- */
+  const addSupplement = () => {
+    setSupplements((prev) => [
+      ...prev,
+      {
+        id: Math.random().toString(36).slice(2, 9),
+        type: 'Inlämningsuppgift',
+        courseCode: '',
+        description: '',
+        term: terms[0] || 'HT2026',
+        placement: 'LP1',
+        done: false,
+      },
+    ]);
+  };
+  const updateSupplement = (id: string, patch: Partial<SupplementItem>) =>
+    setSupplements((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));
+  const removeSupplement = (id: string) =>
+    setSupplements((prev) => prev.filter((s) => s.id !== id));
+
+  const kompletteringBlock = (
+    <div className="mt-6">
+      <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
+        <div>
+          <h4 className="font-bold text-sm flex items-center gap-2">
+            <ClipboardList className="w-4 h-4 text-primary" /> Komplettering
+          </h4>
+          <p className="text-xs text-muted-foreground">
+            {isStudent
+              ? 'Inlämningsuppgifter, labbar, projekt och andra examinationer som du behöver bli klar med. Koppla dem till en läsperiod så syns de i din plan.'
+              : 'Inlämningsuppgifter, labbar, projekt och övriga examinationer som saknas. Kopplas till läsperiod och tas med i sammanställning och export.'}
+          </p>
+        </div>
+        <Button size="sm" variant="outline" onClick={addSupplement}>
+          <Plus className="w-4 h-4 mr-1" /> Lägg till komplettering
+        </Button>
+      </div>
+      {supplements.length === 0 ? (
+        <div className="border border-dashed rounded-md p-4 text-xs text-muted-foreground text-center">
+          Inga kompletteringar tillagda.
+        </div>
+      ) : (
+        <div className="border rounded-md overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead className="bg-muted">
+              <tr>
+                <th className="text-left p-2 font-medium w-40">Typ</th>
+                <th className="text-left p-2 font-medium w-28">Kurskod</th>
+                <th className="text-left p-2 font-medium">Vad saknas</th>
+                <th className="text-left p-2 font-medium w-28">Termin</th>
+                <th className="text-left p-2 font-medium w-24">Läsperiod</th>
+                <th className="text-left p-2 font-medium w-16">Klar</th>
+                <th className="p-2 w-10"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {supplements.map((s) => (
+                <tr key={s.id} className="border-t">
+                  <td className="p-2">
+                    <Select value={s.type} onValueChange={(v) => updateSupplement(s.id, { type: v as SupplementType })}>
+                      <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+                      <SelectContent className="bg-popover z-50">
+                        {SUPPLEMENT_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </td>
+                  <td className="p-2">
+                    <Input value={s.courseCode} onChange={(e) => updateSupplement(s.id, { courseCode: e.target.value })} className="h-7 text-xs font-mono" placeholder="ABCD12" />
+                  </td>
+                  <td className="p-2">
+                    <Input value={s.description} onChange={(e) => updateSupplement(s.id, { description: e.target.value })} className="h-7 text-xs" placeholder="t.ex. Labb 3 och inlämning 2" />
+                  </td>
+                  <td className="p-2">
+                    <Input value={s.term} onChange={(e) => updateSupplement(s.id, { term: e.target.value })} className="h-7 text-xs" />
+                  </td>
+                  <td className="p-2">
+                    <Select value={s.placement} onValueChange={(v) => updateSupplement(s.id, { placement: v as SupplementItem['placement'] })}>
+                      <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+                      <SelectContent className="bg-popover z-50">
+                        {(['LP1', 'LP2', 'LP3', 'LP4'] as const).map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </td>
+                  <td className="p-2 text-center">
+                    <Checkbox checked={!!s.done} onCheckedChange={(v) => updateSupplement(s.id, { done: v === true })} />
+                  </td>
+                  <td className="p-2 text-right">
+                    <button onClick={() => removeSupplement(s.id)} className="text-muted-foreground hover:text-destructive">
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
   );
 
   /* ---------------- Editable handlingsplan table ---------------- */
@@ -757,7 +930,37 @@ export const StudyPlanCanvas = ({
                     </label>
                   );
                 })}
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <RadioGroupItem value="manual:custom" id="pl-manual" />
+                  <span>Ange själv</span>
+                </label>
               </RadioGroup>
+
+              {pendingChoice === 'manual:custom' && (
+                <div className="rounded border bg-background p-3 space-y-2">
+                  <div className="text-xs font-medium">Välj läsperioder själv</div>
+                  <div className="flex flex-wrap gap-3">
+                    {(['1', '2', '3', '4'] as const).map((p) => (
+                      <label key={p} className="flex items-center gap-1.5 text-sm cursor-pointer">
+                        <Checkbox
+                          checked={manualPeriods.includes(p)}
+                          onCheckedChange={(v) => setManualPeriods((prev) =>
+                            v === true ? [...prev, p].sort() : prev.filter((x) => x !== p))}
+                        />
+                        LP{p}
+                      </label>
+                    ))}
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    Väljer du flera läsperioder placeras kursen i alla valda perioder och poängen fördelas jämnt
+                    (t.ex. 10 hp över LP2 och LP3 = 5 hp per läsperiod).
+                  </p>
+                </div>
+              )}
+
+              <p className="text-[11px] text-muted-foreground">
+                Flerperiodskurser visas i samtliga valda läsperioder och hp delas lika mellan dem.
+              </p>
               <div className="flex items-center gap-2 pt-2 border-t">
                 <Label className="text-xs">Termin</Label>
                 <Input value={addTerm} onChange={(e) => setAddTerm(e.target.value)} className="h-8 text-xs max-w-[160px]" />
@@ -769,7 +972,7 @@ export const StudyPlanCanvas = ({
             <Button
               className="w-full"
               size="lg"
-              disabled={!selectedCourseId || !pendingChoice}
+              disabled={!selectedCourseId || !pendingChoice || (pendingChoice === 'manual:custom' && manualPeriods.length === 0)}
               onClick={handleConfirmAdd}
             >
               <Plus className="w-4 h-4 mr-1" /> Lägg till och klar
@@ -860,9 +1063,14 @@ export const StudyPlanCanvas = ({
             <header className="border-b px-6 py-3 flex items-center justify-between gap-4">
               <div>
                 <h2 className="text-lg font-bold flex items-center gap-2">
-                  <GraduationCap className="w-5 h-5 text-primary" /> Stöd i studieplanering – Helskärmsläge
+                  <GraduationCap className="w-5 h-5 text-primary" />
+                  {isStudent ? 'Min studieplanering – Helskärmsläge' : 'Stöd i studieplanering – Helskärmsläge'}
                 </h2>
-                <p className="text-xs text-muted-foreground">Dra och släpp kurser mellan LP. Sammanställning visar HP per termin och läsperiod.</p>
+                <p className="text-xs text-muted-foreground">
+                  {isStudent
+                    ? 'Dra och släpp dina kurser mellan läsperioderna. Till höger ser du hp per termin och läsperiod.'
+                    : 'Dra och släpp kurser mellan LP. Sammanställning visar HP per termin och läsperiod.'}
+                </p>
               </div>
               {headerButtons}
             </header>
@@ -872,6 +1080,7 @@ export const StudyPlanCanvas = ({
                 <div className="min-w-[1200px]">
                   {renderTermsGrid('fullscreen')}
                   {handlingsplanTable}
+                  {kompletteringBlock}
                 </div>
               </main>
               {showSummary && (
@@ -912,10 +1121,12 @@ export const StudyPlanCanvas = ({
             <div>
               <CardTitle className="flex items-center gap-2">
                 <GraduationCap className="w-5 h-5 text-primary" />
-                Stöd i studieplanering
+                {isStudent ? 'Min studieplanering' : 'Stöd i studieplanering'}
               </CardTitle>
               <CardDescription>
-                Planera kurser per termin och läsperiod. Dra och släpp för att flytta kurser. Sammanställning visas till höger.
+                {isStudent
+                  ? 'Lägg till dina kurser i rätt termin och läsperiod. Dra och släpp för att flytta dem – sammanställningen till höger visar hur många hp du planerar.'
+                  : 'Planera kurser per termin och läsperiod. Dra och släpp för att flytta kurser. Sammanställning visas till höger.'}
               </CardDescription>
             </div>
             {headerButtons}
@@ -936,6 +1147,7 @@ export const StudyPlanCanvas = ({
                 <div className="space-y-3">{summaryPanel}</div>
               </div>
               {handlingsplanTable}
+              {kompletteringBlock}
             </TabsContent>
 
             <TabsContent value="text" className="mt-4">
