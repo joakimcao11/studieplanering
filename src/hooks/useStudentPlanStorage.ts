@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
-import type { ActionPlanItem } from '@/components/meeting/StudyPlanCanvas';
+import type { ActionPlanItem, SupplementItem } from '@/components/meeting/StudyPlanCanvas';
 
 export type StudentActionPlanItem = ActionPlanItem & { isExample?: boolean };
 
 export interface PersistedStudentPlan {
   studentName: string;
   program: string;
+  customProgramName?: string;
+  yearGroup?: string;
+  supplements?: SupplementItem[];
   actionPlan: StudentActionPlanItem[];
   studyPlanText: string;
   aiDraft?: string;

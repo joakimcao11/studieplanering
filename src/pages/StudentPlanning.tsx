@@ -15,7 +15,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import {
   GraduationCap, Home, ListChecks, Info, HelpCircle, FileText, FileType2, FileDown, Wand2, RotateCcw, Trash2, Sparkles, Undo2,
 } from 'lucide-react';
-import { StudyPlanCanvas, ActionPlanItem } from '@/components/meeting/StudyPlanCanvas';
+import { StudyPlanCanvas, ActionPlanItem, SupplementItem } from '@/components/meeting/StudyPlanCanvas';
 import { ExportPreviewDialog, DocSection } from '@/components/export/ExportPreviewDialog';
 import { StudentOnboarding } from '@/components/student/StudentOnboarding';
 import { StudentAiPanel } from '@/components/student/StudentAiPanel';
@@ -28,6 +28,8 @@ import { useToast } from '@/hooks/use-toast';
 import { exportSectionsAsPdf, exportSectionsAsTxt } from '@/utils/studentExport';
 import lthLogo from '@/assets/lth-logo.png';
 
+const OWN_PROGRAM = '__EGET__';
+
 const StudentPlanning = () => {
   const { programs } = usePrograms();
   const { toast } = useToast();
@@ -36,6 +38,9 @@ const StudentPlanning = () => {
   const [hydrated, setHydrated] = useState(false);
   const [studentName, setStudentName] = useState(initial?.studentName ?? '');
   const [program, setProgram] = useState<string>(initial?.program ?? '');
+  const [customProgramName, setCustomProgramName] = useState(initial?.customProgramName ?? '');
+  const [yearGroup, setYearGroup] = useState(initial?.yearGroup ?? '');
+  const [supplements, setSupplements] = useState<SupplementItem[]>(initial?.supplements ?? []);
   const [actionPlan, setActionPlan] = useState<StudentActionPlanItem[]>(initial?.actionPlan ?? []);
   const [studyPlanText, setStudyPlanText] = useState(initial?.studyPlanText ?? '');
   const [notes, setNotes] = useState(initial?.notes ?? '');
@@ -53,7 +58,10 @@ const StudentPlanning = () => {
   useEffect(() => { setHydrated(true); }, []);
 
   const savedAt = useDebouncedStudentPlanSave(
-    { studentName, program, actionPlan, studyPlanText, notes, aiDraft, aiMode, aiStyleTemplate, aiPreviewTab },
+    {
+      studentName, program, customProgramName, yearGroup, supplements,
+      actionPlan, studyPlanText, notes, aiDraft, aiMode, aiStyleTemplate, aiPreviewTab,
+    },
     hydrated,
   );
 
@@ -116,6 +124,15 @@ const StudentPlanning = () => {
   };
 
   const exampleCount = actionPlan.filter((it) => it.isExample).length;
+
+  const isOwnProgram = program === OWN_PROGRAM;
+  const profileReady = !!program && (!isOwnProgram || !!customProgramName.trim());
+  const programLabel = isOwnProgram
+    ? (customProgramName.trim() || 'Eget program')
+    : (() => {
+        const p = programs.find((x) => x.code === program);
+        return p ? `${p.code} – ${p.name}` : program;
+      })();
   const clearExamples = () => {
     applyPlan((prev) => prev.filter((it) => !it.isExample));
     toast({ title: 'Exempelkurser borttagna', description: `${exampleCount} rad(er) rensades.` });
@@ -123,6 +140,7 @@ const StudentPlanning = () => {
 
   const resetPlan = () => {
     applyPlan(() => []);
+    setSupplements([]);
     setStudyPlanText('');
     setNotes('');
     setAiDraft('');
@@ -130,6 +148,8 @@ const StudentPlanning = () => {
     if (alsoClearProfile) {
       setStudentName('');
       setProgram('');
+      setCustomProgramName('');
+      setYearGroup('');
     }
     clearStudentPlan();
     setResetOpen(false);
@@ -153,7 +173,18 @@ const StudentPlanning = () => {
         columns: ['Kurskod', 'Namn', 'HP', 'Studietakt', 'Termin', 'Period'],
         rows: actionPlan.map((it) => [
           it.code, it.name, String(it.hp),
-          `${it.studyPace ?? 100}%`, it.term, it.placement,
+          `${it.studyPace ?? 100}%`, it.term,
+          (it.periods?.length ?? 0) > 1 ? `LP${it.periods.join('+')}` : it.placement,
+        ]),
+      });
+    }
+    if (supplements.length > 0) {
+      sections.push({
+        type: 'table',
+        heading: 'Komplettering',
+        columns: ['Typ', 'Kurs', 'Vad saknas', 'Termin', 'Läsperiod', 'Status'],
+        rows: supplements.map((s) => [
+          s.type, s.courseCode, s.description, s.term, s.placement, s.done ? 'Klar' : 'Kvarstår',
         ]),
       });
     }
@@ -194,11 +225,10 @@ const StudentPlanning = () => {
   const handleExportPdf = () => {
     const p = buildPayload();
     if (p.sections.length === 0) return notifyEmpty();
-    const programName = programs.find((x) => x.code === program)?.name;
     exportSectionsAsPdf(p.sections, p.fileBaseName, {
       title: 'Min studieplanering',
       studentName: studentName || undefined,
-      program: programName ? `${program} – ${programName}` : program || undefined,
+      program: programLabel || undefined,
       date: p.today,
     });
     toast({ title: 'PDF exporterad', description: `${p.fileBaseName}.pdf` });
@@ -207,11 +237,10 @@ const StudentPlanning = () => {
   const handleExportTxt = () => {
     const p = buildPayload();
     if (p.sections.length === 0) return notifyEmpty();
-    const programName = programs.find((x) => x.code === program)?.name;
     exportSectionsAsTxt(p.sections, p.fileBaseName, {
       title: 'Min studieplanering',
       studentName: studentName || undefined,
-      program: programName ? `${program} – ${programName}` : program || undefined,
+      program: programLabel || undefined,
       date: p.today,
     });
     toast({ title: 'Textfil exporterad', description: `${p.fileBaseName}.txt` });
@@ -300,26 +329,89 @@ const StudentPlanning = () => {
                     {programs.map((p) => (
                       <SelectItem key={p.id} value={p.code}>{p.code} – {p.name}</SelectItem>
                     ))}
+                    <SelectItem value={OWN_PROGRAM}>Eget program</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+              {isOwnProgram && (
+                <Input
+                  value={customProgramName}
+                  onChange={(e) => setCustomProgramName(e.target.value)}
+                  placeholder="Namn på ditt program"
+                  className="h-9 w-48 text-sm"
+                />
+              )}
             </div>
           </div>
         </header>
 
         <main className="flex-1 overflow-auto p-6">
-          {!program ? (
-            <div className="max-w-2xl mx-auto mt-16 border rounded-lg p-8 bg-card text-center space-y-4">
-              <div className="w-16 h-16 rounded-full bg-primary/10 mx-auto flex items-center justify-center">
-                <GraduationCap className="w-8 h-8 text-primary" />
+          {!profileReady ? (
+            <div className="max-w-2xl mx-auto mt-10 border rounded-lg p-8 bg-card space-y-5">
+              <div className="text-center space-y-2">
+                <div className="w-16 h-16 rounded-full bg-primary/10 mx-auto flex items-center justify-center">
+                  <GraduationCap className="w-8 h-8 text-primary" />
+                </div>
+                <h2 className="text-xl font-bold">Kom igång med din studieplanering</h2>
+                <p className="text-sm text-muted-foreground">
+                  Fyll i ditt namn och välj ditt program. Då laddas kurserna du kan välja mellan – sedan placerar du dem i termin och läsperiod.
+                </p>
               </div>
-              <h2 className="text-xl font-bold">Välj ditt program för att komma igång</h2>
-              <p className="text-sm text-muted-foreground">
-                När du har valt program ovan laddas alla kurser du kan välja mellan. Du kan sedan lägga till dem i respektive termin och läsperiod.
-              </p>
+
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="start-name" className="text-sm font-medium">1. Vad heter du?</Label>
+                  <Input
+                    id="start-name"
+                    value={studentName}
+                    onChange={(e) => setStudentName(e.target.value)}
+                    placeholder="Förnamn Efternamn"
+                  />
+                  <p className="text-[11px] text-muted-foreground">Namnet används i dokumentet du exporterar. Valfritt.</p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium">2. Vilket program läser du?</Label>
+                  <Select value={program} onValueChange={setProgram}>
+                    <SelectTrigger><SelectValue placeholder="Välj program" /></SelectTrigger>
+                    <SelectContent className="bg-popover z-50">
+                      {programs.map((p) => (
+                        <SelectItem key={p.id} value={p.code}>{p.code} – {p.name}</SelectItem>
+                      ))}
+                      <SelectItem value={OWN_PROGRAM}>Eget program (jag lägger in mina egna kurser)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {program === OWN_PROGRAM && (
+                    <div className="space-y-1.5 pt-2">
+                      <Label htmlFor="own-prog" className="text-xs">Namn på ditt program</Label>
+                      <Input
+                        id="own-prog"
+                        value={customProgramName}
+                        onChange={(e) => setCustomProgramName(e.target.value)}
+                        placeholder="t.ex. Maskinteknik eller Utbytesstudier"
+                      />
+                      <p className="text-[11px] text-muted-foreground">
+                        Med eget program finns ingen färdig kurslista – du lägger in dina kurser med "Skapa egen kurs".
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="start-year" className="text-sm font-medium">3. Årskurs (valfritt)</Label>
+                  <Input
+                    id="start-year"
+                    value={yearGroup}
+                    onChange={(e) => setYearGroup(e.target.value)}
+                    placeholder="t.ex. 2"
+                    className="max-w-[160px]"
+                  />
+                </div>
+              </div>
+
               <div className="flex items-start gap-2 text-left bg-muted/30 border rounded p-3 text-xs text-muted-foreground">
                 <Info className="w-4 h-4 mt-0.5 shrink-0" />
-                <span>Ingen inloggning krävs. Din studieplanering sparas endast i din webbläsare och kan när som helst exporteras som Word-dokument.</span>
+                <span>Ingen inloggning krävs. Din studieplanering sparas endast i din webbläsare och kan när som helst exporteras som Word, PDF eller text.</span>
               </div>
               <div className="flex flex-wrap gap-2 justify-center">
                 <Button variant="outline" onClick={() => setShowOnboarding(true)}>
@@ -400,7 +492,10 @@ const StudentPlanning = () => {
                 </div>
               </div>
               <StudyPlanCanvas
-                program={program}
+                program={isOwnProgram ? OWN_PROGRAM : program}
+                variant="student"
+                supplements={supplements}
+                setSupplements={setSupplements}
                 actionPlan={actionPlan}
                 setActionPlan={setActionPlanTracked}
                 studyPlanText={studyPlanText}
@@ -446,6 +541,9 @@ const StudentPlanning = () => {
           counselorName={studentName}
           date={new Date().toISOString().slice(0, 10)}
           sections={exportPayload.sections}
+          variant="student"
+          studentProgram={programLabel}
+          studentYear={yearGroup}
         />
       )}
     </div>

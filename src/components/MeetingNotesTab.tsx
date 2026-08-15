@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { COUNSELORS } from '@/types/planning';
-import { StudyPlanCanvas, ActionPlanItem } from './meeting/StudyPlanCanvas';
+import { StudyPlanCanvas, ActionPlanItem, SupplementItem } from './meeting/StudyPlanCanvas';
 import { ExportPreviewDialog, DocSection } from './export/ExportPreviewDialog';
 import { usePrograms } from '@/hooks/usePrograms';
 
@@ -141,6 +141,19 @@ export const MeetingNotesTab = () => {
   // Handlingsplan
   const [actionPlan, setActionPlan] = useState<ActionPlanItem[]>([]);
   const [studyPlanText, setStudyPlanText] = useState('');
+  const [supplements, setSupplements] = useState<SupplementItem[]>([]);
+
+  const supplementSection = (): DocSection | null => {
+    if (supplements.length === 0) return null;
+    return {
+      type: 'table',
+      heading: 'Komplettering',
+      columns: ['Typ', 'Kurs', 'Vad saknas', 'Termin', 'Läsperiod', 'Status'],
+      rows: supplements.map((s) => [
+        s.type, s.courseCode, s.description, s.term, s.placement, s.done ? 'Klar' : 'Kvarstår',
+      ]),
+    };
+  };
 
   // Export preview dialog state
   const [exportPayload, setExportPayload] = useState<{
@@ -259,6 +272,8 @@ export const MeetingNotesTab = () => {
         ]),
       });
     }
+    const suppA = supplementSection();
+    if (suppA) sections.push(suppA);
     sections.push({
       type: 'paragraph',
       heading: activeMode === 'email-draft' ? 'Mailutkast' : activeMode === 'summary' ? 'Sammanställning' : 'Minnesanteckning',
@@ -288,6 +303,8 @@ export const MeetingNotesTab = () => {
         ]),
       });
     }
+    const supp = supplementSection();
+    if (supp) sections.push(supp);
     if (studyPlanText.trim()) {
       sections.push({ type: 'paragraph', heading: 'Studieplanering', body: studyPlanText });
     }
@@ -523,6 +540,9 @@ export const MeetingNotesTab = () => {
       {/* Stöd i studieplanering — längst ner */}
       <StudyPlanCanvas
         program={program}
+        variant="counselor"
+        supplements={supplements}
+        setSupplements={setSupplements}
         actionPlan={actionPlan}
         setActionPlan={setActionPlan}
         studyPlanText={studyPlanText}
