@@ -1,64 +1,41 @@
-## 1. Ångra senaste ändring på /student
+# Ingångssida, studentanpassning och komplettering
 
-Lägg till en enkel undo-stack för `actionPlan` i `StudentPlanning.tsx`.
+## 1. Ny startsida med två vägar
+- `/` blir en ren landningssida med två stora val: **"Jag är LTH-student"** och **"Jag är studievägledare"**.
+- Student → `/student` (ingen inloggning).
+- Studievägledare → `/svl`, som kräver inloggning (befintlig inloggning + profilval flyttas dit).
+- Nuvarande verktygsinnehåll på `/` flyttas alltså till `/svl`. Gamla bokmärken till `/` landar på startsidan.
 
-- Ny `useUndoableActionPlan`-hook (eller inline `useRef<StudentActionPlanItem[][]>`) som pushar föregående state varje gång `actionPlan` ändras via användaråtgärd (lägg till, ta bort, flytta, ändra hp/takt, rensa exempel, ladda exempel, återställ).
-- Maxdjup: 20 steg (räcker för typisk sessionsanvändning, undviker minnesläckor).
-- Ny **"Ångra"**-knapp i headern (bredvid "Återställ plan") med `Undo2`-ikon från lucide.
-  - Inaktiverad när stacken är tom.
-  - Tooltip: "Ångra senaste ändring".
-  - Kortkommando: `Cmd/Ctrl+Z` (globalt på sidan, ignoreras om fokus ligger i textarea/input).
-- Toast på undo: "Ångrade senaste ändring".
-- Autospar körs vidare som vanligt efter undo (skriver det återställda state:t till localStorage).
+## 2. Tydligare start på /student
+- Namn och program lyfts upp i ett tydligt "Kom igång"-kort med hjälptexter.
+- Programval hämtas som idag (C, D) plus ett nytt alternativ **"Eget program"** där studenten skriver in ett eget programnamn och lägger in helt egna kurser.
+- Kurslistan är tom för eget program; "Skapa egen kurs" blir huvudvägen in.
 
-Notera: undo påverkar endast `actionPlan` (kursrader). Anteckningstext och AI-utkast omfattas inte — de har inbyggd textredigering i webbläsaren.
+## 3. Flerperiodskurser delas per läsperiod
+- När en kurs anges över flera läsperioder (t.ex. LP2 + LP3) placeras kursen i **båda** perioderna i tidslinjen.
+- Poängen delas jämnt: 10 hp över två perioder = 5 hp per period, och räknas så i sammanställningen per läsperiod.
+- Gäller både katalogkurser och "Skapa egen kurs".
 
-## 2. AI-mallar och förhandsvisning i AI-panelen
+## 4. Fler placeringsalternativ
+I "Var ska kursen placeras?" läggs till:
+- **Mellan LP2–LP3 (flerperiod)** (utöver befintliga LP1–LP2 och LP3–LP4)
+- **Ange själv** – studenten kryssar fritt i vilka läsperioder (1–4) kursen ska ligga i.
 
-Utöka `StudentAiPanel.tsx` med mallval och tydlig förhandsvisning.
+## 5. Exportformulär i två varianter
+"Förhandsgranska och exportera" får två profiler för formulärsektionen:
+- **Studentversion** (`/student`): namn, program, årskurs, datum – inga vägledar-/myndighetsfält.
+- **Vägledarversion** (`/svl`): nuvarande fält (institution, enhet, handläggare, kontaktuppgifter, mallval LTH/LU/Anpassad).
+Mallval och dokumentstruktur i övrigt är oförändrade.
 
-**Mallväljare (per läge):**
-Segmented control ovanför de tre AI-knapparna som styr *ton och stil*:
-- **Kort** – punktlista, max ~150 ord, rakt på sak.
-- **Standard** – balanserad prosa + punktlistor (nuvarande beteende).
-- **Utförlig** – fylligare, förklarande text med resonemang.
+## 6. Komplettering (nytt block)
+- Ny sektion **"Komplettering"** i Studieplanering och Stöd i studieplanering: inlämningsuppgifter, labbar, projekt och övriga examinationer.
+- Varje post: typ, kurs/kurskod, beskrivning, kopplad läsperiod (LP1–LP4) och status.
+- Kompletteringar visas i tidslinjen på sin läsperiod, räknas med i sammanställningen (som egen rad, ej hp) och följer med i export (Word/PDF/TXT).
+- Innehåll och rubriker anpassas per roll: studentvänligt språk på `/student`, vägledarformuleringar på `/svl`.
 
-Valet skickas till `analyze-document` som ett nytt fält `styleTemplate: 'short' | 'standard' | 'detailed'` i `studentInfo`. Servern lägger till en kort stil-instruktion i systemprompten baserat på värdet. Övriga befintliga prompts påverkas inte.
-
-**Förhandsvisning:**
-Ersätt nuvarande `Textarea`-resultat med en flikad vy:
-- **Förhandsvisning** (default): renderad HTML med tydlig typografi
-  - Rubriker (rader som matchar `Datum:`, `Student:`, `Bakgrund`, `Diskussion`, `Handlingsplan`, `Nästa steg`, `Sammanfattning`, etc.) → `<h3>` med LTH-navy färg och bottenborder.
-  - Fält på formen `Nyckel: värde` → definition-list style (fet nyckel).
-  - `- `-rader → `<ul><li>`.
-  - Övrigt → `<p>` med `whitespace-pre-line`.
-  - Använder befintlig rensningslogik (samma som `cleanLine` i `MeetingNotesTab`) för att ta bort ev. markdown-tecken.
-- **Redigera**: nuvarande textarea (så användaren fortfarande kan finjustera innan kopiering / append).
-
-**Övrigt:**
-- Behåll knapparna "Kopiera" och "Lägg till i anteckningar" — de opererar på råtexten.
-- Mall-val och senaste flik persisteras via befintlig `useStudentPlanStorage` (utöka `PersistedStudentPlan` med `aiStyleTemplate` och `aiPreviewTab`).
-
-## Tekniskt
-
-**Filer**
-- `src/pages/StudentPlanning.tsx` – undo-stack, "Ångra"-knapp, Cmd/Ctrl+Z-lyssnare, wrapper runt `setActionPlan` som pushar historik.
-- `src/components/student/StudentAiPanel.tsx` – mallväljare (`ToggleGroup`), Tabs (Förhandsvisning / Redigera), formatterad HTML-render, skicka `styleTemplate` i request.
-- `src/hooks/useStudentPlanStorage.ts` – lägg till `aiStyleTemplate?: 'short' | 'standard' | 'detailed'` i `PersistedStudentPlan`.
-- `supabase/functions/analyze-document/index.ts` – läs `studentInfo.styleTemplate` och append:a en stil-instruktion till systemprompten (t.ex. "Håll svaret kort: max 150 ord, punktlista."). Inga breaking changes; default = "standard".
-
-**Undo-strategi (kort)**
-```ts
-const historyRef = useRef<StudentActionPlanItem[][]>([]);
-const applyPlan = (next: StudentActionPlanItem[] | ((p: ...) => ...)) => {
-  setActionPlan(prev => {
-    historyRef.current = [...historyRef.current.slice(-19), prev];
-    return typeof next === 'function' ? next(prev) : next;
-  });
-};
-const undo = () => {
-  const last = historyRef.current.pop();
-  if (last) setActionPlan(last);
-};
-```
-Alla nuvarande `setActionPlan`-anrop i `StudentPlanning.tsx` byts till `applyPlan`.
+## Teknisk översikt
+- `src/App.tsx`: ny `Home`-sida på `/`, verktyget flyttas till `/svl` (nuvarande `Index` blir `/svl`-sidan med `useAuth`-skydd).
+- `src/components/meeting/StudyPlanCanvas.tsx`: `variant: 'student' | 'counselor'`-prop; utökade `PLACEMENT_CHOICES` (mellan LP2–LP3, "Ange själv"); rendera kurser i alla `periods` med hp/antal perioder; nytt `SupplementItem`-state kopplat till läsperiod.
+- `src/components/export/ExportPreviewDialog.tsx`: ny `variant`-prop som styr vilka formulärfält som visas.
+- `src/utils/studentExport.ts`, `wordTemplate.ts`, `wordTemplateLU.ts`: ny kompletteringssektion i exporten.
+- `src/hooks/useStudentPlanStorage.ts`: sparar även eget programnamn och kompletteringar.
