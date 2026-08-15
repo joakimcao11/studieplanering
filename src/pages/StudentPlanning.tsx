@@ -124,6 +124,15 @@ const StudentPlanning = () => {
   };
 
   const exampleCount = actionPlan.filter((it) => it.isExample).length;
+
+  const isOwnProgram = program === OWN_PROGRAM;
+  const profileReady = !!program && (!isOwnProgram || !!customProgramName.trim());
+  const programLabel = isOwnProgram
+    ? (customProgramName.trim() || 'Eget program')
+    : (() => {
+        const p = programs.find((x) => x.code === program);
+        return p ? `${p.code} – ${p.name}` : program;
+      })();
   const clearExamples = () => {
     applyPlan((prev) => prev.filter((it) => !it.isExample));
     toast({ title: 'Exempelkurser borttagna', description: `${exampleCount} rad(er) rensades.` });
