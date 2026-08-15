@@ -225,11 +225,10 @@ const StudentPlanning = () => {
   const handleExportPdf = () => {
     const p = buildPayload();
     if (p.sections.length === 0) return notifyEmpty();
-    const programName = programs.find((x) => x.code === program)?.name;
     exportSectionsAsPdf(p.sections, p.fileBaseName, {
       title: 'Min studieplanering',
       studentName: studentName || undefined,
-      program: programName ? `${program} – ${programName}` : program || undefined,
+      program: programLabel || undefined,
       date: p.today,
     });
     toast({ title: 'PDF exporterad', description: `${p.fileBaseName}.pdf` });
@@ -238,11 +237,10 @@ const StudentPlanning = () => {
   const handleExportTxt = () => {
     const p = buildPayload();
     if (p.sections.length === 0) return notifyEmpty();
-    const programName = programs.find((x) => x.code === program)?.name;
     exportSectionsAsTxt(p.sections, p.fileBaseName, {
       title: 'Min studieplanering',
       studentName: studentName || undefined,
-      program: programName ? `${program} – ${programName}` : program || undefined,
+      program: programLabel || undefined,
       date: p.today,
     });
     toast({ title: 'Textfil exporterad', description: `${p.fileBaseName}.txt` });
