@@ -1182,8 +1182,10 @@ export const StudyPlanCanvas = ({
               <main className="flex-1 overflow-auto p-6">
                 <div className="min-w-[1200px]">
                   {renderTermsGrid('fullscreen')}
+                  {renderOmtBlock('fullscreen')}
                   {handlingsplanTable}
                   {kompletteringBlock}
+                  {finishBlock}
                 </div>
               </main>
               {showSummary && (
@@ -1249,8 +1251,10 @@ export const StudyPlanCanvas = ({
                 </div>
                 <div className="space-y-3">{summaryPanel}</div>
               </div>
+              {renderOmtBlock('default')}
               {handlingsplanTable}
               {kompletteringBlock}
+              {finishBlock}
             </TabsContent>
 
             <TabsContent value="text" className="mt-4">
