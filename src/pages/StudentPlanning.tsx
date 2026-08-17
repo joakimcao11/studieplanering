@@ -49,6 +49,7 @@ const StudentPlanning = () => {
   const [aiStyleTemplate, setAiStyleTemplate] = useState<'short' | 'standard' | 'detailed'>(initial?.aiStyleTemplate ?? 'standard');
   const [aiPreviewTab, setAiPreviewTab] = useState<'preview' | 'edit'>(initial?.aiPreviewTab ?? 'preview');
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
   const [alsoClearProfile, setAlsoClearProfile] = useState(false);
   const [exportPayload, setExportPayload] = useState<{
@@ -469,10 +470,73 @@ const StudentPlanning = () => {
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
+                </div>
+              </div>
+
+              {/* Grundinformation */}
+              <div className="mb-4 border rounded-lg bg-card p-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <Info className="w-4 h-4 text-primary" />
+                  <h2 className="font-bold text-sm">Grundinformation</h2>
+                </div>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Uppgifterna används i dokumentet du exporterar.
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="gi-name" className="text-xs font-medium">Namn</Label>
+                    <Input id="gi-name" value={studentName} onChange={(e) => setStudentName(e.target.value)} placeholder="Förnamn Efternamn" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium">Program</Label>
+                    <Select value={program} onValueChange={setProgram}>
+                      <SelectTrigger><SelectValue placeholder="Välj program" /></SelectTrigger>
+                      <SelectContent className="bg-popover z-50">
+                        {programs.map((p) => (
+                          <SelectItem key={p.id} value={p.code}>{p.code} – {p.name}</SelectItem>
+                        ))}
+                        <SelectItem value={OWN_PROGRAM}>Eget program</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {isOwnProgram && (
+                      <Input
+                        value={customProgramName}
+                        onChange={(e) => setCustomProgramName(e.target.value)}
+                        placeholder="Namn på ditt program"
+                        className="mt-2"
+                      />
+                    )}
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="gi-year" className="text-xs font-medium">Årskull / årskurs</Label>
+                    <Input id="gi-year" value={yearGroup} onChange={(e) => setYearGroup(e.target.value)} placeholder="t.ex. 2 eller D24" />
+                  </div>
+                </div>
+              </div>
+
+              <StudyPlanCanvas
+                program={isOwnProgram ? OWN_PROGRAM : program}
+                variant="student"
+                supplements={supplements}
+                setSupplements={setSupplements}
+                actionPlan={actionPlan}
+                setActionPlan={setActionPlanTracked}
+                studyPlanText={studyPlanText}
+                setStudyPlanText={setStudyPlanText}
+                onExport={handleExportWord}
+              />
+
+              <div className="mt-6 border rounded-lg bg-muted/20 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <div className="font-semibold text-sm flex items-center gap-2">
+                    <FileDown className="w-4 h-4 text-primary" /> Exportera sammanställning
+                  </div>
+                  <p className="text-xs text-muted-foreground">Välj format när du är klar med planeringen.</p>
+                </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button size="sm">
-                      <FileDown className="w-4 h-4 mr-1" /> Exportera sammanställning
+                    <Button size="lg">
+                      <FileDown className="w-4 h-4 mr-2" /> Exportera sammanställning
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="bg-popover z-50">
@@ -489,25 +553,33 @@ const StudentPlanning = () => {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-                </div>
               </div>
-              <StudyPlanCanvas
-                program={isOwnProgram ? OWN_PROGRAM : program}
-                variant="student"
-                supplements={supplements}
-                setSupplements={setSupplements}
-                actionPlan={actionPlan}
-                setActionPlan={setActionPlanTracked}
-                studyPlanText={studyPlanText}
-                setStudyPlanText={setStudyPlanText}
-                onExport={handleExportWord}
-              />
 
               <div className="mt-6">
-                <StudentAiPanel
+                {!aiOpen ? (
+                  <div className="border border-dashed rounded-lg p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                      <div className="font-semibold text-sm flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-primary" /> Anteckningar & AI (extra funktion)
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Skriv anteckningar och låt AI skapa minnesanteckning, sammanställning eller mailutkast.
+                      </p>
+                    </div>
+                    <Button variant="outline" onClick={() => setAiOpen(true)}>
+                      <Sparkles className="w-4 h-4 mr-2" /> Öppna AI-stöd
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="flex justify-end">
+                      <Button size="sm" variant="ghost" onClick={() => setAiOpen(false)}>Dölj AI-stöd</Button>
+                    </div>
+                    <StudentAiPanel
                   studentName={studentName}
                   program={program}
                   actionPlan={actionPlan}
+                  supplements={supplements}
                   notes={notes}
                   setNotes={setNotes}
                   aiDraft={aiDraft}
@@ -519,7 +591,9 @@ const StudentPlanning = () => {
                   setStyleTemplate={setAiStyleTemplate}
                   previewTab={aiPreviewTab}
                   setPreviewTab={setAiPreviewTab}
-                />
+                    />
+                  </div>
+                )}
               </div>
             </div>
           )}

@@ -142,6 +142,15 @@ export const MeetingNotesTab = () => {
   const [actionPlan, setActionPlan] = useState<ActionPlanItem[]>([]);
   const [studyPlanText, setStudyPlanText] = useState('');
   const [supplements, setSupplements] = useState<SupplementItem[]>([]);
+  const [aiOpen, setAiOpen] = useState(false);
+
+  const handleResetPlan = () => {
+    if (!window.confirm('Vill du återställa studieplaneringen? Kurser, komplettering och textplanering rensas.')) return;
+    setActionPlan([]);
+    setSupplements([]);
+    setStudyPlanText('');
+    toast({ title: 'Planen är återställd' });
+  };
 
   const supplementSection = (): DocSection | null => {
     if (supplements.length === 0) return null;
@@ -219,7 +228,7 @@ export const MeetingNotesTab = () => {
     }
 
     const studentInfo = buildStudentInfo();
-    const studentInfoFull = { ...studentInfo, agenda, actionPlan, studyPlanText };
+    const studentInfoFull = { ...studentInfo, agenda, actionPlan, studyPlanText, supplements };
 
     let result = '';
     try {
@@ -373,8 +382,34 @@ export const MeetingNotesTab = () => {
               </Select>
             </div>
           </div>
+          <div className="space-y-2">
+            <Label className="text-foreground font-medium flex items-center gap-2">
+              <CalendarDays className="w-4 h-4 text-primary" /> Agenda
+            </Label>
+            <p className="text-xs text-muted-foreground">Skriv löpande text och/eller punktlista (t.ex. <code>- punkt</code>).</p>
+            <Textarea
+              value={agenda}
+              onChange={(e) => setAgenda(e.target.value)}
+              placeholder={'- Återkoppling sedan förra samtalet\n- Studieplan HT2026 / VT2027\n- Nästa steg'}
+              className="min-h-[100px] text-sm"
+            />
+          </div>
         </CardContent>
       </Card>
+
+      {/* Stöd i studieplanering */}
+      <StudyPlanCanvas
+        program={program}
+        variant="counselor"
+        supplements={supplements}
+        setSupplements={setSupplements}
+        actionPlan={actionPlan}
+        setActionPlan={setActionPlan}
+        studyPlanText={studyPlanText}
+        setStudyPlanText={setStudyPlanText}
+        onExport={handleExportStudyPlan}
+        onReset={handleResetPlan}
+      />
 
       {/* Section B — Ladda upp material */}
       <Card>
@@ -430,31 +465,39 @@ export const MeetingNotesTab = () => {
               className="min-h-[140px] text-sm"
             />
           </div>
-          <div className="space-y-2">
-            <Label className="text-foreground font-medium flex items-center gap-2">
-              <CalendarDays className="w-4 h-4 text-primary" /> Agenda
-            </Label>
-            <p className="text-xs text-muted-foreground">Skriv löpande text och/eller punktlista (t.ex. <code>- punkt</code>).</p>
-            <Textarea
-              value={agenda}
-              onChange={(e) => setAgenda(e.target.value)}
-              placeholder={'- Återkoppling sedan förra samtalet\n- Studieplan HT2026 / VT2027\n- Nästa steg'}
-              className="min-h-[100px] text-sm"
-            />
-          </div>
         </CardContent>
       </Card>
 
       {/* Section C — AI-knappar */}
+      {!aiOpen ? (
+        <div className="rounded-lg border border-dashed p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <div className="font-semibold text-sm flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-primary" /> Generera med AI (extra funktion)
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Skapa minnesanteckning, sammanställning eller mailutkast utifrån materialet, planeringen och kompletteringarna.
+            </p>
+          </div>
+          <Button variant="outline" onClick={() => setAiOpen(true)}>
+            <Sparkles className="w-4 h-4 mr-2" /> Öppna AI-stöd
+          </Button>
+        </div>
+      ) : (
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-primary" />
-            Generera med AI
-          </CardTitle>
-          <CardDescription>
-            Välj vilken typ av text du vill skapa baserat på materialet.
-          </CardDescription>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-primary" />
+                Generera med AI
+              </CardTitle>
+              <CardDescription>
+                Välj vilken typ av text du vill skapa baserat på materialet.
+              </CardDescription>
+            </div>
+            <Button size="sm" variant="ghost" onClick={() => setAiOpen(false)}>Dölj</Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-2">
@@ -499,6 +542,7 @@ export const MeetingNotesTab = () => {
           </div>
         </CardContent>
       </Card>
+      )}
 
       {/* Section D — Resultat */}
       {generatedText && (
@@ -536,19 +580,6 @@ export const MeetingNotesTab = () => {
           </CardContent>
         </Card>
       )}
-
-      {/* Stöd i studieplanering — längst ner */}
-      <StudyPlanCanvas
-        program={program}
-        variant="counselor"
-        supplements={supplements}
-        setSupplements={setSupplements}
-        actionPlan={actionPlan}
-        setActionPlan={setActionPlan}
-        studyPlanText={studyPlanText}
-        setStudyPlanText={setStudyPlanText}
-        onExport={handleExportStudyPlan}
-      />
 
       {/* Export-förhandsgranskning (LTH/LU-mall) */}
       {exportPayload && (

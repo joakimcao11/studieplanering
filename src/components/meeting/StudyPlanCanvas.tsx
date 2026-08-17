@@ -17,6 +17,8 @@ import {
   CalendarDays, ListChecks, Search, Sparkles, Maximize2, Minimize2, Home, Wrench,
   Settings, Briefcase, ChevronsRight, ChevronsLeft, GripVertical, MoreVertical, Check, ClipboardList,
 } from 'lucide-react';
+import { RotateCcw, Pencil, CalendarRange, X } from 'lucide-react';
+import { PreExportSummary } from './PreExportSummary';
 import {
   DndContext, DragEndEvent, PointerSensor, useSensor, useSensors,
   useDraggable, useDroppable,
@@ -57,6 +59,8 @@ export type SupplementItem = {
 };
 
 const PLACEMENT_ORDER: Placement[] = ['LP1', 'LP2', 'LP3', 'LP4', 'OmtentamenI', 'OmtentamenII'];
+const LP_ORDER: Placement[] = ['LP1', 'LP2', 'LP3', 'LP4'];
+const OMT_ORDER: Placement[] = ['OmtentamenI', 'OmtentamenII'];
 
 const placementLabel = (p: Placement) => {
   if (p === 'OmtentamenI') return 'Omtentamen I (april)';
@@ -109,6 +113,8 @@ interface Props {
   variant?: 'student' | 'counselor';
   supplements?: SupplementItem[];
   setSupplements?: React.Dispatch<React.SetStateAction<SupplementItem[]>>;
+  /** Visas som "Återställ plan" i planeringsrubriken när den skickas in. */
+  onReset?: () => void;
 }
 
 /* ============================== Draggable course block ============================== */
@@ -296,6 +302,7 @@ const DroppableCell = ({
 export const StudyPlanCanvas = ({
   program, actionPlan, setActionPlan, studyPlanText, setStudyPlanText, onExport,
   variant = 'counselor', supplements: supplementsProp, setSupplements: setSupplementsProp,
+  onReset,
 }: Props) => {
   const { toast } = useToast();
   const { courses } = useCourses(program);
@@ -308,6 +315,10 @@ export const StudyPlanCanvas = ({
   const setSupplements = setSupplementsProp ?? setLocalSupplements;
 
   const [fullscreen, setFullscreen] = useState(false);
+  const [editingTerm, setEditingTerm] = useState<string | null>(null);
+  const [rowQuery, setRowQuery] = useState('');
+  const [rowTermFilter, setRowTermFilter] = useState('all');
+  const [rowLpFilter, setRowLpFilter] = useState('all');
   const [showSummary, setShowSummary] = useState(true);
 
   const [extraTerms, setExtraTerms] = useState<string[]>(['HT2026', 'VT2027']);
@@ -472,6 +483,29 @@ export const StudyPlanCanvas = ({
     setActionPlan((prev) => prev.filter((i) => i.term !== t));
   };
 
+  /** Byt namn på en termin – uppdaterar även kurser och kompletteringar. */
+  const renameTerm = (oldName: string, rawNew: string) => {
+    const newName = rawNew.trim();
+    if (!newName || newName === oldName) return;
+    setExtraTerms((prev) => {
+      const withNew = prev.map((x) => (x === oldName ? newName : x));
+      return withNew.includes(newName) ? Array.from(new Set(withNew)) : withNew;
+    });
+    setActionPlan((prev) => prev.map((i) => (i.term === oldName ? { ...i, term: newName } : i)));
+    setSupplements((prev) => prev.map((s) => (s.term === oldName ? { ...s, term: newName } : s)));
+  };
+
+  /** Lägg till ett helt läsår (HT + VT). */
+  const addAcademicYear = () => {
+    const years = terms
+      .map((t) => t.match(/^(HT|VT)(\d{4})$/))
+      .filter(Boolean)
+      .map((m) => (m![1] === 'HT' ? parseInt(m![2]) : parseInt(m![2]) - 1));
+    const base = years.length > 0 ? Math.max(...years) + 1 : new Date().getFullYear();
+    setExtraTerms((prev) => Array.from(new Set([...prev, `HT${base}`, `VT${base + 1}`])));
+    toast({ title: 'Läsår tillagt', description: `HT${base} / VT${base + 1}` });
+  };
+
   // Summary calculation: totals + per-LP breakdown
   const summary = useMemo(() => {
     const byTerm: Record<string, { hp: number; pct: number; count: number; perLp: Record<Placement, number> }> = {};
@@ -527,19 +561,115 @@ export const StudyPlanCanvas = ({
           ? <><Minimize2 className="w-4 h-4 mr-1" /> Avsluta helskärmsläge</>
           : <><Maximize2 className="w-4 h-4 mr-1" /> Helskärmsläge</>}
       </Button>
-      <Button size="sm" onClick={onExport}>
-        <Download className="w-4 h-4 mr-1" /> Exportera din studieplanering
-      </Button>
+      {onReset && (
+        <Button size="sm" variant="outline" onClick={onReset}>
+          <RotateCcw className="w-4 h-4 mr-1" /> Återställ plan
+        </Button>
+      )}
+    </div>
+  );
+
+  /* ---------------- Avslutssteg: sammanställning + export ---------------- */
+  const finishBlock = (
+    <div className="mt-8 space-y-4 border-t pt-6">
+      <PreExportSummary actionPlan={actionPlan} supplements={supplements} terms={terms} />
+      <div className="rounded-lg border bg-muted/20 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <div className="font-semibold text-sm">Klar med planeringen?</div>
+          <p className="text-xs text-muted-foreground">
+            Gå igenom sammanställningen ovan och exportera sedan din studieplanering som dokument.
+          </p>
+        </div>
+        <Button size="lg" onClick={onExport}>
+          <Download className="w-4 h-4 mr-2" /> Exportera din studieplanering
+        </Button>
+      </div>
     </div>
   );
 
   /* ---------------- Visual planning grid (shared between standard and fullscreen) ---------------- */
+  const renderCell = (t: string, p: Placement, isFs: boolean) => {
+    const items = actionPlan.filter((i) => i.term === t && i.placement === p);
+    const ghosts = actionPlan.filter((i) => {
+      if (i.term !== t) return false;
+      if (i.placement === p) return false;
+      if (!i.periods || i.periods.length < 2) return false;
+      if (p === 'OmtentamenI' || p === 'OmtentamenII') return false;
+      const lpNum = p.replace('LP', '');
+      return i.periods.includes(lpNum);
+    });
+    return (
+      <DroppableCell
+        key={`${t}|${p}`}
+        term={t}
+        placement={p}
+        items={items}
+        ghosts={ghosts}
+        supplements={supplements.filter((s) => s.term === t && s.placement === (p as any))}
+        onAdd={() => openAddDialog(t, p)}
+        onRemove={removeItem}
+        onUpdatePeriods={(id, periods) => {
+          const sorted = [...periods].sort();
+          const minLp = sorted[0];
+          updateItem(id, { periods: sorted, ...(minLp ? { placement: `LP${minLp}` as Placement } : {}) });
+        }}
+        fullscreen={isFs}
+      />
+    );
+  };
+
+  const renderOmtBlock = (variant: 'default' | 'fullscreen') => (
+    <div className={cn('mt-6 border rounded-lg p-3 bg-card', variant === 'fullscreen' && 'p-4')}>
+      <div className="mb-2">
+        <h4 className={cn('font-bold flex items-center gap-2', variant === 'fullscreen' ? 'text-base' : 'text-sm')}>
+          <CalendarRange className="w-4 h-4 text-primary" /> Omtentamensperioder
+        </h4>
+        <p className="text-xs text-muted-foreground">
+          Omtentamen I (april) och Omtentamen II (augusti) – separat från läsperioderna ovan.
+        </p>
+      </div>
+      <div className="space-y-3">
+        {terms.map((t) => (
+          <div key={`omt-${t}`}>
+            <div className="text-xs font-medium text-muted-foreground mb-1">{t}</div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {OMT_ORDER.map((p) => renderCell(t, p, variant === 'fullscreen'))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
   const renderTermsGrid = (variant: 'default' | 'fullscreen') => (
     <div className={variant === 'fullscreen' ? 'space-y-5' : 'space-y-4'}>
       {terms.map((t) => (
         <div key={t} className={cn('border rounded-lg p-3 bg-card', variant === 'fullscreen' && 'p-4')}>
           <div className="flex items-center justify-between mb-2">
-            <h4 className={cn('font-bold', variant === 'fullscreen' ? 'text-base' : 'text-sm')}>{t}</h4>
+            {editingTerm === t ? (
+              <div className="flex items-center gap-1">
+                <Input
+                  autoFocus
+                  defaultValue={t}
+                  className="h-7 w-32 text-sm"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') { renameTerm(t, (e.target as HTMLInputElement).value); setEditingTerm(null); }
+                    if (e.key === 'Escape') setEditingTerm(null);
+                  }}
+                  onBlur={(e) => { renameTerm(t, e.target.value); setEditingTerm(null); }}
+                />
+                <span className="text-[10px] text-muted-foreground">Enter för att spara</span>
+              </div>
+            ) : (
+              <button
+                onClick={() => setEditingTerm(t)}
+                className={cn('font-bold flex items-center gap-1 hover:text-primary group', variant === 'fullscreen' ? 'text-base' : 'text-sm')}
+                title="Byt namn på terminen"
+              >
+                {t}
+                <Pencil className="w-3 h-3 opacity-40 group-hover:opacity-100" />
+              </button>
+            )}
             <div className="flex items-center gap-3">
               <span className="text-xs text-muted-foreground">
                 {summary.byTerm[t]?.hp.toFixed(1).replace(/\.0$/, '')} hp · {summary.byTerm[t]?.pct}%
@@ -551,45 +681,21 @@ export const StudyPlanCanvas = ({
           </div>
           <div className={cn(
             variant === 'fullscreen'
-              ? 'grid grid-cols-6 gap-3'
-              : 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2',
+              ? 'grid grid-cols-4 gap-3'
+              : 'grid grid-cols-2 lg:grid-cols-4 gap-2',
           )}>
-            {PLACEMENT_ORDER.map((p) => {
-              const items = actionPlan.filter((i) => i.term === t && i.placement === p);
-              // Ghost blocks: multi-period courses whose anchor is in another LP but spans this one.
-              const ghosts = actionPlan.filter((i) => {
-                if (i.term !== t) return false;
-                if (i.placement === p) return false;
-                if (!i.periods || i.periods.length < 2) return false;
-                if (p === 'OmtentamenI' || p === 'OmtentamenII') return false;
-                const lpNum = p.replace('LP', '');
-                return i.periods.includes(lpNum);
-              });
-              return (
-                <DroppableCell
-                  key={p}
-                  term={t}
-                  placement={p}
-                  items={items}
-                  ghosts={ghosts}
-                  supplements={supplements.filter((s) => s.term === t && s.placement === (p as any))}
-                  onAdd={() => openAddDialog(t, p)}
-                  onRemove={removeItem}
-                  onUpdatePeriods={(id, periods) => {
-                    const sorted = [...periods].sort();
-                    const minLp = sorted[0];
-                    updateItem(id, { periods: sorted, ...(minLp ? { placement: `LP${minLp}` as Placement } : {}) });
-                  }}
-                  fullscreen={variant === 'fullscreen'}
-                />
-              );
-            })}
+            {LP_ORDER.map((p) => renderCell(t, p, variant === 'fullscreen'))}
           </div>
         </div>
       ))}
-      <Button variant="outline" size="sm" onClick={addNewTerm}>
-        <Plus className="w-4 h-4 mr-1" /> Lägg till termin ({suggestNextTerm(terms)})
-      </Button>
+      <div className="flex flex-wrap gap-2">
+        <Button variant="outline" size="sm" onClick={addNewTerm}>
+          <Plus className="w-4 h-4 mr-1" /> Lägg till termin ({suggestNextTerm(terms)})
+        </Button>
+        <Button variant="outline" size="sm" onClick={addAcademicYear}>
+          <CalendarRange className="w-4 h-4 mr-1" /> Lägg till läsår
+        </Button>
+      </div>
     </div>
   );
 
@@ -762,13 +868,57 @@ export const StudyPlanCanvas = ({
   );
 
   /* ---------------- Editable handlingsplan table ---------------- */
+  const filteredRows = actionPlan.filter((it) => {
+    const q = rowQuery.trim().toLowerCase();
+    if (q && !`${it.code} ${it.name}`.toLowerCase().includes(q)) return false;
+    if (rowTermFilter !== 'all' && it.term !== rowTermFilter) return false;
+    if (rowLpFilter !== 'all' && it.placement !== rowLpFilter) return false;
+    return true;
+  });
+
   const handlingsplanTable = actionPlan.length > 0 && (
     <div className="mt-4">
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center justify-between gap-3 flex-wrap mb-2">
         <h4 className="font-bold text-sm flex items-center gap-2">
           <ListChecks className="w-4 h-4 text-primary" /> Handlingsplan
         </h4>
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="relative">
+            <Search className="w-3.5 h-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={rowQuery}
+              onChange={(e) => setRowQuery(e.target.value)}
+              placeholder="Sök kurskod eller namn…"
+              className="h-8 w-56 pl-7 text-xs"
+            />
+            {rowQuery && (
+              <button
+                onClick={() => setRowQuery('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+          <Select value={rowTermFilter} onValueChange={setRowTermFilter}>
+            <SelectTrigger className="h-8 w-32 text-xs"><SelectValue placeholder="Termin" /></SelectTrigger>
+            <SelectContent className="bg-popover z-50">
+              <SelectItem value="all">Alla terminer</SelectItem>
+              {terms.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={rowLpFilter} onValueChange={setRowLpFilter}>
+            <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Period" /></SelectTrigger>
+            <SelectContent className="bg-popover z-50">
+              <SelectItem value="all">Alla perioder</SelectItem>
+              {PLACEMENT_ORDER.map((p) => <SelectItem key={p} value={p}>{placementLabel(p)}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
+      {filteredRows.length === 0 && (
+        <p className="text-xs text-muted-foreground mb-2">Inga kurser matchar sökningen.</p>
+      )}
       <div className="border rounded-md overflow-x-auto">
         <table className="w-full text-xs">
           <thead className="bg-muted">
@@ -783,7 +933,7 @@ export const StudyPlanCanvas = ({
             </tr>
           </thead>
           <tbody>
-            {actionPlan.map((it) => (
+            {filteredRows.map((it) => (
               <tr key={it.id} className="border-t">
                 <td className="p-2 font-mono">{it.code}{it.isCustom && <Badge variant="outline" className="ml-1 text-[9px]">egen</Badge>}</td>
                 <td className="p-2">{it.name}</td>
@@ -1079,8 +1229,10 @@ export const StudyPlanCanvas = ({
               <main className="flex-1 overflow-auto p-6">
                 <div className="min-w-[1200px]">
                   {renderTermsGrid('fullscreen')}
+                  {renderOmtBlock('fullscreen')}
                   {handlingsplanTable}
                   {kompletteringBlock}
+                  {finishBlock}
                 </div>
               </main>
               {showSummary && (
@@ -1146,8 +1298,10 @@ export const StudyPlanCanvas = ({
                 </div>
                 <div className="space-y-3">{summaryPanel}</div>
               </div>
+              {renderOmtBlock('default')}
               {handlingsplanTable}
               {kompletteringBlock}
+              {finishBlock}
             </TabsContent>
 
             <TabsContent value="text" className="mt-4">
