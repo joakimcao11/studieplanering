@@ -581,19 +581,6 @@ export const MeetingNotesTab = () => {
         </Card>
       )}
 
-      {/* Stöd i studieplanering — längst ner */}
-      <StudyPlanCanvas
-        program={program}
-        variant="counselor"
-        supplements={supplements}
-        setSupplements={setSupplements}
-        actionPlan={actionPlan}
-        setActionPlan={setActionPlan}
-        studyPlanText={studyPlanText}
-        setStudyPlanText={setStudyPlanText}
-        onExport={handleExportStudyPlan}
-      />
-
       {/* Export-förhandsgranskning (LTH/LU-mall) */}
       {exportPayload && (
         <ExportPreviewDialog
