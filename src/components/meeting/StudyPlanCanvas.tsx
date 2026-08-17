@@ -315,6 +315,7 @@ export const StudyPlanCanvas = ({
   const setSupplements = setSupplementsProp ?? setLocalSupplements;
 
   const [fullscreen, setFullscreen] = useState(false);
+  const [editingTerm, setEditingTerm] = useState<string | null>(null);
   const [showSummary, setShowSummary] = useState(true);
 
   const [extraTerms, setExtraTerms] = useState<string[]>(['HT2026', 'VT2027']);
