@@ -316,6 +316,9 @@ export const StudyPlanCanvas = ({
 
   const [fullscreen, setFullscreen] = useState(false);
   const [editingTerm, setEditingTerm] = useState<string | null>(null);
+  const [rowQuery, setRowQuery] = useState('');
+  const [rowTermFilter, setRowTermFilter] = useState('all');
+  const [rowLpFilter, setRowLpFilter] = useState('all');
   const [showSummary, setShowSummary] = useState(true);
 
   const [extraTerms, setExtraTerms] = useState<string[]>(['HT2026', 'VT2027']);
