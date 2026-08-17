@@ -151,6 +151,17 @@ ${
       `\n`
     : ""
 }
+${
+  Array.isArray(studentInfo.supplements) && studentInfo.supplements.length > 0
+    ? `\nKomplettering – inlämningsuppgifter, labbar, projekt och övriga examinationer som saknas. Ta ALLTID med dessa under en egen rubrik "Komplettering" som lista, och beakta dem i handlingsplanen/nästa steg:\n` +
+      studentInfo.supplements
+        .map((s: any) =>
+          `- ${s.type || "Komplettering"}: ${s.description || ""}${s.courseCode ? ` (kurs ${s.courseCode})` : ""} – ${s.term || ""} ${s.placement || ""} – ${s.done ? "Klar" : "Kvarstår"}`
+        )
+        .join("\n") +
+      `\n`
+    : ""
+}
 `
       : "";
 
