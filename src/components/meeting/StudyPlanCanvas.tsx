@@ -557,9 +557,29 @@ export const StudyPlanCanvas = ({
           ? <><Minimize2 className="w-4 h-4 mr-1" /> Avsluta helskärmsläge</>
           : <><Maximize2 className="w-4 h-4 mr-1" /> Helskärmsläge</>}
       </Button>
-      <Button size="sm" onClick={onExport}>
-        <Download className="w-4 h-4 mr-1" /> Exportera din studieplanering
-      </Button>
+      {onReset && (
+        <Button size="sm" variant="outline" onClick={onReset}>
+          <RotateCcw className="w-4 h-4 mr-1" /> Återställ plan
+        </Button>
+      )}
+    </div>
+  );
+
+  /* ---------------- Avslutssteg: sammanställning + export ---------------- */
+  const finishBlock = (
+    <div className="mt-8 space-y-4 border-t pt-6">
+      <PreExportSummary actionPlan={actionPlan} supplements={supplements} terms={terms} />
+      <div className="rounded-lg border bg-muted/20 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <div className="font-semibold text-sm">Klar med planeringen?</div>
+          <p className="text-xs text-muted-foreground">
+            Gå igenom sammanställningen ovan och exportera sedan din studieplanering som dokument.
+          </p>
+        </div>
+        <Button size="lg" onClick={onExport}>
+          <Download className="w-4 h-4 mr-2" /> Exportera din studieplanering
+        </Button>
+      </div>
     </div>
   );
 
