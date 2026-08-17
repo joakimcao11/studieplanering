@@ -142,6 +142,15 @@ export const MeetingNotesTab = () => {
   const [actionPlan, setActionPlan] = useState<ActionPlanItem[]>([]);
   const [studyPlanText, setStudyPlanText] = useState('');
   const [supplements, setSupplements] = useState<SupplementItem[]>([]);
+  const [aiOpen, setAiOpen] = useState(false);
+
+  const handleResetPlan = () => {
+    if (!window.confirm('Vill du återställa studieplaneringen? Kurser, komplettering och textplanering rensas.')) return;
+    setActionPlan([]);
+    setSupplements([]);
+    setStudyPlanText('');
+    toast({ title: 'Planen är återställd' });
+  };
 
   const supplementSection = (): DocSection | null => {
     if (supplements.length === 0) return null;
@@ -219,7 +228,7 @@ export const MeetingNotesTab = () => {
     }
 
     const studentInfo = buildStudentInfo();
-    const studentInfoFull = { ...studentInfo, agenda, actionPlan, studyPlanText };
+    const studentInfoFull = { ...studentInfo, agenda, actionPlan, studyPlanText, supplements };
 
     let result = '';
     try {
