@@ -867,11 +867,47 @@ export const StudyPlanCanvas = ({
   /* ---------------- Editable handlingsplan table ---------------- */
   const handlingsplanTable = actionPlan.length > 0 && (
     <div className="mt-4">
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center justify-between gap-3 flex-wrap mb-2">
         <h4 className="font-bold text-sm flex items-center gap-2">
           <ListChecks className="w-4 h-4 text-primary" /> Handlingsplan
         </h4>
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="relative">
+            <Search className="w-3.5 h-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={rowQuery}
+              onChange={(e) => setRowQuery(e.target.value)}
+              placeholder="Sök kurskod eller namn…"
+              className="h-8 w-56 pl-7 text-xs"
+            />
+            {rowQuery && (
+              <button
+                onClick={() => setRowQuery('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+          <Select value={rowTermFilter} onValueChange={setRowTermFilter}>
+            <SelectTrigger className="h-8 w-32 text-xs"><SelectValue placeholder="Termin" /></SelectTrigger>
+            <SelectContent className="bg-popover z-50">
+              <SelectItem value="all">Alla terminer</SelectItem>
+              {terms.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={rowLpFilter} onValueChange={setRowLpFilter}>
+            <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Period" /></SelectTrigger>
+            <SelectContent className="bg-popover z-50">
+              <SelectItem value="all">Alla perioder</SelectItem>
+              {PLACEMENT_ORDER.map((p) => <SelectItem key={p} value={p}>{placementLabel(p)}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
+      {filteredRows.length === 0 && (
+        <p className="text-xs text-muted-foreground mb-2">Inga kurser matchar sökningen.</p>
+      )}
       <div className="border rounded-md overflow-x-auto">
         <table className="w-full text-xs">
           <thead className="bg-muted">
@@ -886,7 +922,7 @@ export const StudyPlanCanvas = ({
             </tr>
           </thead>
           <tbody>
-            {actionPlan.map((it) => (
+            {filteredRows.map((it) => (
               <tr key={it.id} className="border-t">
                 <td className="p-2 font-mono">{it.code}{it.isCustom && <Badge variant="outline" className="ml-1 text-[9px]">egen</Badge>}</td>
                 <td className="p-2">{it.name}</td>
