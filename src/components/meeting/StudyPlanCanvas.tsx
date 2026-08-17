@@ -302,6 +302,7 @@ const DroppableCell = ({
 export const StudyPlanCanvas = ({
   program, actionPlan, setActionPlan, studyPlanText, setStudyPlanText, onExport,
   variant = 'counselor', supplements: supplementsProp, setSupplements: setSupplementsProp,
+  onReset,
 }: Props) => {
   const { toast } = useToast();
   const { courses } = useCourses(program);
@@ -476,6 +477,29 @@ export const StudyPlanCanvas = ({
   const removeTerm = (t: string) => {
     setExtraTerms((prev) => prev.filter((x) => x !== t));
     setActionPlan((prev) => prev.filter((i) => i.term !== t));
+  };
+
+  /** Byt namn på en termin – uppdaterar även kurser och kompletteringar. */
+  const renameTerm = (oldName: string, rawNew: string) => {
+    const newName = rawNew.trim();
+    if (!newName || newName === oldName) return;
+    setExtraTerms((prev) => {
+      const withNew = prev.map((x) => (x === oldName ? newName : x));
+      return withNew.includes(newName) ? Array.from(new Set(withNew)) : withNew;
+    });
+    setActionPlan((prev) => prev.map((i) => (i.term === oldName ? { ...i, term: newName } : i)));
+    setSupplements((prev) => prev.map((s) => (s.term === oldName ? { ...s, term: newName } : s)));
+  };
+
+  /** Lägg till ett helt läsår (HT + VT). */
+  const addAcademicYear = () => {
+    const years = terms
+      .map((t) => t.match(/^(HT|VT)(\d{4})$/))
+      .filter(Boolean)
+      .map((m) => (m![1] === 'HT' ? parseInt(m![2]) : parseInt(m![2]) - 1));
+    const base = years.length > 0 ? Math.max(...years) + 1 : new Date().getFullYear();
+    setExtraTerms((prev) => Array.from(new Set([...prev, `HT${base}`, `VT${base + 1}`])));
+    toast({ title: 'Läsår tillagt', description: `HT${base} / VT${base + 1}` });
   };
 
   // Summary calculation: totals + per-LP breakdown
