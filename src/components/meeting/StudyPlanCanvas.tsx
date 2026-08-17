@@ -584,12 +584,88 @@ export const StudyPlanCanvas = ({
   );
 
   /* ---------------- Visual planning grid (shared between standard and fullscreen) ---------------- */
+  const renderCell = (t: string, p: Placement, isFs: boolean) => {
+    const items = actionPlan.filter((i) => i.term === t && i.placement === p);
+    const ghosts = actionPlan.filter((i) => {
+      if (i.term !== t) return false;
+      if (i.placement === p) return false;
+      if (!i.periods || i.periods.length < 2) return false;
+      if (p === 'OmtentamenI' || p === 'OmtentamenII') return false;
+      const lpNum = p.replace('LP', '');
+      return i.periods.includes(lpNum);
+    });
+    return (
+      <DroppableCell
+        key={`${t}|${p}`}
+        term={t}
+        placement={p}
+        items={items}
+        ghosts={ghosts}
+        supplements={supplements.filter((s) => s.term === t && s.placement === (p as any))}
+        onAdd={() => openAddDialog(t, p)}
+        onRemove={removeItem}
+        onUpdatePeriods={(id, periods) => {
+          const sorted = [...periods].sort();
+          const minLp = sorted[0];
+          updateItem(id, { periods: sorted, ...(minLp ? { placement: `LP${minLp}` as Placement } : {}) });
+        }}
+        fullscreen={isFs}
+      />
+    );
+  };
+
+  const renderOmtBlock = (variant: 'default' | 'fullscreen') => (
+    <div className={cn('mt-6 border rounded-lg p-3 bg-card', variant === 'fullscreen' && 'p-4')}>
+      <div className="mb-2">
+        <h4 className={cn('font-bold flex items-center gap-2', variant === 'fullscreen' ? 'text-base' : 'text-sm')}>
+          <CalendarRange className="w-4 h-4 text-primary" /> Omtentamensperioder
+        </h4>
+        <p className="text-xs text-muted-foreground">
+          Omtentamen I (april) och Omtentamen II (augusti) – separat från läsperioderna ovan.
+        </p>
+      </div>
+      <div className="space-y-3">
+        {terms.map((t) => (
+          <div key={`omt-${t}`}>
+            <div className="text-xs font-medium text-muted-foreground mb-1">{t}</div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {OMT_ORDER.map((p) => renderCell(t, p, variant === 'fullscreen'))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
   const renderTermsGrid = (variant: 'default' | 'fullscreen') => (
     <div className={variant === 'fullscreen' ? 'space-y-5' : 'space-y-4'}>
       {terms.map((t) => (
         <div key={t} className={cn('border rounded-lg p-3 bg-card', variant === 'fullscreen' && 'p-4')}>
           <div className="flex items-center justify-between mb-2">
-            <h4 className={cn('font-bold', variant === 'fullscreen' ? 'text-base' : 'text-sm')}>{t}</h4>
+            {editingTerm === t ? (
+              <div className="flex items-center gap-1">
+                <Input
+                  autoFocus
+                  defaultValue={t}
+                  className="h-7 w-32 text-sm"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') { renameTerm(t, (e.target as HTMLInputElement).value); setEditingTerm(null); }
+                    if (e.key === 'Escape') setEditingTerm(null);
+                  }}
+                  onBlur={(e) => { renameTerm(t, e.target.value); setEditingTerm(null); }}
+                />
+                <span className="text-[10px] text-muted-foreground">Enter för att spara</span>
+              </div>
+            ) : (
+              <button
+                onClick={() => setEditingTerm(t)}
+                className={cn('font-bold flex items-center gap-1 hover:text-primary group', variant === 'fullscreen' ? 'text-base' : 'text-sm')}
+                title="Byt namn på terminen"
+              >
+                {t}
+                <Pencil className="w-3 h-3 opacity-40 group-hover:opacity-100" />
+              </button>
+            )}
             <div className="flex items-center gap-3">
               <span className="text-xs text-muted-foreground">
                 {summary.byTerm[t]?.hp.toFixed(1).replace(/\.0$/, '')} hp · {summary.byTerm[t]?.pct}%
@@ -601,45 +677,21 @@ export const StudyPlanCanvas = ({
           </div>
           <div className={cn(
             variant === 'fullscreen'
-              ? 'grid grid-cols-6 gap-3'
-              : 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2',
+              ? 'grid grid-cols-4 gap-3'
+              : 'grid grid-cols-2 lg:grid-cols-4 gap-2',
           )}>
-            {PLACEMENT_ORDER.map((p) => {
-              const items = actionPlan.filter((i) => i.term === t && i.placement === p);
-              // Ghost blocks: multi-period courses whose anchor is in another LP but spans this one.
-              const ghosts = actionPlan.filter((i) => {
-                if (i.term !== t) return false;
-                if (i.placement === p) return false;
-                if (!i.periods || i.periods.length < 2) return false;
-                if (p === 'OmtentamenI' || p === 'OmtentamenII') return false;
-                const lpNum = p.replace('LP', '');
-                return i.periods.includes(lpNum);
-              });
-              return (
-                <DroppableCell
-                  key={p}
-                  term={t}
-                  placement={p}
-                  items={items}
-                  ghosts={ghosts}
-                  supplements={supplements.filter((s) => s.term === t && s.placement === (p as any))}
-                  onAdd={() => openAddDialog(t, p)}
-                  onRemove={removeItem}
-                  onUpdatePeriods={(id, periods) => {
-                    const sorted = [...periods].sort();
-                    const minLp = sorted[0];
-                    updateItem(id, { periods: sorted, ...(minLp ? { placement: `LP${minLp}` as Placement } : {}) });
-                  }}
-                  fullscreen={variant === 'fullscreen'}
-                />
-              );
-            })}
+            {LP_ORDER.map((p) => renderCell(t, p, variant === 'fullscreen'))}
           </div>
         </div>
       ))}
-      <Button variant="outline" size="sm" onClick={addNewTerm}>
-        <Plus className="w-4 h-4 mr-1" /> Lägg till termin ({suggestNextTerm(terms)})
-      </Button>
+      <div className="flex flex-wrap gap-2">
+        <Button variant="outline" size="sm" onClick={addNewTerm}>
+          <Plus className="w-4 h-4 mr-1" /> Lägg till termin ({suggestNextTerm(terms)})
+        </Button>
+        <Button variant="outline" size="sm" onClick={addAcademicYear}>
+          <CalendarRange className="w-4 h-4 mr-1" /> Lägg till läsår
+        </Button>
+      </div>
     </div>
   );
 
