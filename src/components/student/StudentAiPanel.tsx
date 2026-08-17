@@ -6,7 +6,7 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Sparkles, Loader2, ClipboardList, Mail, FileText, Copy, Check, ArrowDownToLine } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import type { ActionPlanItem } from '@/components/meeting/StudyPlanCanvas';
+import type { ActionPlanItem, SupplementItem } from '@/components/meeting/StudyPlanCanvas';
 
 const ANALYZE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analyze-document`;
 
@@ -121,6 +121,7 @@ interface Props {
   studentName: string;
   program: string;
   actionPlan: ActionPlanItem[];
+  supplements?: SupplementItem[];
   notes: string;
   setNotes: (v: string) => void;
   aiDraft: string;
@@ -135,7 +136,7 @@ interface Props {
 }
 
 export const StudentAiPanel = ({
-  studentName, program, actionPlan, notes, setNotes,
+  studentName, program, actionPlan, supplements = [], notes, setNotes,
   aiDraft, setAiDraft, aiMode, setAiMode, onAppendToNotes,
   styleTemplate: styleProp, setStyleTemplate: setStyleProp,
   previewTab: tabProp, setPreviewTab: setTabProp,
@@ -153,10 +154,10 @@ export const StudentAiPanel = ({
   const rendered = useMemo(() => renderPreview(aiDraft), [aiDraft]);
 
   const generate = async (mode: Mode) => {
-    if (!notes.trim() && actionPlan.length === 0) {
+    if (!notes.trim() && actionPlan.length === 0 && supplements.length === 0) {
       toast({
         title: 'Inget underlag',
-        description: 'Skriv några anteckningar eller lägg till kurser först.',
+        description: 'Skriv några anteckningar eller lägg till kurser/kompletteringar först.',
         variant: 'destructive',
       });
       return;
@@ -180,6 +181,7 @@ export const StudentAiPanel = ({
             audience: 'student',
             styleTemplate,
             actionPlan,
+            supplements,
           },
         },
         (delta) => { result += delta; setAiDraft(result); },
