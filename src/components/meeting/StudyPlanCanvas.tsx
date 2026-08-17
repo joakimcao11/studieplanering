@@ -868,6 +868,14 @@ export const StudyPlanCanvas = ({
   );
 
   /* ---------------- Editable handlingsplan table ---------------- */
+  const filteredRows = actionPlan.filter((it) => {
+    const q = rowQuery.trim().toLowerCase();
+    if (q && !`${it.code} ${it.name}`.toLowerCase().includes(q)) return false;
+    if (rowTermFilter !== 'all' && it.term !== rowTermFilter) return false;
+    if (rowLpFilter !== 'all' && it.placement !== rowLpFilter) return false;
+    return true;
+  });
+
   const handlingsplanTable = actionPlan.length > 0 && (
     <div className="mt-4">
       <div className="flex items-center justify-between gap-3 flex-wrap mb-2">
