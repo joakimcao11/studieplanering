@@ -382,8 +382,34 @@ export const MeetingNotesTab = () => {
               </Select>
             </div>
           </div>
+          <div className="space-y-2">
+            <Label className="text-foreground font-medium flex items-center gap-2">
+              <CalendarDays className="w-4 h-4 text-primary" /> Agenda
+            </Label>
+            <p className="text-xs text-muted-foreground">Skriv löpande text och/eller punktlista (t.ex. <code>- punkt</code>).</p>
+            <Textarea
+              value={agenda}
+              onChange={(e) => setAgenda(e.target.value)}
+              placeholder={'- Återkoppling sedan förra samtalet\n- Studieplan HT2026 / VT2027\n- Nästa steg'}
+              className="min-h-[100px] text-sm"
+            />
+          </div>
         </CardContent>
       </Card>
+
+      {/* Stöd i studieplanering */}
+      <StudyPlanCanvas
+        program={program}
+        variant="counselor"
+        supplements={supplements}
+        setSupplements={setSupplements}
+        actionPlan={actionPlan}
+        setActionPlan={setActionPlan}
+        studyPlanText={studyPlanText}
+        setStudyPlanText={setStudyPlanText}
+        onExport={handleExportStudyPlan}
+        onReset={handleResetPlan}
+      />
 
       {/* Section B — Ladda upp material */}
       <Card>
