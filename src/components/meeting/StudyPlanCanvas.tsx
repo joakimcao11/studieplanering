@@ -17,6 +17,8 @@ import {
   CalendarDays, ListChecks, Search, Sparkles, Maximize2, Minimize2, Home, Wrench,
   Settings, Briefcase, ChevronsRight, ChevronsLeft, GripVertical, MoreVertical, Check, ClipboardList,
 } from 'lucide-react';
+import { RotateCcw, Pencil, CalendarRange, X } from 'lucide-react';
+import { PreExportSummary } from './PreExportSummary';
 import {
   DndContext, DragEndEvent, PointerSensor, useSensor, useSensors,
   useDraggable, useDroppable,
@@ -57,6 +59,8 @@ export type SupplementItem = {
 };
 
 const PLACEMENT_ORDER: Placement[] = ['LP1', 'LP2', 'LP3', 'LP4', 'OmtentamenI', 'OmtentamenII'];
+const LP_ORDER: Placement[] = ['LP1', 'LP2', 'LP3', 'LP4'];
+const OMT_ORDER: Placement[] = ['OmtentamenI', 'OmtentamenII'];
 
 const placementLabel = (p: Placement) => {
   if (p === 'OmtentamenI') return 'Omtentamen I (april)';
@@ -109,6 +113,8 @@ interface Props {
   variant?: 'student' | 'counselor';
   supplements?: SupplementItem[];
   setSupplements?: React.Dispatch<React.SetStateAction<SupplementItem[]>>;
+  /** Visas som "Återställ plan" i planeringsrubriken när den skickas in. */
+  onReset?: () => void;
 }
 
 /* ============================== Draggable course block ============================== */
