@@ -522,13 +522,24 @@ export const StudyPlanCanvas = ({
 
   // Summary calculation: totals + per-LP breakdown
   const summary = useMemo(() => {
-    const byTerm: Record<string, { hp: number; pct: number; count: number; perLp: Record<Placement, number> }> = {};
+    const byTerm: Record<string, {
+      hp: number; pct: number; count: number; perLp: Record<Placement, number>;
+      omtHp: number; omtCount: number;
+    }> = {};
     let totalHp = 0;
     const empty = (): Record<Placement, number> => ({ LP1: 0, LP2: 0, LP3: 0, LP4: 0, OmtentamenI: 0, OmtentamenII: 0 });
-    terms.forEach((t) => { byTerm[t] = { hp: 0, pct: 0, count: 0, perLp: empty() }; });
+    const emptyRow = () => ({ hp: 0, pct: 0, count: 0, perLp: empty(), omtHp: 0, omtCount: 0 });
+    terms.forEach((t) => { byTerm[t] = emptyRow(); });
     actionPlan.forEach((it) => {
       const e = effectiveHP(it);
-      byTerm[it.term] = byTerm[it.term] || { hp: 0, pct: 0, count: 0, perLp: empty() };
+      byTerm[it.term] = byTerm[it.term] || emptyRow();
+      // Omtentamensperioder ligger utanför studietakten och räknas separat.
+      if (isOmt(it.placement)) {
+        byTerm[it.term].omtHp += e;
+        byTerm[it.term].omtCount += 1;
+        byTerm[it.term].perLp[it.placement] += e;
+        return;
+      }
       byTerm[it.term].hp += e;
       byTerm[it.term].count += 1;
       // Distribute HP across multi-period courses (e.g. between LP1-LP2)
@@ -558,7 +569,31 @@ export const StudyPlanCanvas = ({
     const target = String(over.id);
     const [term, placement] = target.split('|');
     if (!term || !placement) return;
-    setActionPlan((prev) => prev.map((i) => i.id === active.id ? { ...i, term, placement: placement as Placement } : i));
+    const activeId = String(active.id);
+    const pl = placement as Placement;
+
+    // Kompletteringar: dras endast mellan LP1–LP4, aldrig till omtentamensperioder.
+    if (activeId.startsWith('sup:')) {
+      if (isOmt(pl)) {
+        toast({
+          title: 'Går inte att placera här',
+          description: 'Kompletteringar kopplas till läsperiod 1–4.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      const supId = activeId.slice(4);
+      setSupplements((prev) => prev.map((s) => (s.id === supId ? { ...s, term, placement: pl as SupplementItem['placement'] } : s)));
+      return;
+    }
+
+    setActionPlan((prev) => prev.map((i) => {
+      if (i.id !== activeId) return i;
+      // Flytt till/från omtentamen nollställer flerperiodsplaceringen.
+      if (isOmt(pl)) return { ...i, term, placement: pl, periods: [] };
+      const periods = (i.periods || []).length > 1 ? i.periods : [pl.replace('LP', '')];
+      return { ...i, term, placement: pl, periods };
+    }));
   };
 
   /* ---------------- Header buttons (shared) ---------------- */
