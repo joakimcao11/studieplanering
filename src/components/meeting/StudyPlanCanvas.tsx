@@ -426,6 +426,7 @@ export const StudyPlanCanvas = ({
   };
 
   const smartDefaultChoice = (c: any): string => {
+    if (isOmt(addPlacement)) return `single:${addPlacement}`;
     const ps: string[] = c?.periods || [];
     if (ps.length === 2 && ps.includes('1') && ps.includes('2')) return 'between:LP1|1,2';
     if (ps.length === 2 && ps.includes('2') && ps.includes('3')) return 'between:LP2|2,3';
