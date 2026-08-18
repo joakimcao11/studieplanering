@@ -12,7 +12,7 @@ import {
   Table, TableRow, TableCell, WidthType, ShadingType,
 } from 'docx';
 import { saveAs } from 'file-saver';
-import { Download, FileText } from 'lucide-react';
+import { Download, FileText, Printer } from 'lucide-react';
 import {
   buildGovHeader, buildGovFooter, buildGovTitle, loadLogoBuffer,
   GOV_PAGE_PROPS, GOV_SANS, GOV_ACCENT, GOV_DEFAULT_FOOTER,
