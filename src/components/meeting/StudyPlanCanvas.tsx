@@ -221,6 +221,48 @@ const DraggableCourseBlock = ({
 };
 
 /* ============================== Ghost (read-only) span block ============================== */
+const DraggableSupplementBlock = ({
+  s, fullscreen, onRemove,
+}: { s: SupplementItem; fullscreen?: boolean; onRemove: () => void }) => {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: `sup:${s.id}` });
+  const style = { transform: CSS.Translate.toString(transform), opacity: isDragging ? 0.4 : 1 };
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        'group relative rounded border border-dashed border-primary/50 bg-primary/5 px-1.5 py-1',
+        fullscreen ? 'text-[11px]' : 'text-[10px]',
+      )}
+      title={`${s.type}${s.courseCode ? ` – ${s.courseCode}` : ''}: ${s.description}`}
+    >
+      <div className="flex items-start gap-1">
+        <button
+          {...listeners}
+          {...attributes}
+          className="text-muted-foreground/60 hover:text-foreground cursor-grab active:cursor-grabbing"
+          aria-label="Dra för att flytta komplettering"
+        >
+          <GripVertical className={fullscreen ? 'w-3.5 h-3.5' : 'w-3 h-3'} />
+        </button>
+        <div className="min-w-0 flex-1">
+          <div className="font-medium text-primary">{s.type}</div>
+          <div className="truncate text-muted-foreground">
+            {s.courseCode ? `${s.courseCode} · ` : ''}{s.description || 'Komplettering'}
+          </div>
+        </div>
+      </div>
+      <button
+        onClick={onRemove}
+        className="absolute top-0.5 right-0.5 opacity-0 group-hover:opacity-100 text-destructive"
+        title="Ta bort"
+      >
+        <Trash2 className="w-3 h-3" />
+      </button>
+    </div>
+  );
+};
+
 const GhostBlock = ({ it, fullscreen }: { it: ActionPlanItem; fullscreen?: boolean }) => {
   const totalHp = effectiveHP(it);
   const perLp = totalHp / (it.periods.length || 1);
