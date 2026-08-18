@@ -166,8 +166,8 @@ const DraggableCourseBlock = ({
           <div className={cn('font-mono text-muted-foreground', fullscreen ? 'text-[11px]' : 'text-[10px]')}>{it.code}</div>
           <div className="truncate" title={it.name}>{it.name}</div>
           <div className={cn('text-primary', fullscreen ? 'text-[11px]' : 'text-[10px]')}>
-            {totalHp.toFixed(1).replace(/\.0$/, '')} hp
-            {isMulti && ` · ${perLp.toFixed(1).replace(/\.0$/, '')} hp/LP`}
+            {fmtHp(totalHp)} hp
+            {isMulti && ` · ${fmtHp(perLp)} hp/LP`}
             {it.studyPace && it.studyPace !== 100 ? ` (${it.studyPace}%)` : ''}
             {isMulti && ` · LP${it.periods.join('+')}`}
           </div>
@@ -235,7 +235,7 @@ const GhostBlock = ({ it, fullscreen }: { it: ActionPlanItem; fullscreen?: boole
       <div className={cn('font-mono', fullscreen ? 'text-[11px]' : 'text-[10px]')}>{it.code}</div>
       <div className="truncate italic" title={it.name}>↳ {it.name}</div>
       <div className={cn('text-primary/80', fullscreen ? 'text-[11px]' : 'text-[10px]')}>
-        {perLp.toFixed(1).replace(/\.0$/, '')} hp · av {totalHp.toFixed(1).replace(/\.0$/, '')} totalt
+        {fmtHp(perLp)} hp · av {fmtHp(totalHp)} totalt
       </div>
     </div>
   );
@@ -687,7 +687,7 @@ export const StudyPlanCanvas = ({
             )}
             <div className="flex items-center gap-3">
               <span className="text-xs text-muted-foreground">
-                {summary.byTerm[t]?.hp.toFixed(1).replace(/\.0$/, '')} hp · {summary.byTerm[t]?.pct}%
+                {fmtHp(summary.byTerm[t]?.hp)} hp · {summary.byTerm[t]?.pct}%
               </span>
               <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => removeTerm(t)}>
                 <Trash2 className="w-3.5 h-3.5" />
@@ -722,7 +722,7 @@ export const StudyPlanCanvas = ({
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="text-center">
-          <div className="text-3xl font-bold text-primary">{summary.totalHp.toFixed(1).replace(/\.0$/, '')}</div>
+          <div className="text-3xl font-bold text-primary">{fmtHp(summary.totalHp)}</div>
           <div className="text-xs text-muted-foreground">totalt hp</div>
         </div>
         <div className="space-y-3">
@@ -733,7 +733,7 @@ export const StudyPlanCanvas = ({
               <div key={t} className="space-y-1.5 border-b last:border-b-0 pb-2 last:pb-0">
                 <div className="flex justify-between text-xs">
                   <span className="font-medium">{t}</span>
-                  <span className="text-muted-foreground">{s.hp.toFixed(1).replace(/\.0$/, '')} hp · {s.pct}%</span>
+                  <span className="text-muted-foreground">{fmtHp(s.hp)} hp · {s.pct}%</span>
                 </div>
                 <div className="h-2 bg-muted rounded overflow-hidden">
                   <div className="h-full transition-all" style={{ width: `${pct}%`, backgroundColor: colorFor(s.hp) }} />
@@ -745,7 +745,7 @@ export const StudyPlanCanvas = ({
                       <div key={p} className="flex items-center gap-1">
                         <span className="font-mono text-muted-foreground">{p}</span>
                         <span className="font-medium" style={{ color: v > 0 ? colorFor(v, 15) : undefined }}>
-                          {v.toFixed(1).replace(/\.0$/, '')} hp
+                          {fmtHp(v)} hp
                         </span>
                       </div>
                     );
@@ -756,7 +756,7 @@ export const StudyPlanCanvas = ({
                     return (
                       <div key={p} className="flex items-center gap-1 col-span-3">
                         <span className="font-mono text-muted-foreground">{placementShort(p)}</span>
-                        <span className="font-medium">{v.toFixed(1).replace(/\.0$/, '')} hp</span>
+                        <span className="font-medium">{fmtHp(v)} hp</span>
                       </div>
                     );
                   })}
