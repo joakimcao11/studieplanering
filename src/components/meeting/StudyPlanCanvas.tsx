@@ -798,7 +798,10 @@ export const StudyPlanCanvas = ({
         </div>
         <div className="space-y-3">
           {terms.map((t) => {
-            const s = summary.byTerm[t] || { hp: 0, pct: 0, count: 0, perLp: { LP1:0,LP2:0,LP3:0,LP4:0,OmtentamenI:0,OmtentamenII:0 } };
+            const s = summary.byTerm[t] || {
+              hp: 0, pct: 0, count: 0, omtHp: 0, omtCount: 0,
+              perLp: { LP1: 0, LP2: 0, LP3: 0, LP4: 0, OmtentamenI: 0, OmtentamenII: 0 },
+            };
             const pct = Math.min(100, s.pct);
             return (
               <div key={t} className="space-y-1.5 border-b last:border-b-0 pb-2 last:pb-0">
@@ -828,6 +831,7 @@ export const StudyPlanCanvas = ({
                       <div key={p} className="flex items-center gap-1 col-span-3">
                         <span className="font-mono text-muted-foreground">{placementShort(p)}</span>
                         <span className="font-medium">{fmtHp(v)} hp</span>
+                        <span className="text-muted-foreground">(räknas ej i studietakt)</span>
                       </div>
                     );
                   })}
