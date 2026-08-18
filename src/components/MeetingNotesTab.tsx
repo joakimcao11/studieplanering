@@ -164,6 +164,17 @@ export const MeetingNotesTab = () => {
     };
   };
 
+  /** Lista över uppladdat material så att det följer med i exporten. */
+  const materialSection = (): DocSection | null => {
+    if (uploadedFiles.length === 0) return null;
+    return {
+      type: 'table',
+      heading: 'Uppladdat material',
+      columns: ['Filnamn', 'Typ'],
+      rows: uploadedFiles.map((f) => [f.name, f.type || 'okänd']),
+    };
+  };
+
   // Export preview dialog state
   const [exportPayload, setExportPayload] = useState<{
     sections: DocSection[];
@@ -283,6 +294,11 @@ export const MeetingNotesTab = () => {
     }
     const suppA = supplementSection();
     if (suppA) sections.push(suppA);
+    const matA = materialSection();
+    if (matA) sections.push(matA);
+    if (textInput.trim()) {
+      sections.push({ type: 'paragraph', heading: 'Anteckningar', body: textInput });
+    }
     sections.push({
       type: 'paragraph',
       heading: activeMode === 'email-draft' ? 'Mailutkast' : activeMode === 'summary' ? 'Sammanställning' : 'Minnesanteckning',
@@ -394,6 +410,15 @@ export const MeetingNotesTab = () => {
               className="min-h-[100px] text-sm"
             />
           </div>
+          <div className="space-y-2">
+            <Label className="text-foreground font-medium">Anteckningar / klistra in text</Label>
+            <Textarea
+              value={textInput}
+              onChange={(e) => setTextInput(e.target.value)}
+              placeholder="Skriv eller klistra in anteckningar från samtalet här..."
+              className="min-h-[140px] text-sm"
+            />
+          </div>
         </CardContent>
       </Card>
 
@@ -455,16 +480,6 @@ export const MeetingNotesTab = () => {
               ))}
             </div>
           )}
-
-          <div className="space-y-2">
-            <Label className="text-foreground font-medium">Anteckningar / klistra in text</Label>
-            <Textarea
-              value={textInput}
-              onChange={(e) => setTextInput(e.target.value)}
-              placeholder="Skriv eller klistra in anteckningar från samtalet här..."
-              className="min-h-[140px] text-sm"
-            />
-          </div>
         </CardContent>
       </Card>
 

@@ -73,17 +73,32 @@ const placementShort = (p: Placement) => {
   return p;
 };
 
-function suggestNextTerm(existing: string[]): string {
-  if (existing.length === 0) return 'HT2026';
-  const last = existing[existing.length - 1];
-  const m = last.match(/^(HT|VT)(\d{4})$/);
-  if (!m) return 'HT2026';
-  const sem = m[1];
+/** Kronologisk sorteringsnyckel: HT2026 < VT2027 < HT2027 < VT2028 ... */
+const termKey = (t: string): number => {
+  const m = t.match(/^(HT|VT)(\d{4})$/);
+  if (!m) return Number.MAX_SAFE_INTEGER;
   const year = parseInt(m[2]);
-  return sem === 'HT' ? `VT${year + 1}` : `HT${year}`;
+  // Inom samma kalenderår kommer VT (jan–jun) före HT (aug–dec).
+  return year * 2 + (m[1] === 'VT' ? 0 : 1);
+};
+
+const sortTerms = (list: string[]) => [...list].sort((a, b) => termKey(a) - termKey(b));
+
+function suggestNextTerm(existing: string[]): string {
+  const valid = existing.filter((t) => /^(HT|VT)\d{4}$/.test(t));
+  if (valid.length === 0) return 'HT2026';
+  const last = sortTerms(valid)[valid.length - 1];
+  const m = last.match(/^(HT|VT)(\d{4})$/)!;
+  const year = parseInt(m[2]);
+  return m[1] === 'HT' ? `VT${year + 1}` : `HT${year}`;
 }
 
 const effectiveHP = (it: ActionPlanItem) => (it.hp * (it.studyPace ?? 100)) / 100;
+
+/** Visar hp utan avrundningsfel: 3.75 → "3,75", 7.5 → "7,5", 15 → "15". */
+const fmtHp = (n: number) => String(Math.round(n * 100) / 100).replace('.', ',');
+
+export const isOmt = (p: Placement) => p === 'OmtentamenI' || p === 'OmtentamenII';
 
 /** Placement options shown in the per-course "Lägg till"-popover. */
 type PlacementChoice =
@@ -151,8 +166,8 @@ const DraggableCourseBlock = ({
           <div className={cn('font-mono text-muted-foreground', fullscreen ? 'text-[11px]' : 'text-[10px]')}>{it.code}</div>
           <div className="truncate" title={it.name}>{it.name}</div>
           <div className={cn('text-primary', fullscreen ? 'text-[11px]' : 'text-[10px]')}>
-            {totalHp.toFixed(1).replace(/\.0$/, '')} hp
-            {isMulti && ` · ${perLp.toFixed(1).replace(/\.0$/, '')} hp/LP`}
+            {fmtHp(totalHp)} hp
+            {isMulti && ` · ${fmtHp(perLp)} hp/LP`}
             {it.studyPace && it.studyPace !== 100 ? ` (${it.studyPace}%)` : ''}
             {isMulti && ` · LP${it.periods.join('+')}`}
           </div>
@@ -206,6 +221,48 @@ const DraggableCourseBlock = ({
 };
 
 /* ============================== Ghost (read-only) span block ============================== */
+const DraggableSupplementBlock = ({
+  s, fullscreen, onRemove,
+}: { s: SupplementItem; fullscreen?: boolean; onRemove: () => void }) => {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: `sup:${s.id}` });
+  const style = { transform: CSS.Translate.toString(transform), opacity: isDragging ? 0.4 : 1 };
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        'group relative rounded border border-dashed border-primary/50 bg-primary/5 px-1.5 py-1',
+        fullscreen ? 'text-[11px]' : 'text-[10px]',
+      )}
+      title={`${s.type}${s.courseCode ? ` – ${s.courseCode}` : ''}: ${s.description}`}
+    >
+      <div className="flex items-start gap-1">
+        <button
+          {...listeners}
+          {...attributes}
+          className="text-muted-foreground/60 hover:text-foreground cursor-grab active:cursor-grabbing"
+          aria-label="Dra för att flytta komplettering"
+        >
+          <GripVertical className={fullscreen ? 'w-3.5 h-3.5' : 'w-3 h-3'} />
+        </button>
+        <div className="min-w-0 flex-1">
+          <div className="font-medium text-primary">{s.type}</div>
+          <div className="truncate text-muted-foreground">
+            {s.courseCode ? `${s.courseCode} · ` : ''}{s.description || 'Komplettering'}
+          </div>
+        </div>
+      </div>
+      <button
+        onClick={onRemove}
+        className="absolute top-0.5 right-0.5 opacity-0 group-hover:opacity-100 text-destructive"
+        title="Ta bort"
+      >
+        <Trash2 className="w-3 h-3" />
+      </button>
+    </div>
+  );
+};
+
 const GhostBlock = ({ it, fullscreen }: { it: ActionPlanItem; fullscreen?: boolean }) => {
   const totalHp = effectiveHP(it);
   const perLp = totalHp / (it.periods.length || 1);
@@ -220,7 +277,7 @@ const GhostBlock = ({ it, fullscreen }: { it: ActionPlanItem; fullscreen?: boole
       <div className={cn('font-mono', fullscreen ? 'text-[11px]' : 'text-[10px]')}>{it.code}</div>
       <div className="truncate italic" title={it.name}>↳ {it.name}</div>
       <div className={cn('text-primary/80', fullscreen ? 'text-[11px]' : 'text-[10px]')}>
-        {perLp.toFixed(1).replace(/\.0$/, '')} hp · av {totalHp.toFixed(1).replace(/\.0$/, '')} totalt
+        {fmtHp(perLp)} hp · av {fmtHp(totalHp)} totalt
       </div>
     </div>
   );
@@ -228,7 +285,7 @@ const GhostBlock = ({ it, fullscreen }: { it: ActionPlanItem; fullscreen?: boole
 
 /* ============================== Droppable LP cell ============================== */
 const DroppableCell = ({
-  term, placement, items, ghosts, supplements = [], onAdd, onRemove, onUpdatePeriods, fullscreen,
+  term, placement, items, ghosts, supplements = [], onAdd, onRemove, onRemoveSupplement, onUpdatePeriods, fullscreen,
 }: {
   term: string;
   placement: Placement;
@@ -237,6 +294,7 @@ const DroppableCell = ({
   supplements?: SupplementItem[];
   onAdd: () => void;
   onRemove: (id: string) => void;
+  onRemoveSupplement?: (id: string) => void;
   onUpdatePeriods: (id: string, periods: string[]) => void;
   fullscreen?: boolean;
 }) => {
@@ -270,19 +328,12 @@ const DroppableCell = ({
           <GhostBlock key={`ghost-${it.id}`} it={it} fullscreen={fullscreen} />
         ))}
         {supplements.map((s) => (
-          <div
+          <DraggableSupplementBlock
             key={`sup-${s.id}`}
-            className={cn(
-              'rounded border border-dashed border-primary/50 bg-primary/5 px-1.5 py-1',
-              fullscreen ? 'text-[11px]' : 'text-[10px]',
-            )}
-            title={`${s.type}${s.courseCode ? ` – ${s.courseCode}` : ''}: ${s.description}`}
-          >
-            <div className="font-medium text-primary">{s.type}</div>
-            <div className="truncate text-muted-foreground">
-              {s.courseCode ? `${s.courseCode} · ` : ''}{s.description || 'Komplettering'}
-            </div>
-          </div>
+            s={s}
+            fullscreen={fullscreen}
+            onRemove={() => onRemoveSupplement?.(s.id)}
+          />
         ))}
         <button
           onClick={onAdd}
@@ -325,11 +376,7 @@ export const StudyPlanCanvas = ({
   const terms = useMemo(() => {
     const set = new Set<string>(extraTerms);
     actionPlan.forEach((i) => set.add(i.term));
-    return Array.from(set).sort((a, b) => {
-      const ya = parseInt(a.slice(2)); const yb = parseInt(b.slice(2));
-      if (ya !== yb) return ya - yb;
-      return a.startsWith('HT') ? -1 : 1;
-    });
+    return sortTerms(Array.from(set));
   }, [actionPlan, extraTerms]);
 
   // Add-course modal
@@ -397,6 +444,8 @@ export const StudyPlanCanvas = ({
 
   const addCourseWithChoice = (c: any, choiceKey: string) => {
     const { placement, periods } = placementChoiceFromKey(choiceKey);
+    // Omtentamenskurser tillhör ingen läsperiod – periods lämnas tom.
+    const resolvedPeriods = isOmt(placement) ? [] : (periods ?? c.periods ?? []);
     setActionPlan((prev) => [
       ...prev,
       {
@@ -404,7 +453,7 @@ export const StudyPlanCanvas = ({
         code: c.code,
         name: c.name,
         hp: Number(c.hp),
-        periods: periods ?? c.periods ?? [],
+        periods: resolvedPeriods,
         term: addTerm,
         placement,
         studyPace: 100,
@@ -415,6 +464,7 @@ export const StudyPlanCanvas = ({
   };
 
   const smartDefaultChoice = (c: any): string => {
+    if (isOmt(addPlacement)) return `single:${addPlacement}`;
     const ps: string[] = c?.periods || [];
     if (ps.length === 2 && ps.includes('1') && ps.includes('2')) return 'between:LP1|1,2';
     if (ps.length === 2 && ps.includes('2') && ps.includes('3')) return 'between:LP2|2,3';
@@ -508,13 +558,24 @@ export const StudyPlanCanvas = ({
 
   // Summary calculation: totals + per-LP breakdown
   const summary = useMemo(() => {
-    const byTerm: Record<string, { hp: number; pct: number; count: number; perLp: Record<Placement, number> }> = {};
+    const byTerm: Record<string, {
+      hp: number; pct: number; count: number; perLp: Record<Placement, number>;
+      omtHp: number; omtCount: number;
+    }> = {};
     let totalHp = 0;
     const empty = (): Record<Placement, number> => ({ LP1: 0, LP2: 0, LP3: 0, LP4: 0, OmtentamenI: 0, OmtentamenII: 0 });
-    terms.forEach((t) => { byTerm[t] = { hp: 0, pct: 0, count: 0, perLp: empty() }; });
+    const emptyRow = () => ({ hp: 0, pct: 0, count: 0, perLp: empty(), omtHp: 0, omtCount: 0 });
+    terms.forEach((t) => { byTerm[t] = emptyRow(); });
     actionPlan.forEach((it) => {
       const e = effectiveHP(it);
-      byTerm[it.term] = byTerm[it.term] || { hp: 0, pct: 0, count: 0, perLp: empty() };
+      byTerm[it.term] = byTerm[it.term] || emptyRow();
+      // Omtentamensperioder ligger utanför studietakten och räknas separat.
+      if (isOmt(it.placement)) {
+        byTerm[it.term].omtHp += e;
+        byTerm[it.term].omtCount += 1;
+        byTerm[it.term].perLp[it.placement] += e;
+        return;
+      }
       byTerm[it.term].hp += e;
       byTerm[it.term].count += 1;
       // Distribute HP across multi-period courses (e.g. between LP1-LP2)
@@ -544,7 +605,31 @@ export const StudyPlanCanvas = ({
     const target = String(over.id);
     const [term, placement] = target.split('|');
     if (!term || !placement) return;
-    setActionPlan((prev) => prev.map((i) => i.id === active.id ? { ...i, term, placement: placement as Placement } : i));
+    const activeId = String(active.id);
+    const pl = placement as Placement;
+
+    // Kompletteringar: dras endast mellan LP1–LP4, aldrig till omtentamensperioder.
+    if (activeId.startsWith('sup:')) {
+      if (isOmt(pl)) {
+        toast({
+          title: 'Går inte att placera här',
+          description: 'Kompletteringar kopplas till läsperiod 1–4.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      const supId = activeId.slice(4);
+      setSupplements((prev) => prev.map((s) => (s.id === supId ? { ...s, term, placement: pl as SupplementItem['placement'] } : s)));
+      return;
+    }
+
+    setActionPlan((prev) => prev.map((i) => {
+      if (i.id !== activeId) return i;
+      // Flytt till/från omtentamen nollställer flerperiodsplaceringen.
+      if (isOmt(pl)) return { ...i, term, placement: pl, periods: [] };
+      const periods = (i.periods || []).length > 1 ? i.periods : [pl.replace('LP', '')];
+      return { ...i, term, placement: pl, periods };
+    }));
   };
 
   /* ---------------- Header buttons (shared) ---------------- */
@@ -608,6 +693,7 @@ export const StudyPlanCanvas = ({
         supplements={supplements.filter((s) => s.term === t && s.placement === (p as any))}
         onAdd={() => openAddDialog(t, p)}
         onRemove={removeItem}
+        onRemoveSupplement={(id) => setSupplements((prev) => prev.filter((s) => s.id !== id))}
         onUpdatePeriods={(id, periods) => {
           const sorted = [...periods].sort();
           const minLp = sorted[0];
@@ -672,7 +758,7 @@ export const StudyPlanCanvas = ({
             )}
             <div className="flex items-center gap-3">
               <span className="text-xs text-muted-foreground">
-                {summary.byTerm[t]?.hp.toFixed(1).replace(/\.0$/, '')} hp · {summary.byTerm[t]?.pct}%
+                {fmtHp(summary.byTerm[t]?.hp)} hp · {summary.byTerm[t]?.pct}%
               </span>
               <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => removeTerm(t)}>
                 <Trash2 className="w-3.5 h-3.5" />
@@ -707,18 +793,21 @@ export const StudyPlanCanvas = ({
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="text-center">
-          <div className="text-3xl font-bold text-primary">{summary.totalHp.toFixed(1).replace(/\.0$/, '')}</div>
+          <div className="text-3xl font-bold text-primary">{fmtHp(summary.totalHp)}</div>
           <div className="text-xs text-muted-foreground">totalt hp</div>
         </div>
         <div className="space-y-3">
           {terms.map((t) => {
-            const s = summary.byTerm[t] || { hp: 0, pct: 0, count: 0, perLp: { LP1:0,LP2:0,LP3:0,LP4:0,OmtentamenI:0,OmtentamenII:0 } };
+            const s = summary.byTerm[t] || {
+              hp: 0, pct: 0, count: 0, omtHp: 0, omtCount: 0,
+              perLp: { LP1: 0, LP2: 0, LP3: 0, LP4: 0, OmtentamenI: 0, OmtentamenII: 0 },
+            };
             const pct = Math.min(100, s.pct);
             return (
               <div key={t} className="space-y-1.5 border-b last:border-b-0 pb-2 last:pb-0">
                 <div className="flex justify-between text-xs">
                   <span className="font-medium">{t}</span>
-                  <span className="text-muted-foreground">{s.hp.toFixed(1).replace(/\.0$/, '')} hp · {s.pct}%</span>
+                  <span className="text-muted-foreground">{fmtHp(s.hp)} hp · {s.pct}%</span>
                 </div>
                 <div className="h-2 bg-muted rounded overflow-hidden">
                   <div className="h-full transition-all" style={{ width: `${pct}%`, backgroundColor: colorFor(s.hp) }} />
@@ -730,7 +819,7 @@ export const StudyPlanCanvas = ({
                       <div key={p} className="flex items-center gap-1">
                         <span className="font-mono text-muted-foreground">{p}</span>
                         <span className="font-medium" style={{ color: v > 0 ? colorFor(v, 15) : undefined }}>
-                          {v.toFixed(1).replace(/\.0$/, '')} hp
+                          {fmtHp(v)} hp
                         </span>
                       </div>
                     );
@@ -741,7 +830,8 @@ export const StudyPlanCanvas = ({
                     return (
                       <div key={p} className="flex items-center gap-1 col-span-3">
                         <span className="font-mono text-muted-foreground">{placementShort(p)}</span>
-                        <span className="font-medium">{v.toFixed(1).replace(/\.0$/, '')} hp</span>
+                        <span className="font-medium">{fmtHp(v)} hp</span>
+                        <span className="text-muted-foreground">(räknas ej i studietakt)</span>
                       </div>
                     );
                   })}
@@ -751,7 +841,7 @@ export const StudyPlanCanvas = ({
           })}
         </div>
         <div className="text-[10px] text-muted-foreground pt-2 border-t">
-          Mål: 30 hp/termin (≈15 hp per LP)
+          Mål: 30 hp/termin (≈15 hp per LP). Kurser i omtentamensperioder påverkar inte hp-summan eller studietakten.
         </div>
         {supplements.length > 0 && (
           <div className="text-[10px] text-muted-foreground pt-2 border-t space-y-1">
@@ -1064,6 +1154,29 @@ export const StudyPlanCanvas = ({
             {/* Placement section — inline, always visible below the course list */}
             <div className="rounded-lg border p-4 space-y-3 bg-muted/20">
               <div className="text-sm font-semibold">Var ska kursen placeras?</div>
+              {isOmt(addPlacement) ? (
+                <>
+                  <RadioGroup
+                    value={pendingChoice}
+                    onValueChange={setPendingChoice}
+                    className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2"
+                  >
+                    <label className="flex items-center gap-2 text-sm cursor-pointer">
+                      <RadioGroupItem value="single:OmtentamenI" id="pl-omt1" />
+                      <span>Omtentamen I (april)</span>
+                    </label>
+                    <label className="flex items-center gap-2 text-sm cursor-pointer">
+                      <RadioGroupItem value="single:OmtentamenII" id="pl-omt2" />
+                      <span>Omtentamen II (augusti)</span>
+                    </label>
+                  </RadioGroup>
+                  <p className="text-[11px] text-muted-foreground">
+                    Kursen placeras i en omtentamensperiod och läggs inte i någon läsperiod. Poängen räknas
+                    inte med i terminens hp-summa eller studietakt.
+                  </p>
+                </>
+              ) : (
+              <>
               <RadioGroup
                 value={pendingChoice}
                 onValueChange={setPendingChoice}
@@ -1111,6 +1224,8 @@ export const StudyPlanCanvas = ({
               <p className="text-[11px] text-muted-foreground">
                 Flerperiodskurser visas i samtliga valda läsperioder och hp delas lika mellan dem.
               </p>
+              </>
+              )}
               <div className="flex items-center gap-2 pt-2 border-t">
                 <Label className="text-xs">Termin</Label>
                 <Input value={addTerm} onChange={(e) => setAddTerm(e.target.value)} className="h-8 text-xs max-w-[160px]" />

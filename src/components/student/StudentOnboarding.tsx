@@ -47,7 +47,6 @@ export const StudentOnboarding = ({
 
   useEffect(() => {
     if (forceOpen) { setOpen(true); setStep(0); return; }
-    if (!localStorage.getItem(STORAGE_KEY)) { setOpen(true); setStep(0); }
   }, [forceOpen]);
 
   const close = () => {
