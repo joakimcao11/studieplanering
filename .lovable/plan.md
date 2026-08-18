@@ -18,6 +18,10 @@ Kurser går redan att dra mellan läsperioder. Kompletteringar visas i dag som s
 - "Lägg till termin" föreslår nästa termin i den kronologiska följden.
 - Poäng avrundas inte längre till en decimal: 7,5 hp i 50 % visas som 3,75 hp. Gäller kursrutor, sammanställning, validering och export.
 
+## 3b. /student utan tvingande onboarding
+- Besökaren kommer direkt in på planeringssidan och fyller i "Grundinformation" (namn, program, årskull) på plats.
+- Rutan "Kom igång med din studieplanering" visas inte längre automatiskt; guiden och exempelplanen finns kvar bakom en knapp ("Visa guide" / "Ladda exempelplan").
+
 ## 4. Omtentamensperioder separeras från studietakten
 - När en kurs läggs till i blocket "Omtentamensperioder" väljs Omtentamen I (april) eller Omtentamen II (augusti) direkt – inga läsperiodsval visas där.
 - Kurser i omtentamensperioder placeras aldrig i LP1–LP4 och skapar inga "spök"-rutor i läsperioderna.
