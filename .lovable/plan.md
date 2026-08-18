@@ -42,4 +42,5 @@ Kurser går redan att dra mellan läsperioder. Kompletteringar visas i dag som s
 - `planValidation.ts`: samma exkludering av omtentamen och samma decimalformat.
 - `ExportPreviewDialog.tsx`: PDF-knapp som återanvänder `exportSectionsAsPdf` med aktuella (redigerade) sektioner; stöd för bildsektioner.
 - `studentExport.ts` / `wordTemplate*.ts`: ny sektionstyp `image` för bifogade bilder.
+- `StudentPlanning.tsx`: onboarding-overlayen öppnas inte per default utan via knapp; Grundinformation blir startpunkt.
 - `MeetingNotesTab.tsx`: flytta textfältet, bygg sektionen "Bifogat material" av `uploadedFiles` i båda exportvägarna.
