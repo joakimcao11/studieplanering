@@ -164,6 +164,17 @@ export const MeetingNotesTab = () => {
     };
   };
 
+  /** Lista över uppladdat material så att det följer med i exporten. */
+  const materialSection = (): DocSection | null => {
+    if (uploadedFiles.length === 0) return null;
+    return {
+      type: 'table',
+      heading: 'Uppladdat material',
+      columns: ['Filnamn', 'Typ'],
+      rows: uploadedFiles.map((f) => [f.name, f.type || 'okänd']),
+    };
+  };
+
   // Export preview dialog state
   const [exportPayload, setExportPayload] = useState<{
     sections: DocSection[];
