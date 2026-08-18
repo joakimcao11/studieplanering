@@ -693,6 +693,7 @@ export const StudyPlanCanvas = ({
         supplements={supplements.filter((s) => s.term === t && s.placement === (p as any))}
         onAdd={() => openAddDialog(t, p)}
         onRemove={removeItem}
+        onRemoveSupplement={(id) => setSupplements((prev) => prev.filter((s) => s.id !== id))}
         onUpdatePeriods={(id, periods) => {
           const sorted = [...periods].sort();
           const minLp = sorted[0];
