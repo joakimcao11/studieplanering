@@ -285,7 +285,7 @@ const GhostBlock = ({ it, fullscreen }: { it: ActionPlanItem; fullscreen?: boole
 
 /* ============================== Droppable LP cell ============================== */
 const DroppableCell = ({
-  term, placement, items, ghosts, supplements = [], onAdd, onRemove, onUpdatePeriods, fullscreen,
+  term, placement, items, ghosts, supplements = [], onAdd, onRemove, onRemoveSupplement, onUpdatePeriods, fullscreen,
 }: {
   term: string;
   placement: Placement;
@@ -294,6 +294,7 @@ const DroppableCell = ({
   supplements?: SupplementItem[];
   onAdd: () => void;
   onRemove: (id: string) => void;
+  onRemoveSupplement?: (id: string) => void;
   onUpdatePeriods: (id: string, periods: string[]) => void;
   fullscreen?: boolean;
 }) => {
@@ -327,19 +328,12 @@ const DroppableCell = ({
           <GhostBlock key={`ghost-${it.id}`} it={it} fullscreen={fullscreen} />
         ))}
         {supplements.map((s) => (
-          <div
+          <DraggableSupplementBlock
             key={`sup-${s.id}`}
-            className={cn(
-              'rounded border border-dashed border-primary/50 bg-primary/5 px-1.5 py-1',
-              fullscreen ? 'text-[11px]' : 'text-[10px]',
-            )}
-            title={`${s.type}${s.courseCode ? ` – ${s.courseCode}` : ''}: ${s.description}`}
-          >
-            <div className="font-medium text-primary">{s.type}</div>
-            <div className="truncate text-muted-foreground">
-              {s.courseCode ? `${s.courseCode} · ` : ''}{s.description || 'Komplettering'}
-            </div>
-          </div>
+            s={s}
+            fullscreen={fullscreen}
+            onRemove={() => onRemoveSupplement?.(s.id)}
+          />
         ))}
         <button
           onClick={onAdd}
