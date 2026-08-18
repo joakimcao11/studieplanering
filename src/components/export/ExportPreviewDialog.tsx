@@ -705,6 +705,9 @@ export const ExportPreviewDialog = ({
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Avbryt</Button>
+          <Button variant="outline" onClick={buildPdf}>
+            <Printer className="w-4 h-4 mr-2" /> Ladda ner PDF
+          </Button>
           <Button onClick={buildDocx}>
             <Download className="w-4 h-4 mr-2" /> Ladda ner Word
           </Button>
