@@ -36,7 +36,11 @@ export const statusFor = (hp: number, target: number): PlanStatus => {
   return 'error';
 };
 
-export const fmtHp = (n: number) => n.toFixed(1).replace(/\.0$/, '');
+/** Visar hp med upp till två decimaler utan avrundning till en decimal (t.ex. 3,75). */
+export const fmtHp = (n: number) =>
+  String(Math.round(n * 100) / 100).replace('.', ',');
+
+export const isOmtPlacement = (p: Placement) => p === 'OmtentamenI' || p === 'OmtentamenII';
 
 export function computePlanValidation(
   actionPlan: ActionPlanItem[],
@@ -60,6 +64,11 @@ export function computePlanValidation(
     const e = effectiveHP(it);
     const row = byTerm[it.term];
     if (!row) return;
+    // Omtentamensperioder räknas inte in i terminens hp eller studietakt.
+    if (isOmtPlacement(it.placement)) {
+      row.perLp[it.placement] += e;
+      return;
+    }
     row.hp += e;
     row.courseCount += 1;
     totalHp += e;
