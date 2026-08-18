@@ -138,6 +138,64 @@ export const ExportPreviewDialog = ({
     setSections((prev) => prev.map((s, i) => (i === idx ? { ...s, ...patch } as DocSection : s)));
   };
 
+  /** PDF-export: öppnar en utskriftsvy med samma innehåll som Word-exporten. */
+  const buildPdf = () => {
+    const esc = (v: string) =>
+      String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const logo = template === 'LU' ? luLogo : lthLogo;
+    const accent = template === 'LU' ? '#000000' : `#${GOV_ACCENT}`;
+    const font = template === 'LU' ? 'Georgia, serif' : 'Arial, Helvetica, sans-serif';
+
+    const meta = isStudent
+      ? [stud.name, stud.program, stud.year].filter(Boolean)
+      : [lth.counselor, lth.institution, lth.unit].filter(Boolean);
+
+    const body = sections.map((s) => {
+      const heading = s.heading ? `<h2>${esc(s.heading)}</h2>` : '';
+      if (s.type === 'table') {
+        return `${heading}<table>
+          <thead><tr>${s.columns.map((c) => `<th>${esc(c)}</th>`).join('')}</tr></thead>
+          <tbody>${s.rows.map((r) => `<tr>${r.map((c) => `<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody>
+        </table>`;
+      }
+      const paras = s.body.split('\n').map((line) =>
+        line.trim() ? `<p>${esc(line)}</p>` : '<p class="sp"></p>').join('');
+      return `${heading}${paras}`;
+    }).join('');
+
+    const html = `<!doctype html><html lang="sv"><head><meta charset="utf-8">
+      <title>${esc(fileBaseName)}</title>
+      <style>
+        @page { size: A4; margin: 20mm; }
+        body { font-family: ${font}; color: #000; font-size: 11pt; line-height: 1.4; }
+        .top { display: flex; justify-content: space-between; align-items: flex-start;
+               border-bottom: 2px solid ${accent}; padding-bottom: 8px; margin-bottom: 18px; }
+        .top img { height: 46px; }
+        .meta { text-align: right; font-size: 9pt; color: #333; }
+        h1 { font-size: 17pt; margin: 0 0 4px; }
+        h2 { font-size: 12pt; margin: 18px 0 6px; color: ${accent}; }
+        p { margin: 0 0 6px; }
+        p.sp { margin: 0 0 8px; }
+        table { width: 100%; border-collapse: collapse; margin: 6px 0 12px; font-size: 10pt; }
+        th, td { border: 1px solid #bbb; padding: 5px 7px; text-align: left; vertical-align: top; }
+        th { background: #eee; font-weight: bold; }
+        tr, table { page-break-inside: avoid; }
+      </style></head><body>
+      <div class="top">
+        <img src="${logo}" alt="">
+        <div class="meta">${meta.map((m) => `<div>${esc(m)}</div>`).join('')}<div>${esc(docDate)}</div></div>
+      </div>
+      <h1>${esc(docName)}</h1>
+      ${body}
+      <script>window.onload = function () { setTimeout(function () { window.print(); }, 300); };<\/script>
+      </body></html>`;
+
+    const w = window.open('', '_blank');
+    if (!w) return;
+    w.document.write(html);
+    w.document.close();
+  };
+
   const buildDocx = async () => {
     const FONT = template === 'LU' ? LU_BODY_FONT : GOV_SANS;
     const ACCENT = template === 'LU' ? '000000' : GOV_ACCENT;
