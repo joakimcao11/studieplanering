@@ -394,6 +394,15 @@ export const MeetingNotesTab = () => {
               className="min-h-[100px] text-sm"
             />
           </div>
+          <div className="space-y-2">
+            <Label className="text-foreground font-medium">Anteckningar / klistra in text</Label>
+            <Textarea
+              value={textInput}
+              onChange={(e) => setTextInput(e.target.value)}
+              placeholder="Skriv eller klistra in anteckningar från samtalet här..."
+              className="min-h-[140px] text-sm"
+            />
+          </div>
         </CardContent>
       </Card>
 
@@ -455,16 +464,6 @@ export const MeetingNotesTab = () => {
               ))}
             </div>
           )}
-
-          <div className="space-y-2">
-            <Label className="text-foreground font-medium">Anteckningar / klistra in text</Label>
-            <Textarea
-              value={textInput}
-              onChange={(e) => setTextInput(e.target.value)}
-              placeholder="Skriv eller klistra in anteckningar från samtalet här..."
-              className="min-h-[140px] text-sm"
-            />
-          </div>
         </CardContent>
       </Card>
 
