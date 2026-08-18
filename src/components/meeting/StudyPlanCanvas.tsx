@@ -841,7 +841,7 @@ export const StudyPlanCanvas = ({
           })}
         </div>
         <div className="text-[10px] text-muted-foreground pt-2 border-t">
-          Mål: 30 hp/termin (≈15 hp per LP)
+          Mål: 30 hp/termin (≈15 hp per LP). Kurser i omtentamensperioder påverkar inte hp-summan eller studietakten.
         </div>
         {supplements.length > 0 && (
           <div className="text-[10px] text-muted-foreground pt-2 border-t space-y-1">
