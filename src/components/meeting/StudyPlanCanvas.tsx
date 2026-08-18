@@ -73,17 +73,32 @@ const placementShort = (p: Placement) => {
   return p;
 };
 
-function suggestNextTerm(existing: string[]): string {
-  if (existing.length === 0) return 'HT2026';
-  const last = existing[existing.length - 1];
-  const m = last.match(/^(HT|VT)(\d{4})$/);
-  if (!m) return 'HT2026';
-  const sem = m[1];
+/** Kronologisk sorteringsnyckel: HT2026 < VT2027 < HT2027 < VT2028 ... */
+const termKey = (t: string): number => {
+  const m = t.match(/^(HT|VT)(\d{4})$/);
+  if (!m) return Number.MAX_SAFE_INTEGER;
   const year = parseInt(m[2]);
-  return sem === 'HT' ? `VT${year + 1}` : `HT${year}`;
+  // Inom samma kalenderår kommer VT (jan–jun) före HT (aug–dec).
+  return year * 2 + (m[1] === 'VT' ? 0 : 1);
+};
+
+const sortTerms = (list: string[]) => [...list].sort((a, b) => termKey(a) - termKey(b));
+
+function suggestNextTerm(existing: string[]): string {
+  const valid = existing.filter((t) => /^(HT|VT)\d{4}$/.test(t));
+  if (valid.length === 0) return 'HT2026';
+  const last = sortTerms(valid)[valid.length - 1];
+  const m = last.match(/^(HT|VT)(\d{4})$/)!;
+  const year = parseInt(m[2]);
+  return m[1] === 'HT' ? `VT${year + 1}` : `HT${year}`;
 }
 
 const effectiveHP = (it: ActionPlanItem) => (it.hp * (it.studyPace ?? 100)) / 100;
+
+/** Visar hp utan avrundningsfel: 3.75 → "3,75", 7.5 → "7,5", 15 → "15". */
+const fmtHp = (n: number) => String(Math.round(n * 100) / 100).replace('.', ',');
+
+export const isOmt = (p: Placement) => p === 'OmtentamenI' || p === 'OmtentamenII';
 
 /** Placement options shown in the per-course "Lägg till"-popover. */
 type PlacementChoice =
