@@ -1154,6 +1154,29 @@ export const StudyPlanCanvas = ({
             {/* Placement section — inline, always visible below the course list */}
             <div className="rounded-lg border p-4 space-y-3 bg-muted/20">
               <div className="text-sm font-semibold">Var ska kursen placeras?</div>
+              {isOmt(addPlacement) ? (
+                <>
+                  <RadioGroup
+                    value={pendingChoice}
+                    onValueChange={setPendingChoice}
+                    className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2"
+                  >
+                    <label className="flex items-center gap-2 text-sm cursor-pointer">
+                      <RadioGroupItem value="single:OmtentamenI" id="pl-omt1" />
+                      <span>Omtentamen I (april)</span>
+                    </label>
+                    <label className="flex items-center gap-2 text-sm cursor-pointer">
+                      <RadioGroupItem value="single:OmtentamenII" id="pl-omt2" />
+                      <span>Omtentamen II (augusti)</span>
+                    </label>
+                  </RadioGroup>
+                  <p className="text-[11px] text-muted-foreground">
+                    Kursen placeras i en omtentamensperiod och läggs inte i någon läsperiod. Poängen räknas
+                    inte med i terminens hp-summa eller studietakt.
+                  </p>
+                </>
+              ) : (
+              <>
               <RadioGroup
                 value={pendingChoice}
                 onValueChange={setPendingChoice}
@@ -1201,6 +1224,8 @@ export const StudyPlanCanvas = ({
               <p className="text-[11px] text-muted-foreground">
                 Flerperiodskurser visas i samtliga valda läsperioder och hp delas lika mellan dem.
               </p>
+              </>
+              )}
               <div className="flex items-center gap-2 pt-2 border-t">
                 <Label className="text-xs">Termin</Label>
                 <Input value={addTerm} onChange={(e) => setAddTerm(e.target.value)} className="h-8 text-xs max-w-[160px]" />
