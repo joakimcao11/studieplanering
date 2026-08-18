@@ -294,6 +294,11 @@ export const MeetingNotesTab = () => {
     }
     const suppA = supplementSection();
     if (suppA) sections.push(suppA);
+    const matA = materialSection();
+    if (matA) sections.push(matA);
+    if (textInput.trim()) {
+      sections.push({ type: 'paragraph', heading: 'Anteckningar', body: textInput });
+    }
     sections.push({
       type: 'paragraph',
       heading: activeMode === 'email-draft' ? 'Mailutkast' : activeMode === 'summary' ? 'Sammanställning' : 'Minnesanteckning',
