@@ -340,11 +340,7 @@ export const StudyPlanCanvas = ({
   const terms = useMemo(() => {
     const set = new Set<string>(extraTerms);
     actionPlan.forEach((i) => set.add(i.term));
-    return Array.from(set).sort((a, b) => {
-      const ya = parseInt(a.slice(2)); const yb = parseInt(b.slice(2));
-      if (ya !== yb) return ya - yb;
-      return a.startsWith('HT') ? -1 : 1;
-    });
+    return sortTerms(Array.from(set));
   }, [actionPlan, extraTerms]);
 
   // Add-course modal
