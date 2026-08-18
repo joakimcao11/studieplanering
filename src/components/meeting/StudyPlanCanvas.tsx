@@ -408,6 +408,8 @@ export const StudyPlanCanvas = ({
 
   const addCourseWithChoice = (c: any, choiceKey: string) => {
     const { placement, periods } = placementChoiceFromKey(choiceKey);
+    // Omtentamenskurser tillhör ingen läsperiod – periods lämnas tom.
+    const resolvedPeriods = isOmt(placement) ? [] : (periods ?? c.periods ?? []);
     setActionPlan((prev) => [
       ...prev,
       {
@@ -415,7 +417,7 @@ export const StudyPlanCanvas = ({
         code: c.code,
         name: c.name,
         hp: Number(c.hp),
-        periods: periods ?? c.periods ?? [],
+        periods: resolvedPeriods,
         term: addTerm,
         placement,
         studyPace: 100,
