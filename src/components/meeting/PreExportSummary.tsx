@@ -37,12 +37,12 @@ export const PreExportSummary = ({ actionPlan, supplements, terms, compact, clas
         <table className="w-full text-xs">
           <thead className="bg-muted">
             <tr>
-              <th className="text-left p-2 font-medium">Läsår / termin</th>
-              <th className="text-left p-2 font-medium">LP1</th>
-              <th className="text-left p-2 font-medium">LP2</th>
-              <th className="text-left p-2 font-medium">LP3</th>
-              <th className="text-left p-2 font-medium">LP4</th>
-              <th className="text-left p-2 font-medium">Totalt</th>
+              <th className="text-left p-2 font-medium">Läsår</th>
+              <th className="text-left p-2 font-medium">LP1 (höst)</th>
+              <th className="text-left p-2 font-medium">LP2 (höst)</th>
+              <th className="text-left p-2 font-medium">LP3 (vår)</th>
+              <th className="text-left p-2 font-medium">LP4 (vår)</th>
+              <th className="text-left p-2 font-medium">Totalt läsår</th>
               <th className="text-left p-2 font-medium">Studietakt</th>
               <th className="text-left p-2 font-medium">Komplettering</th>
             </tr>
@@ -50,7 +50,7 @@ export const PreExportSummary = ({ actionPlan, supplements, terms, compact, clas
           <tbody>
             {v.terms.map((row) => (
               <tr key={row.term} className="border-t">
-                <td className="p-2 font-medium">{row.term}</td>
+                <td className="p-2 font-medium">{termLabel(row.term)}</td>
                 {(['LP1', 'LP2', 'LP3', 'LP4'] as const).map((p) => (
                   <td key={p} className={cn('p-2 font-medium', statusClass[row.lpStatus[p]])}>
                     {fmtHp(row.perLp[p] || 0)} hp
@@ -84,9 +84,11 @@ export const PreExportSummary = ({ actionPlan, supplements, terms, compact, clas
       </div>
 
       <p className="text-[11px] text-muted-foreground">
-        Krav som jämförs: {TERM_TARGET_HP} hp per termin (100 % studietakt) och ca {LP_TARGET_HP} hp per läsperiod.
-        Flerläsperiodskurser delas jämnt mellan sina läsperioder.
+        Krav som jämförs: {TERM_TARGET_HP} hp per termin (hösttermin = LP1–LP2, vårtermin = LP3–LP4),
+        {' '}{YEAR_TARGET_HP} hp per läsår vid 100 % studietakt och ca {LP_TARGET_HP} hp per läsperiod.
+        Flerläsperiodskurser delas jämnt mellan sina läsperioder. Omtentamen I och II räknas inte in.
       </p>
+
 
       {v.warnings.length === 0 ? (
         <div className="flex items-center gap-2 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded p-3">
