@@ -1,7 +1,30 @@
 import type { ActionPlanItem, SupplementItem, Placement } from './StudyPlanCanvas';
 
 export const TERM_TARGET_HP = 30;
+/** Ett läsår = två terminer = fyra läsperioder. */
+export const YEAR_TARGET_HP = 60;
 export const LP_TARGET_HP = 15;
+
+/** "HT2026" / "VT2027" → "Läsår 2026/2027" resp. "Läsår 2027/2028". */
+export const termLabel = (t: string): string => {
+  const m = (t || '').match(/^(HT|VT)(\d{4})$/);
+  if (!m) return t;
+  const y = parseInt(m[2], 10);
+  return `Läsår ${y}/${y + 1}`;
+};
+
+/** Hösttermin = LP1–LP2, Vårtermin = LP3–LP4. Omtentamen saknar termin. */
+export const termHalfLabel = (it: { placement: Placement; periods?: string[] }): string => {
+  if (it.placement === 'OmtentamenI' || it.placement === 'OmtentamenII') return '-';
+  const ps = it.periods && it.periods.length > 0
+    ? it.periods
+    : [String(it.placement).replace('LP', '')];
+  const host = ps.some((p) => p === '1' || p === '2');
+  const var_ = ps.some((p) => p === '3' || p === '4');
+  if (host && var_) return 'Höst/Vår';
+  return var_ ? 'Vårtermin' : 'Hösttermin';
+};
+
 
 export type PlanStatus = 'ok' | 'warn' | 'error';
 
