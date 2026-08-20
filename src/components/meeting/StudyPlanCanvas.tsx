@@ -810,7 +810,7 @@ export const StudyPlanCanvas = ({
             return (
               <div key={t} className="space-y-1.5 border-b last:border-b-0 pb-2 last:pb-0">
                 <div className="flex justify-between text-xs">
-                  <span className="font-medium">{t}</span>
+                  <span className="font-medium">{termLabel(t)}</span>
                   <span className="text-muted-foreground">{fmtHp(s.hp)} hp · {s.pct}%</span>
                 </div>
                 <div className="h-2 bg-muted rounded overflow-hidden">
