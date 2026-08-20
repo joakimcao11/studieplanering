@@ -157,10 +157,13 @@ export const MeetingNotesTab = () => {
     return {
       type: 'table',
       heading: 'Komplettering',
-      columns: ['Typ', 'Kurs', 'Vad saknas', 'Termin', 'Läsperiod', 'Status'],
+      columns: ['Typ', 'Kurs', 'Vad saknas', 'Läsår', 'Termin', 'Läsperiod', 'Status'],
       rows: supplements.map((s) => [
-        s.type, s.courseCode, s.description, s.term, s.placement, s.done ? 'Klar' : 'Kvarstår',
+        s.type, s.courseCode, s.description,
+        termLabel(s.term), termHalfLabel(s), placementLabel(s.placement),
+        s.done ? 'Klar' : 'Kvarstår',
       ]),
+
     };
   };
 
