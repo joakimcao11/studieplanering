@@ -25,6 +25,15 @@ export const termHalfLabel = (it: { placement: Placement; periods?: string[] }):
   return var_ ? 'Vårtermin' : 'Hösttermin';
 };
 
+export const isOmtPlacement = (p: Placement | string): boolean =>
+  p === 'OmtentamenI' || p === 'OmtentamenII';
+
+/** Läsbar etikett för placering: "LP1" eller "Omtentamen I (april)". */
+export const placementLabel = (p: Placement | string): string =>
+  p === 'OmtentamenI' ? 'Omtentamen I (april)'
+    : p === 'OmtentamenII' ? 'Omtentamen II (augusti)'
+    : String(p || '-');
+
 
 export type PlanStatus = 'ok' | 'warn' | 'error';
 
