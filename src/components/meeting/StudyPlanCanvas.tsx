@@ -1017,8 +1017,9 @@ export const StudyPlanCanvas = ({
               <th className="text-left p-2 font-medium">Namn</th>
               <th className="text-left p-2 font-medium w-20">HP</th>
               <th className="text-left p-2 font-medium w-24">Studietakt</th>
+              <th className="text-left p-2 font-medium w-40">Läsår</th>
               <th className="text-left p-2 font-medium w-28">Termin</th>
-              <th className="text-left p-2 font-medium w-32">Period</th>
+              <th className="text-left p-2 font-medium w-32">Läsperiod</th>
               <th className="p-2 w-10"></th>
             </tr>
           </thead>
@@ -1033,19 +1034,29 @@ export const StudyPlanCanvas = ({
                     className="h-7 text-xs" />
                 </td>
                 <td className="p-2">
-                  <Select value={String(it.studyPace ?? 100)} onValueChange={(v) => updateItem(it.id, { studyPace: parseInt(v) as 25 | 50 | 75 | 100 })}>
+                  {isOmt(it.placement) ? (
+                    <span className="text-muted-foreground">-</span>
+                  ) : (
+                    <Select value={String(it.studyPace ?? 100)} onValueChange={(v) => updateItem(it.id, { studyPace: parseInt(v) as 25 | 50 | 75 | 100 })}>
+                      <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+                      <SelectContent className="bg-popover z-50">
+                        <SelectItem value="25">25%</SelectItem>
+                        <SelectItem value="50">50%</SelectItem>
+                        <SelectItem value="75">75%</SelectItem>
+                        <SelectItem value="100">100%</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                </td>
+                <td className="p-2">
+                  <Select value={it.term} onValueChange={(v) => updateItem(it.id, { term: v })}>
                     <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
                     <SelectContent className="bg-popover z-50">
-                      <SelectItem value="25">25%</SelectItem>
-                      <SelectItem value="50">50%</SelectItem>
-                      <SelectItem value="75">75%</SelectItem>
-                      <SelectItem value="100">100%</SelectItem>
+                      {terms.map((t) => <SelectItem key={t} value={t}>{termLabel(t)}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </td>
-                <td className="p-2">
-                  <Input value={it.term} onChange={(e) => updateItem(it.id, { term: e.target.value })} className="h-7 text-xs" />
-                </td>
+                <td className="p-2 text-muted-foreground">{termHalfLabel(it)}</td>
                 <td className="p-2">
                   <Select value={it.placement} onValueChange={(v) => updateItem(it.id, { placement: v as Placement })}>
                     <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
@@ -1056,6 +1067,7 @@ export const StudyPlanCanvas = ({
                     </SelectContent>
                   </Select>
                 </td>
+
                 <td className="p-2 text-right">
                   <button onClick={() => removeItem(it.id)} className="text-muted-foreground hover:text-destructive">
                     <Trash2 className="w-3.5 h-3.5" />
