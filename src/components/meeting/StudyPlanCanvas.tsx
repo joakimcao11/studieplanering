@@ -1227,9 +1227,15 @@ export const StudyPlanCanvas = ({
               </>
               )}
               <div className="flex items-center gap-2 pt-2 border-t">
-                <Label className="text-xs">Termin</Label>
-                <Input value={addTerm} onChange={(e) => setAddTerm(e.target.value)} className="h-8 text-xs max-w-[160px]" />
+                <Label className="text-xs">Läsår</Label>
+                <Select value={addTerm} onValueChange={setAddTerm}>
+                  <SelectTrigger className="h-8 text-xs max-w-[200px]"><SelectValue /></SelectTrigger>
+                  <SelectContent className="bg-popover z-50">
+                    {terms.map((t) => <SelectItem key={t} value={t}>{termLabel(t)}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
+
             </div>
           </div>
 
