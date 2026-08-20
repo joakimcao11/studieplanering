@@ -991,12 +991,13 @@ export const StudyPlanCanvas = ({
             )}
           </div>
           <Select value={rowTermFilter} onValueChange={setRowTermFilter}>
-            <SelectTrigger className="h-8 w-32 text-xs"><SelectValue placeholder="Termin" /></SelectTrigger>
+            <SelectTrigger className="h-8 w-40 text-xs"><SelectValue placeholder="Läsår" /></SelectTrigger>
             <SelectContent className="bg-popover z-50">
-              <SelectItem value="all">Alla terminer</SelectItem>
-              {terms.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+              <SelectItem value="all">Alla läsår</SelectItem>
+              {terms.map((t) => <SelectItem key={t} value={t}>{termLabel(t)}</SelectItem>)}
             </SelectContent>
           </Select>
+
           <Select value={rowLpFilter} onValueChange={setRowLpFilter}>
             <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Period" /></SelectTrigger>
             <SelectContent className="bg-popover z-50">
