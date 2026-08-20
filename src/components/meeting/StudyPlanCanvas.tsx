@@ -906,7 +906,8 @@ export const StudyPlanCanvas = ({
                 <th className="text-left p-2 font-medium w-40">Typ</th>
                 <th className="text-left p-2 font-medium w-28">Kurskod</th>
                 <th className="text-left p-2 font-medium">Vad saknas</th>
-                <th className="text-left p-2 font-medium w-28">Termin</th>
+                <th className="text-left p-2 font-medium w-40">Läsår</th>
+
                 <th className="text-left p-2 font-medium w-24">Läsperiod</th>
                 <th className="text-left p-2 font-medium w-16">Klar</th>
                 <th className="p-2 w-10"></th>
