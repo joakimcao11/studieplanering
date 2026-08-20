@@ -841,7 +841,7 @@ export const StudyPlanCanvas = ({
           })}
         </div>
         <div className="text-[10px] text-muted-foreground pt-2 border-t">
-          Mål: 30 hp/termin (≈15 hp per LP). Kurser i omtentamensperioder påverkar inte hp-summan eller studietakten.
+          Mål: 30 hp per termin (60 hp per läsår, ≈15 hp per läsperiod). Kurser i omtentamensperioder påverkar inte hp-summan eller studietakten.
         </div>
         {supplements.length > 0 && (
           <div className="text-[10px] text-muted-foreground pt-2 border-t space-y-1">
@@ -849,8 +849,9 @@ export const StudyPlanCanvas = ({
             {terms.map((t) => {
               const n = supplements.filter((s) => s.term === t).length;
               if (n === 0) return null;
-              return <div key={t}>{t}: {n} st ({supplements.filter((s) => s.term === t && s.done).length} klara)</div>;
+              return <div key={t}>{termLabel(t)}: {n} st ({supplements.filter((s) => s.term === t && s.done).length} klara)</div>;
             })}
+
           </div>
         )}
       </CardContent>
