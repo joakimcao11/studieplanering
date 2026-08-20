@@ -766,6 +766,10 @@ export const StudyPlanCanvas = ({
               </Button>
             </div>
           </div>
+          <div className="hidden lg:grid grid-cols-4 gap-2 mb-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+            <div className="col-span-2">Hösttermin (LP1–LP2)</div>
+            <div className="col-span-2">Vårtermin (LP3–LP4)</div>
+          </div>
           <div className={cn(
             variant === 'fullscreen'
               ? 'grid grid-cols-4 gap-3'
@@ -773,6 +777,7 @@ export const StudyPlanCanvas = ({
           )}>
             {LP_ORDER.map((p) => renderCell(t, p, variant === 'fullscreen'))}
           </div>
+
         </div>
       ))}
       <div className="flex flex-wrap gap-2">
