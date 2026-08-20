@@ -346,12 +346,14 @@ export const MeetingNotesTab = () => {
       sections.push({
         type: 'table',
         heading: 'Handlingsplan – kurser',
-        columns: ['Kurskod', 'Namn', 'HP', 'Studietakt', 'Termin', 'Period'],
+        columns: ['Kurskod', 'Namn', 'HP', 'Studietakt', 'Läsår', 'Termin', 'Läsperiod'],
         rows: actionPlan.map((it) => [
           it.code, it.name, String(it.hp),
-          `${it.studyPace ?? 100}%`, it.term, it.placement,
+          isOmtPlacement(it.placement) ? '-' : `${it.studyPace ?? 100}%`,
+          termLabel(it.term), termHalfLabel(it), placementLabel(it.placement),
         ]),
       });
+
     }
     const supp = supplementSection();
     if (supp) sections.push(supp);
