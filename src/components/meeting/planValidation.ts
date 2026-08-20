@@ -119,8 +119,9 @@ export function computePlanValidation(
       warnings.push({ id: `noplace-${it.id}`, level: 'error', message: `${it.code} saknar läsperiod.` });
     }
     if (!it.term?.trim()) {
-      warnings.push({ id: `noterm-${it.id}`, level: 'error', message: `${it.code} saknar termin.` });
+      warnings.push({ id: `noterm-${it.id}`, level: 'error', message: `${it.code} saknar läsår.` });
     }
+
   });
 
   supplements.forEach((s) => {
