@@ -34,8 +34,11 @@ function dataUrlToArrayBuffer(dataUrl: string): ArrayBuffer {
 }
 
 export type DocSection =
-  | { type: 'paragraph'; heading?: string; body: string }
-  | { type: 'table'; heading?: string; columns: string[]; rows: string[][] };
+  | { type: 'paragraph'; heading?: string; body: string; pageBreak?: boolean }
+  | { type: 'table'; heading?: string; columns: string[]; rows: string[][]; pageBreak?: boolean }
+  /** Bilaga med bild (dataUrl). Renderas som bild i Word och PDF. */
+  | { type: 'image'; heading?: string; dataUrl: string; caption?: string; pageBreak?: boolean };
+
 
 export interface ExportPreviewProps {
   open: boolean;
