@@ -546,16 +546,13 @@ export const StudyPlanCanvas = ({
     setSupplements((prev) => prev.map((s) => (s.term === oldName ? { ...s, term: newName } : s)));
   };
 
-  /** Lägg till ett helt läsår (HT + VT). */
+  /** Lägg till nästa läsår (LP1–LP4). */
   const addAcademicYear = () => {
-    const years = terms
-      .map((t) => t.match(/^(HT|VT)(\d{4})$/))
-      .filter(Boolean)
-      .map((m) => (m![1] === 'HT' ? parseInt(m![2]) : parseInt(m![2]) - 1));
-    const base = years.length > 0 ? Math.max(...years) + 1 : new Date().getFullYear();
-    setExtraTerms((prev) => Array.from(new Set([...prev, `HT${base}`, `VT${base + 1}`])));
-    toast({ title: 'Läsår tillagt', description: `HT${base} / VT${base + 1}` });
+    const next = suggestNextTerm(terms);
+    setExtraTerms((prev) => Array.from(new Set([...prev, next])));
+    toast({ title: 'Läsår tillagt', description: termLabel(next) });
   };
+
 
   // Summary calculation: totals + per-LP breakdown
   const summary = useMemo(() => {
