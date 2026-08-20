@@ -1423,15 +1423,16 @@ export const StudyPlanCanvas = ({
               <div className="space-y-2">
                 <Label className="text-foreground font-medium">Textplanering</Label>
                 <p className="text-xs text-muted-foreground">
-                  Skriv studieplaneringen i fritext. Använd t.ex. rubriker per termin (HT2026, VT2027) och listor per LP.
+                  Skriv studieplaneringen i fritext. Använd t.ex. rubriker per läsår (Läsår 2026/2027) och listor per läsperiod.
                 </p>
                 <Textarea
                   value={studyPlanText}
                   onChange={(e) => setStudyPlanText(e.target.value)}
                   rows={14}
-                  placeholder={'HT2026\n  LP1: ...\n  LP2: ...\n\nVT2027\n  LP3: ...\n  LP4: ...'}
+                  placeholder={'Läsår 2026/2027\n  Hösttermin\n    LP1: ...\n    LP2: ...\n  Vårtermin\n    LP3: ...\n    LP4: ...'}
                   className="font-mono text-sm"
                 />
+
               </div>
             </TabsContent>
           </Tabs>
