@@ -9,8 +9,9 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
   Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle,
-  Table, TableRow, TableCell, WidthType, ShadingType,
+  Table, TableRow, TableCell, WidthType, ShadingType, PageBreak, ImageRun,
 } from 'docx';
+
 import { saveAs } from 'file-saver';
 import { Download, FileText, Printer } from 'lucide-react';
 import {
