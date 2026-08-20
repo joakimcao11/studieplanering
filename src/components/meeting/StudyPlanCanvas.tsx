@@ -27,6 +27,10 @@ import { CSS } from '@dnd-kit/utilities';
 import { useCourses } from '@/hooks/useCourses';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { termLabel, termHalfLabel, YEAR_TARGET_HP } from './planValidation';
+
+export { termLabel, termHalfLabel };
+
 
 export type Placement = 'LP1' | 'LP2' | 'LP3' | 'LP4' | 'OmtentamenI' | 'OmtentamenII';
 
