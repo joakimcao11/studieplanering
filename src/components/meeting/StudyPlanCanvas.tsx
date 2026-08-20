@@ -736,8 +736,8 @@ export const StudyPlanCanvas = ({
               <div className="flex items-center gap-1">
                 <Input
                   autoFocus
-                  defaultValue={t}
-                  className="h-7 w-32 text-sm"
+                  defaultValue={termLabel(t)}
+                  className="h-7 w-44 text-sm"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') { renameTerm(t, (e.target as HTMLInputElement).value); setEditingTerm(null); }
                     if (e.key === 'Escape') setEditingTerm(null);
@@ -750,9 +750,9 @@ export const StudyPlanCanvas = ({
               <button
                 onClick={() => setEditingTerm(t)}
                 className={cn('font-bold flex items-center gap-1 hover:text-primary group', variant === 'fullscreen' ? 'text-base' : 'text-sm')}
-                title="Byt namn på terminen"
+                title="Byt namn på läsåret"
               >
-                {t}
+                {termLabel(t)}
                 <Pencil className="w-3 h-3 opacity-40 group-hover:opacity-100" />
               </button>
             )}
@@ -760,6 +760,7 @@ export const StudyPlanCanvas = ({
               <span className="text-xs text-muted-foreground">
                 {fmtHp(summary.byTerm[t]?.hp)} hp · {summary.byTerm[t]?.pct}%
               </span>
+
               <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => removeTerm(t)}>
                 <Trash2 className="w-3.5 h-3.5" />
               </Button>
