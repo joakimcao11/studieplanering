@@ -12,6 +12,8 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { COUNSELORS } from '@/types/planning';
 import { StudyPlanCanvas, ActionPlanItem, SupplementItem } from './meeting/StudyPlanCanvas';
+import { termLabel, termHalfLabel, placementLabel, isOmtPlacement } from './meeting/planValidation';
+
 import { ExportPreviewDialog, DocSection } from './export/ExportPreviewDialog';
 import { usePrograms } from '@/hooks/usePrograms';
 
