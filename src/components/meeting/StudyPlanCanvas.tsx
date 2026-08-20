@@ -775,13 +775,11 @@ export const StudyPlanCanvas = ({
         </div>
       ))}
       <div className="flex flex-wrap gap-2">
-        <Button variant="outline" size="sm" onClick={addNewTerm}>
-          <Plus className="w-4 h-4 mr-1" /> Lägg till termin ({suggestNextTerm(terms)})
-        </Button>
         <Button variant="outline" size="sm" onClick={addAcademicYear}>
-          <CalendarRange className="w-4 h-4 mr-1" /> Lägg till läsår
+          <CalendarRange className="w-4 h-4 mr-1" /> Lägg till läsår ({termLabel(suggestNextTerm(terms))})
         </Button>
       </div>
+
     </div>
   );
 
