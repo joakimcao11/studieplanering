@@ -586,11 +586,12 @@ export const StudyPlanCanvas = ({
       lpKeys.forEach((k) => { byTerm[it.term].perLp[k] = (byTerm[it.term].perLp[k] || 0) + share; });
       totalHp += e;
     });
-    Object.values(byTerm).forEach((v) => { v.pct = Math.round((v.hp / 30) * 100); });
+    Object.values(byTerm).forEach((v) => { v.pct = Math.round((v.hp / YEAR_TARGET_HP) * 100); });
     return { byTerm, totalHp };
   }, [actionPlan, terms]);
 
-  const colorFor = (hp: number, target = 30) => {
+  const colorFor = (hp: number, target = YEAR_TARGET_HP) => {
+
     const lo = target * 0.9, hi = target * 1.1;
     const lo2 = target * 0.6, hi2 = target * 1.2;
     if (hp >= lo && hp <= hi) return 'hsl(142 71% 45%)';
