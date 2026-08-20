@@ -164,16 +164,40 @@ export const MeetingNotesTab = () => {
     };
   };
 
-  /** Lista över uppladdat material så att det följer med i exporten. */
-  const materialSection = (): DocSection | null => {
-    if (uploadedFiles.length === 0) return null;
-    return {
+  /**
+   * Uppladdat material i exporten: en innehållsförteckning följt av
+   * varje fil som en egen bilaga på ny sida med tydlig rubrik.
+   */
+  const materialSections = (): DocSection[] => {
+    if (uploadedFiles.length === 0) return [];
+    const total = uploadedFiles.length;
+    const today = new Date().toISOString().slice(0, 10);
+    const out: DocSection[] = [{
       type: 'table',
-      heading: 'Uppladdat material',
-      columns: ['Filnamn', 'Typ'],
-      rows: uploadedFiles.map((f) => [f.name, f.type || 'okänd']),
-    };
+      heading: 'Bifogat material',
+      pageBreak: true,
+      columns: ['Bilaga', 'Filnamn', 'Filtyp', 'Datum'],
+      rows: uploadedFiles.map((f, i) => [
+        `Bilaga ${i + 1} av ${total}`, f.name, f.type || 'okänd', today,
+      ]),
+    }];
+
+    uploadedFiles.forEach((f, i) => {
+      const heading = `Bilaga ${i + 1} av ${total} – ${f.name}`;
+      if (f.type.startsWith('image/')) {
+        out.push({ type: 'image', heading, pageBreak: true, dataUrl: f.base64, caption: `${f.name} (${f.type})` });
+      } else {
+        out.push({
+          type: 'paragraph',
+          heading,
+          pageBreak: true,
+          body: `Filtyp: ${f.type || 'okänd'}\nDatum: ${today}\n\nFilen kan inte bäddas in i dokumentet och bifogas separat.`,
+        });
+      }
+    });
+    return out;
   };
+
 
   // Export preview dialog state
   const [exportPayload, setExportPayload] = useState<{
