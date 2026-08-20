@@ -72,7 +72,6 @@ export const statusFor = (hp: number, target: number): PlanStatus => {
 export const fmtHp = (n: number) =>
   String(Math.round(n * 100) / 100).replace('.', ',');
 
-export const isOmtPlacement = (p: Placement) => p === 'OmtentamenI' || p === 'OmtentamenII';
 
 export function computePlanValidation(
   actionPlan: ActionPlanItem[],
