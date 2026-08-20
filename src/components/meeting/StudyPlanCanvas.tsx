@@ -530,10 +530,6 @@ export const StudyPlanCanvas = ({
   };
   const removeItem = (id: string) => setActionPlan((prev) => prev.filter((i) => i.id !== id));
 
-  const addNewTerm = () => {
-    const next = suggestNextTerm(terms);
-    setExtraTerms((prev) => Array.from(new Set([...prev, next])));
-  };
 
   const removeTerm = (t: string) => {
     setExtraTerms((prev) => prev.filter((x) => x !== t));
