@@ -717,7 +717,7 @@ export const StudyPlanCanvas = ({
       <div className="space-y-3">
         {terms.map((t) => (
           <div key={`omt-${t}`}>
-            <div className="text-xs font-medium text-muted-foreground mb-1">{t}</div>
+            <div className="text-xs font-medium text-muted-foreground mb-1">{termLabel(t)}</div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {OMT_ORDER.map((p) => renderCell(t, p, variant === 'fullscreen'))}
             </div>
