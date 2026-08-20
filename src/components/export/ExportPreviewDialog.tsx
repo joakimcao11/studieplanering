@@ -154,35 +154,52 @@ export const ExportPreviewDialog = ({
       : [lth.counselor, lth.institution, lth.unit].filter(Boolean);
 
     const body = sections.map((s) => {
+      const cls = s.pageBreak ? ' class="brk"' : '';
       const heading = s.heading ? `<h2>${esc(s.heading)}</h2>` : '';
       if (s.type === 'table') {
-        return `${heading}<table>
+        return `<section${cls}>${heading}<table>
           <thead><tr>${s.columns.map((c) => `<th>${esc(c)}</th>`).join('')}</tr></thead>
           <tbody>${s.rows.map((r) => `<tr>${r.map((c) => `<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody>
-        </table>`;
+        </table></section>`;
+      }
+      if (s.type === 'image') {
+        return `<section${cls}>${heading}<img class="att" src="${s.dataUrl}" alt="${esc(s.caption || '')}">${
+          s.caption ? `<p class="cap">${esc(s.caption)}</p>` : ''
+        }</section>`;
       }
       const paras = s.body.split('\n').map((line) =>
         line.trim() ? `<p>${esc(line)}</p>` : '<p class="sp"></p>').join('');
-      return `${heading}${paras}`;
+      return `<section${cls}>${heading}${paras}</section>`;
     }).join('');
 
     const html = `<!doctype html><html lang="sv"><head><meta charset="utf-8">
       <title>${esc(fileBaseName)}</title>
       <style>
-        @page { size: A4; margin: 20mm; }
-        body { font-family: ${font}; color: #000; font-size: 11pt; line-height: 1.4; }
+        @page { size: A4; margin: 18mm 18mm 20mm; }
+        html, body { margin: 0; padding: 0; }
+        body { font-family: ${font}; color: #000; font-size: 11pt; line-height: 1.45;
+               -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         .top { display: flex; justify-content: space-between; align-items: flex-start;
                border-bottom: 2px solid ${accent}; padding-bottom: 8px; margin-bottom: 18px; }
         .top img { height: 46px; }
         .meta { text-align: right; font-size: 9pt; color: #333; }
-        h1 { font-size: 17pt; margin: 0 0 4px; }
-        h2 { font-size: 12pt; margin: 18px 0 6px; color: ${accent}; }
-        p { margin: 0 0 6px; }
+        h1 { font-size: 17pt; margin: 0 0 10px; break-after: avoid; page-break-after: avoid; }
+        h2 { font-size: 12pt; margin: 18px 0 6px; color: ${accent};
+             break-after: avoid; page-break-after: avoid; }
+        section { break-inside: auto; }
+        section.brk { break-before: page; page-break-before: always; }
+        p { margin: 0 0 6px; orphans: 3; widows: 3; overflow-wrap: anywhere; }
         p.sp { margin: 0 0 8px; }
-        table { width: 100%; border-collapse: collapse; margin: 6px 0 12px; font-size: 10pt; }
-        th, td { border: 1px solid #bbb; padding: 5px 7px; text-align: left; vertical-align: top; }
+        p.cap { font-size: 9pt; color: #444; margin-top: 4px; }
+        img.att { max-width: 100%; max-height: 220mm; object-fit: contain; }
+        table { width: 100%; border-collapse: collapse; margin: 6px 0 12px; font-size: 10pt;
+                break-inside: auto; page-break-inside: auto; }
+        thead { display: table-header-group; }
+        tfoot { display: table-footer-group; }
+        th, td { border: 1px solid #bbb; padding: 5px 7px; text-align: left; vertical-align: top;
+                 overflow-wrap: anywhere; word-break: break-word; }
         th { background: #eee; font-weight: bold; }
-        tr, table { page-break-inside: avoid; }
+        tr { break-inside: avoid; page-break-inside: avoid; }
       </style></head><body>
       <div class="top">
         <img src="${logo}" alt="">
@@ -190,11 +207,12 @@ export const ExportPreviewDialog = ({
       </div>
       <h1>${esc(docName)}</h1>
       ${body}
-      <script>window.onload = function () { setTimeout(function () { window.print(); }, 300); };<\/script>
+      <script>window.onload = function () { setTimeout(function () { window.print(); }, 400); };<\/script>
       </body></html>`;
 
     const w = window.open('', '_blank');
     if (!w) return;
+
     w.document.write(html);
     w.document.close();
   };
