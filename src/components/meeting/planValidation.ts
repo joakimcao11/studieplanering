@@ -145,21 +145,21 @@ export function computePlanValidation(
   });
 
   Object.values(byTerm).forEach((row) => {
-    row.pct = Math.round((row.hp / TERM_TARGET_HP) * 100);
-    row.status = statusFor(row.hp, TERM_TARGET_HP);
+    row.pct = Math.round((row.hp / YEAR_TARGET_HP) * 100);
+    row.status = statusFor(row.hp, YEAR_TARGET_HP);
     (['LP1', 'LP2', 'LP3', 'LP4'] as const).forEach((p) => {
       row.lpStatus[p] = statusFor(row.perLp[p] || 0, LP_TARGET_HP);
     });
 
     if (row.courseCount === 0 && row.supplementCount === 0) {
-      warnings.push({ id: `emptyterm-${row.term}`, level: 'warn', message: `${row.term} innehåller inga kurser.` });
+      warnings.push({ id: `emptyterm-${row.term}`, level: 'warn', message: `${termLabel(row.term)} innehåller inga kurser.` });
       return;
     }
     if (row.pct !== 100) {
       warnings.push({
         id: `pace-${row.term}`,
         level: row.status === 'error' ? 'error' : 'warn',
-        message: `${row.term}: ${fmtHp(row.hp)} hp (${row.pct}% studietakt) – målet är ${TERM_TARGET_HP} hp.`,
+        message: `${termLabel(row.term)}: ${fmtHp(row.hp)} hp (${row.pct}% studietakt) – målet är ${YEAR_TARGET_HP} hp per läsår.`,
       });
     }
     (['LP1', 'LP2', 'LP3', 'LP4'] as const).forEach((p) => {
@@ -168,11 +168,12 @@ export function computePlanValidation(
         warnings.push({
           id: `lp-${row.term}-${p}`,
           level: row.lpStatus[p] === 'error' ? 'error' : 'warn',
-          message: `${row.term} ${p}: ${fmtHp(v)} hp (mål ${LP_TARGET_HP} hp).`,
+          message: `${termLabel(row.term)} ${p}: ${fmtHp(v)} hp (mål ${LP_TARGET_HP} hp).`,
         });
       }
     });
   });
+
 
   const orderedTerms = allTerms.map((t) => byTerm[t]);
   return { byTerm, terms: orderedTerms, totalHp, warnings };
