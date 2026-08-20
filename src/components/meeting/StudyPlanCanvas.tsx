@@ -84,14 +84,16 @@ const termKey = (t: string): number => {
 
 const sortTerms = (list: string[]) => [...list].sort((a, b) => termKey(a) - termKey(b));
 
+/** Nästa läsår i följden: Läsår 2026/2027 → Läsår 2027/2028 → … */
 function suggestNextTerm(existing: string[]): string {
-  const valid = existing.filter((t) => /^(HT|VT)\d{4}$/.test(t));
-  if (valid.length === 0) return 'HT2026';
-  const last = sortTerms(valid)[valid.length - 1];
-  const m = last.match(/^(HT|VT)(\d{4})$/)!;
-  const year = parseInt(m[2]);
-  return m[1] === 'HT' ? `VT${year + 1}` : `HT${year}`;
+  const years = existing
+    .map((t) => t.match(/^(HT|VT)(\d{4})$/))
+    .filter(Boolean)
+    .map((m) => parseInt(m![2], 10));
+  if (years.length === 0) return 'HT2026';
+  return `HT${Math.max(...years) + 1}`;
 }
+
 
 const effectiveHP = (it: ActionPlanItem) => (it.hp * (it.studyPace ?? 100)) / 100;
 
