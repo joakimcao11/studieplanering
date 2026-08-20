@@ -246,7 +246,43 @@ export const ExportPreviewDialog = ({
     }
 
     for (const sec of sections) {
-      if (sec.type === 'table') {
+      if (sec.pageBreak && children.length > 0) {
+        children.push(new Paragraph({ children: [new PageBreak()] }));
+      }
+      if (sec.type === 'image') {
+        if (sec.heading) {
+          children.push(new Paragraph({
+            children: [new TextRun({ text: sec.heading, bold: true, size: 24, font: FONT, color: ACCENT })],
+            heading: HeadingLevel.HEADING_2,
+            spacing: { before: 200, after: 120 },
+          }));
+        }
+        try {
+          const mime = (sec.dataUrl.match(/^data:(image\/[a-z+]+);/i)?.[1] || 'image/png').toLowerCase();
+          const kind = mime.includes('jpeg') || mime.includes('jpg') ? 'jpg'
+            : mime.includes('gif') ? 'gif' : mime.includes('bmp') ? 'bmp' : 'png';
+          children.push(new Paragraph({
+            children: [new ImageRun({
+              type: kind,
+              data: dataUrlToArrayBuffer(sec.dataUrl),
+              transformation: { width: 520, height: 380 },
+              altText: { title: 'Bilaga', description: sec.caption || 'Bifogad bild', name: 'bilaga' },
+            } as any)],
+            spacing: { after: 120 },
+          }));
+        } catch {
+          children.push(new Paragraph({
+            children: [new TextRun({ text: '(Bilden kunde inte bäddas in)', italics: true, size: 20, font: FONT })],
+          }));
+        }
+        if (sec.caption) {
+          children.push(new Paragraph({
+            children: [new TextRun({ text: sec.caption, size: 18, font: FONT, color: '555555' })],
+            spacing: { after: 200 },
+          }));
+        }
+      } else if (sec.type === 'table') {
+
         if (sec.heading) {
           children.push(new Paragraph({
             children: [new TextRun({ text: sec.heading, bold: true, size: 24, font: FONT, color: ACCENT })],
