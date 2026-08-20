@@ -3,8 +3,9 @@ import { AlertTriangle, CheckCircle2, ClipboardList } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { ActionPlanItem, SupplementItem } from './StudyPlanCanvas';
 import {
-  computePlanValidation, fmtHp, LP_TARGET_HP, TERM_TARGET_HP, type PlanStatus,
+  computePlanValidation, fmtHp, LP_TARGET_HP, TERM_TARGET_HP, YEAR_TARGET_HP, termLabel, type PlanStatus,
 } from './planValidation';
+
 
 const statusClass: Record<PlanStatus, string> = {
   ok: 'text-emerald-600',
