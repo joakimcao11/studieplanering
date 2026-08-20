@@ -747,9 +747,20 @@ export const ExportPreviewDialog = ({
                     )}
                     {s.type === 'paragraph' ? (
                       <Textarea rows={6} value={s.body} onChange={(e) => updateSection(i, { body: e.target.value })} className="text-xs font-mono" />
+                    ) : s.type === 'image' ? (
+                      <p className="text-xs text-muted-foreground italic">Bilaga (bild) – visas på egen sida i exporten.</p>
                     ) : (
                       <p className="text-xs text-muted-foreground italic">Tabell ({s.rows.length} rader) – redigeras i handlingsplanen.</p>
                     )}
+                    <label className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                      <input
+                        type="checkbox"
+                        checked={!!s.pageBreak}
+                        onChange={(e) => updateSection(i, { pageBreak: e.target.checked } as Partial<DocSection>)}
+                      />
+                      Börja på ny sida
+                    </label>
+
                   </div>
                 ))}
               </div>
