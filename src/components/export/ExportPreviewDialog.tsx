@@ -9,8 +9,9 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
   Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle,
-  Table, TableRow, TableCell, WidthType, ShadingType,
+  Table, TableRow, TableCell, WidthType, ShadingType, PageBreak, ImageRun,
 } from 'docx';
+
 import { saveAs } from 'file-saver';
 import { Download, FileText, Printer } from 'lucide-react';
 import {
@@ -34,8 +35,11 @@ function dataUrlToArrayBuffer(dataUrl: string): ArrayBuffer {
 }
 
 export type DocSection =
-  | { type: 'paragraph'; heading?: string; body: string }
-  | { type: 'table'; heading?: string; columns: string[]; rows: string[][] };
+  | { type: 'paragraph'; heading?: string; body: string; pageBreak?: boolean }
+  | { type: 'table'; heading?: string; columns: string[]; rows: string[][]; pageBreak?: boolean }
+  /** Bilaga med bild (dataUrl). Renderas som bild i Word och PDF. */
+  | { type: 'image'; heading?: string; dataUrl: string; caption?: string; pageBreak?: boolean };
+
 
 export interface ExportPreviewProps {
   open: boolean;
@@ -151,35 +155,52 @@ export const ExportPreviewDialog = ({
       : [lth.counselor, lth.institution, lth.unit].filter(Boolean);
 
     const body = sections.map((s) => {
+      const cls = s.pageBreak ? ' class="brk"' : '';
       const heading = s.heading ? `<h2>${esc(s.heading)}</h2>` : '';
       if (s.type === 'table') {
-        return `${heading}<table>
+        return `<section${cls}>${heading}<table>
           <thead><tr>${s.columns.map((c) => `<th>${esc(c)}</th>`).join('')}</tr></thead>
           <tbody>${s.rows.map((r) => `<tr>${r.map((c) => `<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody>
-        </table>`;
+        </table></section>`;
+      }
+      if (s.type === 'image') {
+        return `<section${cls}>${heading}<img class="att" src="${s.dataUrl}" alt="${esc(s.caption || '')}">${
+          s.caption ? `<p class="cap">${esc(s.caption)}</p>` : ''
+        }</section>`;
       }
       const paras = s.body.split('\n').map((line) =>
         line.trim() ? `<p>${esc(line)}</p>` : '<p class="sp"></p>').join('');
-      return `${heading}${paras}`;
+      return `<section${cls}>${heading}${paras}</section>`;
     }).join('');
 
     const html = `<!doctype html><html lang="sv"><head><meta charset="utf-8">
       <title>${esc(fileBaseName)}</title>
       <style>
-        @page { size: A4; margin: 20mm; }
-        body { font-family: ${font}; color: #000; font-size: 11pt; line-height: 1.4; }
+        @page { size: A4; margin: 18mm 18mm 20mm; }
+        html, body { margin: 0; padding: 0; }
+        body { font-family: ${font}; color: #000; font-size: 11pt; line-height: 1.45;
+               -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         .top { display: flex; justify-content: space-between; align-items: flex-start;
                border-bottom: 2px solid ${accent}; padding-bottom: 8px; margin-bottom: 18px; }
         .top img { height: 46px; }
         .meta { text-align: right; font-size: 9pt; color: #333; }
-        h1 { font-size: 17pt; margin: 0 0 4px; }
-        h2 { font-size: 12pt; margin: 18px 0 6px; color: ${accent}; }
-        p { margin: 0 0 6px; }
+        h1 { font-size: 17pt; margin: 0 0 10px; break-after: avoid; page-break-after: avoid; }
+        h2 { font-size: 12pt; margin: 18px 0 6px; color: ${accent};
+             break-after: avoid; page-break-after: avoid; }
+        section { break-inside: auto; }
+        section.brk { break-before: page; page-break-before: always; }
+        p { margin: 0 0 6px; orphans: 3; widows: 3; overflow-wrap: anywhere; }
         p.sp { margin: 0 0 8px; }
-        table { width: 100%; border-collapse: collapse; margin: 6px 0 12px; font-size: 10pt; }
-        th, td { border: 1px solid #bbb; padding: 5px 7px; text-align: left; vertical-align: top; }
+        p.cap { font-size: 9pt; color: #444; margin-top: 4px; }
+        img.att { max-width: 100%; max-height: 220mm; object-fit: contain; }
+        table { width: 100%; border-collapse: collapse; margin: 6px 0 12px; font-size: 10pt;
+                break-inside: auto; page-break-inside: auto; }
+        thead { display: table-header-group; }
+        tfoot { display: table-footer-group; }
+        th, td { border: 1px solid #bbb; padding: 5px 7px; text-align: left; vertical-align: top;
+                 overflow-wrap: anywhere; word-break: break-word; }
         th { background: #eee; font-weight: bold; }
-        tr, table { page-break-inside: avoid; }
+        tr { break-inside: avoid; page-break-inside: avoid; }
       </style></head><body>
       <div class="top">
         <img src="${logo}" alt="">
@@ -187,11 +208,12 @@ export const ExportPreviewDialog = ({
       </div>
       <h1>${esc(docName)}</h1>
       ${body}
-      <script>window.onload = function () { setTimeout(function () { window.print(); }, 300); };<\/script>
+      <script>window.onload = function () { setTimeout(function () { window.print(); }, 400); };<\/script>
       </body></html>`;
 
     const w = window.open('', '_blank');
     if (!w) return;
+
     w.document.write(html);
     w.document.close();
   };
@@ -225,7 +247,43 @@ export const ExportPreviewDialog = ({
     }
 
     for (const sec of sections) {
-      if (sec.type === 'table') {
+      if (sec.pageBreak && children.length > 0) {
+        children.push(new Paragraph({ children: [new PageBreak()] }));
+      }
+      if (sec.type === 'image') {
+        if (sec.heading) {
+          children.push(new Paragraph({
+            children: [new TextRun({ text: sec.heading, bold: true, size: 24, font: FONT, color: ACCENT })],
+            heading: HeadingLevel.HEADING_2,
+            spacing: { before: 200, after: 120 },
+          }));
+        }
+        try {
+          const mime = (sec.dataUrl.match(/^data:(image\/[a-z+]+);/i)?.[1] || 'image/png').toLowerCase();
+          const kind = mime.includes('jpeg') || mime.includes('jpg') ? 'jpg'
+            : mime.includes('gif') ? 'gif' : mime.includes('bmp') ? 'bmp' : 'png';
+          children.push(new Paragraph({
+            children: [new ImageRun({
+              type: kind,
+              data: dataUrlToArrayBuffer(sec.dataUrl),
+              transformation: { width: 520, height: 380 },
+              altText: { title: 'Bilaga', description: sec.caption || 'Bifogad bild', name: 'bilaga' },
+            } as any)],
+            spacing: { after: 120 },
+          }));
+        } catch {
+          children.push(new Paragraph({
+            children: [new TextRun({ text: '(Bilden kunde inte bäddas in)', italics: true, size: 20, font: FONT })],
+          }));
+        }
+        if (sec.caption) {
+          children.push(new Paragraph({
+            children: [new TextRun({ text: sec.caption, size: 18, font: FONT, color: '555555' })],
+            spacing: { after: 200 },
+          }));
+        }
+      } else if (sec.type === 'table') {
+
         if (sec.heading) {
           children.push(new Paragraph({
             children: [new TextRun({ text: sec.heading, bold: true, size: 24, font: FONT, color: ACCENT })],
@@ -449,9 +507,15 @@ export const ExportPreviewDialog = ({
                   ))}
                 </tbody>
               </table>
+            ) : s.type === 'image' ? (
+              <div>
+                <img src={s.dataUrl} alt={s.caption || 'Bilaga'} className="max-h-64 border rounded" />
+                {s.caption && <div className="text-[10px] text-gray-500 mt-1">{s.caption}</div>}
+              </div>
             ) : (
               <pre className="whitespace-pre-wrap font-[inherit]">{s.body}</pre>
             )}
+
           </div>
         ))}
       </div>
@@ -683,9 +747,20 @@ export const ExportPreviewDialog = ({
                     )}
                     {s.type === 'paragraph' ? (
                       <Textarea rows={6} value={s.body} onChange={(e) => updateSection(i, { body: e.target.value })} className="text-xs font-mono" />
+                    ) : s.type === 'image' ? (
+                      <p className="text-xs text-muted-foreground italic">Bilaga (bild) – visas på egen sida i exporten.</p>
                     ) : (
                       <p className="text-xs text-muted-foreground italic">Tabell ({s.rows.length} rader) – redigeras i handlingsplanen.</p>
                     )}
+                    <label className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                      <input
+                        type="checkbox"
+                        checked={!!s.pageBreak}
+                        onChange={(e) => updateSection(i, { pageBreak: e.target.checked } as Partial<DocSection>)}
+                      />
+                      Börja på ny sida
+                    </label>
+
                   </div>
                 ))}
               </div>

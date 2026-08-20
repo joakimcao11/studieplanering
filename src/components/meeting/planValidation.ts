@@ -1,7 +1,39 @@
 import type { ActionPlanItem, SupplementItem, Placement } from './StudyPlanCanvas';
 
 export const TERM_TARGET_HP = 30;
+/** Ett läsår = två terminer = fyra läsperioder. */
+export const YEAR_TARGET_HP = 60;
 export const LP_TARGET_HP = 15;
+
+/** "HT2026" / "VT2027" → "Läsår 2026/2027" resp. "Läsår 2027/2028". */
+export const termLabel = (t: string): string => {
+  const m = (t || '').match(/^(HT|VT)(\d{4})$/);
+  if (!m) return t;
+  const y = parseInt(m[2], 10);
+  return `Läsår ${y}/${y + 1}`;
+};
+
+/** Hösttermin = LP1–LP2, Vårtermin = LP3–LP4. Omtentamen saknar termin. */
+export const termHalfLabel = (it: { placement: Placement; periods?: string[] }): string => {
+  if (it.placement === 'OmtentamenI' || it.placement === 'OmtentamenII') return '-';
+  const ps = it.periods && it.periods.length > 0
+    ? it.periods
+    : [String(it.placement).replace('LP', '')];
+  const host = ps.some((p) => p === '1' || p === '2');
+  const var_ = ps.some((p) => p === '3' || p === '4');
+  if (host && var_) return 'Höst/Vår';
+  return var_ ? 'Vårtermin' : 'Hösttermin';
+};
+
+export const isOmtPlacement = (p: Placement | string): boolean =>
+  p === 'OmtentamenI' || p === 'OmtentamenII';
+
+/** Läsbar etikett för placering: "LP1" eller "Omtentamen I (april)". */
+export const placementLabel = (p: Placement | string): string =>
+  p === 'OmtentamenI' ? 'Omtentamen I (april)'
+    : p === 'OmtentamenII' ? 'Omtentamen II (augusti)'
+    : String(p || '-');
+
 
 export type PlanStatus = 'ok' | 'warn' | 'error';
 
@@ -40,7 +72,6 @@ export const statusFor = (hp: number, target: number): PlanStatus => {
 export const fmtHp = (n: number) =>
   String(Math.round(n * 100) / 100).replace('.', ',');
 
-export const isOmtPlacement = (p: Placement) => p === 'OmtentamenI' || p === 'OmtentamenII';
 
 export function computePlanValidation(
   actionPlan: ActionPlanItem[],
@@ -96,8 +127,9 @@ export function computePlanValidation(
       warnings.push({ id: `noplace-${it.id}`, level: 'error', message: `${it.code} saknar läsperiod.` });
     }
     if (!it.term?.trim()) {
-      warnings.push({ id: `noterm-${it.id}`, level: 'error', message: `${it.code} saknar termin.` });
+      warnings.push({ id: `noterm-${it.id}`, level: 'error', message: `${it.code} saknar läsår.` });
     }
+
   });
 
   supplements.forEach((s) => {
@@ -106,7 +138,7 @@ export function computePlanValidation(
       warnings.push({
         id: `supterm-${s.id}`,
         level: 'warn',
-        message: `Kompletteringen "${s.description || s.type}" är kopplad till en termin (${s.term || 'saknas'}) som inte finns i planeringen.`,
+        message: `Kompletteringen "${s.description || s.type}" är kopplad till ett läsår (${termLabel(s.term) || 'saknas'}) som inte finns i planeringen.`,
       });
       return;
     }
@@ -122,21 +154,21 @@ export function computePlanValidation(
   });
 
   Object.values(byTerm).forEach((row) => {
-    row.pct = Math.round((row.hp / TERM_TARGET_HP) * 100);
-    row.status = statusFor(row.hp, TERM_TARGET_HP);
+    row.pct = Math.round((row.hp / YEAR_TARGET_HP) * 100);
+    row.status = statusFor(row.hp, YEAR_TARGET_HP);
     (['LP1', 'LP2', 'LP3', 'LP4'] as const).forEach((p) => {
       row.lpStatus[p] = statusFor(row.perLp[p] || 0, LP_TARGET_HP);
     });
 
     if (row.courseCount === 0 && row.supplementCount === 0) {
-      warnings.push({ id: `emptyterm-${row.term}`, level: 'warn', message: `${row.term} innehåller inga kurser.` });
+      warnings.push({ id: `emptyterm-${row.term}`, level: 'warn', message: `${termLabel(row.term)} innehåller inga kurser.` });
       return;
     }
     if (row.pct !== 100) {
       warnings.push({
         id: `pace-${row.term}`,
         level: row.status === 'error' ? 'error' : 'warn',
-        message: `${row.term}: ${fmtHp(row.hp)} hp (${row.pct}% studietakt) – målet är ${TERM_TARGET_HP} hp.`,
+        message: `${termLabel(row.term)}: ${fmtHp(row.hp)} hp (${row.pct}% studietakt) – målet är ${YEAR_TARGET_HP} hp per läsår.`,
       });
     }
     (['LP1', 'LP2', 'LP3', 'LP4'] as const).forEach((p) => {
@@ -145,11 +177,12 @@ export function computePlanValidation(
         warnings.push({
           id: `lp-${row.term}-${p}`,
           level: row.lpStatus[p] === 'error' ? 'error' : 'warn',
-          message: `${row.term} ${p}: ${fmtHp(v)} hp (mål ${LP_TARGET_HP} hp).`,
+          message: `${termLabel(row.term)} ${p}: ${fmtHp(v)} hp (mål ${LP_TARGET_HP} hp).`,
         });
       }
     });
   });
+
 
   const orderedTerms = allTerms.map((t) => byTerm[t]);
   return { byTerm, terms: orderedTerms, totalHp, warnings };

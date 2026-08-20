@@ -16,6 +16,8 @@ import {
   GraduationCap, Home, ListChecks, Info, HelpCircle, FileText, FileType2, FileDown, Wand2, RotateCcw, Trash2, Sparkles, Undo2,
 } from 'lucide-react';
 import { StudyPlanCanvas, ActionPlanItem, SupplementItem } from '@/components/meeting/StudyPlanCanvas';
+import { termLabel, termHalfLabel, placementLabel, isOmtPlacement } from '@/components/meeting/planValidation';
+
 import { ExportPreviewDialog, DocSection } from '@/components/export/ExportPreviewDialog';
 import { StudentOnboarding } from '@/components/student/StudentOnboarding';
 import { StudentAiPanel } from '@/components/student/StudentAiPanel';
@@ -171,11 +173,12 @@ const StudentPlanning = () => {
       sections.push({
         type: 'table',
         heading: 'Mina kurser',
-        columns: ['Kurskod', 'Namn', 'HP', 'Studietakt', 'Termin', 'Period'],
+        columns: ['Kurskod', 'Namn', 'HP', 'Studietakt', 'Läsår', 'Termin', 'Läsperiod'],
         rows: actionPlan.map((it) => [
           it.code, it.name, String(it.hp),
-          `${it.studyPace ?? 100}%`, it.term,
-          (it.periods?.length ?? 0) > 1 ? `LP${it.periods.join('+')}` : it.placement,
+          isOmtPlacement(it.placement) ? '-' : `${it.studyPace ?? 100}%`,
+          termLabel(it.term), termHalfLabel(it),
+          (it.periods?.length ?? 0) > 1 ? `LP${it.periods.join('+')}` : placementLabel(it.placement),
         ]),
       });
     }
@@ -183,11 +186,14 @@ const StudentPlanning = () => {
       sections.push({
         type: 'table',
         heading: 'Komplettering',
-        columns: ['Typ', 'Kurs', 'Vad saknas', 'Termin', 'Läsperiod', 'Status'],
+        columns: ['Typ', 'Kurs', 'Vad saknas', 'Läsår', 'Termin', 'Läsperiod', 'Status'],
         rows: supplements.map((s) => [
-          s.type, s.courseCode, s.description, s.term, s.placement, s.done ? 'Klar' : 'Kvarstår',
+          s.type, s.courseCode, s.description,
+          termLabel(s.term), termHalfLabel(s), placementLabel(s.placement),
+          s.done ? 'Klar' : 'Kvarstår',
         ]),
       });
+
     }
     if (studyPlanText.trim()) {
       sections.push({ type: 'paragraph', heading: 'Anteckningar', body: studyPlanText });

@@ -12,6 +12,8 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { COUNSELORS } from '@/types/planning';
 import { StudyPlanCanvas, ActionPlanItem, SupplementItem } from './meeting/StudyPlanCanvas';
+import { termLabel, termHalfLabel, placementLabel, isOmtPlacement } from './meeting/planValidation';
+
 import { ExportPreviewDialog, DocSection } from './export/ExportPreviewDialog';
 import { usePrograms } from '@/hooks/usePrograms';
 
@@ -157,23 +159,50 @@ export const MeetingNotesTab = () => {
     return {
       type: 'table',
       heading: 'Komplettering',
-      columns: ['Typ', 'Kurs', 'Vad saknas', 'Termin', 'Läsperiod', 'Status'],
+      columns: ['Typ', 'Kurs', 'Vad saknas', 'Läsår', 'Termin', 'Läsperiod', 'Status'],
       rows: supplements.map((s) => [
-        s.type, s.courseCode, s.description, s.term, s.placement, s.done ? 'Klar' : 'Kvarstår',
+        s.type, s.courseCode, s.description,
+        termLabel(s.term), termHalfLabel(s), placementLabel(s.placement),
+        s.done ? 'Klar' : 'Kvarstår',
       ]),
+
     };
   };
 
-  /** Lista över uppladdat material så att det följer med i exporten. */
-  const materialSection = (): DocSection | null => {
-    if (uploadedFiles.length === 0) return null;
-    return {
+  /**
+   * Uppladdat material i exporten: en innehållsförteckning följt av
+   * varje fil som en egen bilaga på ny sida med tydlig rubrik.
+   */
+  const materialSections = (): DocSection[] => {
+    if (uploadedFiles.length === 0) return [];
+    const total = uploadedFiles.length;
+    const today = new Date().toISOString().slice(0, 10);
+    const out: DocSection[] = [{
       type: 'table',
-      heading: 'Uppladdat material',
-      columns: ['Filnamn', 'Typ'],
-      rows: uploadedFiles.map((f) => [f.name, f.type || 'okänd']),
-    };
+      heading: 'Bifogat material',
+      pageBreak: true,
+      columns: ['Bilaga', 'Filnamn', 'Filtyp', 'Datum'],
+      rows: uploadedFiles.map((f, i) => [
+        `Bilaga ${i + 1} av ${total}`, f.name, f.type || 'okänd', today,
+      ]),
+    }];
+
+    uploadedFiles.forEach((f, i) => {
+      const heading = `Bilaga ${i + 1} av ${total} – ${f.name}`;
+      if (f.type.startsWith('image/')) {
+        out.push({ type: 'image', heading, pageBreak: true, dataUrl: f.base64, caption: `${f.name} (${f.type})` });
+      } else {
+        out.push({
+          type: 'paragraph',
+          heading,
+          pageBreak: true,
+          body: `Filtyp: ${f.type || 'okänd'}\nDatum: ${today}\n\nFilen kan inte bäddas in i dokumentet och bifogas separat.`,
+        });
+      }
+    });
+    return out;
   };
+
 
   // Export preview dialog state
   const [exportPayload, setExportPayload] = useState<{
@@ -285,17 +314,16 @@ export const MeetingNotesTab = () => {
       sections.push({
         type: 'table',
         heading: 'Handlingsplan – kurser',
-        columns: ['Kurskod', 'Namn', 'HP', 'Studietakt', 'Termin', 'Period'],
+        columns: ['Kurskod', 'Namn', 'HP', 'Studietakt', 'Läsår', 'Termin', 'Läsperiod'],
         rows: actionPlan.map((it) => [
           it.code, it.name, String(it.hp),
-          `${it.studyPace ?? 100}%`, it.term, it.placement,
+          isOmtPlacement(it.placement) ? '-' : `${it.studyPace ?? 100}%`,
+          termLabel(it.term), termHalfLabel(it), placementLabel(it.placement),
         ]),
       });
     }
     const suppA = supplementSection();
     if (suppA) sections.push(suppA);
-    const matA = materialSection();
-    if (matA) sections.push(matA);
     if (textInput.trim()) {
       sections.push({ type: 'paragraph', heading: 'Anteckningar', body: textInput });
     }
@@ -304,6 +332,8 @@ export const MeetingNotesTab = () => {
       heading: activeMode === 'email-draft' ? 'Mailutkast' : activeMode === 'summary' ? 'Sammanställning' : 'Minnesanteckning',
       body: generatedText.split('\n').map(cleanLine).join('\n'),
     });
+    materialSections().forEach((s) => sections.push(s));
+
     const safeName = (studentName || 'student').replace(/[^a-zA-Z0-9_-]/g, '_');
     setExportPayload({
       sections,
@@ -321,12 +351,14 @@ export const MeetingNotesTab = () => {
       sections.push({
         type: 'table',
         heading: 'Handlingsplan – kurser',
-        columns: ['Kurskod', 'Namn', 'HP', 'Studietakt', 'Termin', 'Period'],
+        columns: ['Kurskod', 'Namn', 'HP', 'Studietakt', 'Läsår', 'Termin', 'Läsperiod'],
         rows: actionPlan.map((it) => [
           it.code, it.name, String(it.hp),
-          `${it.studyPace ?? 100}%`, it.term, it.placement,
+          isOmtPlacement(it.placement) ? '-' : `${it.studyPace ?? 100}%`,
+          termLabel(it.term), termHalfLabel(it), placementLabel(it.placement),
         ]),
       });
+
     }
     const supp = supplementSection();
     if (supp) sections.push(supp);

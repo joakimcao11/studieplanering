@@ -27,6 +27,10 @@ import { CSS } from '@dnd-kit/utilities';
 import { useCourses } from '@/hooks/useCourses';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { termLabel, termHalfLabel, YEAR_TARGET_HP } from './planValidation';
+
+export { termLabel, termHalfLabel };
+
 
 export type Placement = 'LP1' | 'LP2' | 'LP3' | 'LP4' | 'OmtentamenI' | 'OmtentamenII';
 
@@ -84,14 +88,16 @@ const termKey = (t: string): number => {
 
 const sortTerms = (list: string[]) => [...list].sort((a, b) => termKey(a) - termKey(b));
 
+/** Nästa läsår i följden: Läsår 2026/2027 → Läsår 2027/2028 → … */
 function suggestNextTerm(existing: string[]): string {
-  const valid = existing.filter((t) => /^(HT|VT)\d{4}$/.test(t));
-  if (valid.length === 0) return 'HT2026';
-  const last = sortTerms(valid)[valid.length - 1];
-  const m = last.match(/^(HT|VT)(\d{4})$/)!;
-  const year = parseInt(m[2]);
-  return m[1] === 'HT' ? `VT${year + 1}` : `HT${year}`;
+  const years = existing
+    .map((t) => t.match(/^(HT|VT)(\d{4})$/))
+    .filter(Boolean)
+    .map((m) => parseInt(m![2], 10));
+  if (years.length === 0) return 'HT2026';
+  return `HT${Math.max(...years) + 1}`;
 }
+
 
 const effectiveHP = (it: ActionPlanItem) => (it.hp * (it.studyPace ?? 100)) / 100;
 
@@ -524,10 +530,7 @@ export const StudyPlanCanvas = ({
   };
   const removeItem = (id: string) => setActionPlan((prev) => prev.filter((i) => i.id !== id));
 
-  const addNewTerm = () => {
-    const next = suggestNextTerm(terms);
-    setExtraTerms((prev) => [...prev, next]);
-  };
+
   const removeTerm = (t: string) => {
     setExtraTerms((prev) => prev.filter((x) => x !== t));
     setActionPlan((prev) => prev.filter((i) => i.term !== t));
@@ -545,16 +548,13 @@ export const StudyPlanCanvas = ({
     setSupplements((prev) => prev.map((s) => (s.term === oldName ? { ...s, term: newName } : s)));
   };
 
-  /** Lägg till ett helt läsår (HT + VT). */
+  /** Lägg till nästa läsår (LP1–LP4). */
   const addAcademicYear = () => {
-    const years = terms
-      .map((t) => t.match(/^(HT|VT)(\d{4})$/))
-      .filter(Boolean)
-      .map((m) => (m![1] === 'HT' ? parseInt(m![2]) : parseInt(m![2]) - 1));
-    const base = years.length > 0 ? Math.max(...years) + 1 : new Date().getFullYear();
-    setExtraTerms((prev) => Array.from(new Set([...prev, `HT${base}`, `VT${base + 1}`])));
-    toast({ title: 'Läsår tillagt', description: `HT${base} / VT${base + 1}` });
+    const next = suggestNextTerm(terms);
+    setExtraTerms((prev) => Array.from(new Set([...prev, next])));
+    toast({ title: 'Läsår tillagt', description: termLabel(next) });
   };
+
 
   // Summary calculation: totals + per-LP breakdown
   const summary = useMemo(() => {
@@ -586,11 +586,12 @@ export const StudyPlanCanvas = ({
       lpKeys.forEach((k) => { byTerm[it.term].perLp[k] = (byTerm[it.term].perLp[k] || 0) + share; });
       totalHp += e;
     });
-    Object.values(byTerm).forEach((v) => { v.pct = Math.round((v.hp / 30) * 100); });
+    Object.values(byTerm).forEach((v) => { v.pct = Math.round((v.hp / YEAR_TARGET_HP) * 100); });
     return { byTerm, totalHp };
   }, [actionPlan, terms]);
 
-  const colorFor = (hp: number, target = 30) => {
+  const colorFor = (hp: number, target = YEAR_TARGET_HP) => {
+
     const lo = target * 0.9, hi = target * 1.1;
     const lo2 = target * 0.6, hi2 = target * 1.2;
     if (hp >= lo && hp <= hi) return 'hsl(142 71% 45%)';
@@ -717,7 +718,7 @@ export const StudyPlanCanvas = ({
       <div className="space-y-3">
         {terms.map((t) => (
           <div key={`omt-${t}`}>
-            <div className="text-xs font-medium text-muted-foreground mb-1">{t}</div>
+            <div className="text-xs font-medium text-muted-foreground mb-1">{termLabel(t)}</div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {OMT_ORDER.map((p) => renderCell(t, p, variant === 'fullscreen'))}
             </div>
@@ -736,8 +737,8 @@ export const StudyPlanCanvas = ({
               <div className="flex items-center gap-1">
                 <Input
                   autoFocus
-                  defaultValue={t}
-                  className="h-7 w-32 text-sm"
+                  defaultValue={termLabel(t)}
+                  className="h-7 w-44 text-sm"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') { renameTerm(t, (e.target as HTMLInputElement).value); setEditingTerm(null); }
                     if (e.key === 'Escape') setEditingTerm(null);
@@ -750,9 +751,9 @@ export const StudyPlanCanvas = ({
               <button
                 onClick={() => setEditingTerm(t)}
                 className={cn('font-bold flex items-center gap-1 hover:text-primary group', variant === 'fullscreen' ? 'text-base' : 'text-sm')}
-                title="Byt namn på terminen"
+                title="Byt namn på läsåret"
               >
-                {t}
+                {termLabel(t)}
                 <Pencil className="w-3 h-3 opacity-40 group-hover:opacity-100" />
               </button>
             )}
@@ -760,10 +761,15 @@ export const StudyPlanCanvas = ({
               <span className="text-xs text-muted-foreground">
                 {fmtHp(summary.byTerm[t]?.hp)} hp · {summary.byTerm[t]?.pct}%
               </span>
+
               <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => removeTerm(t)}>
                 <Trash2 className="w-3.5 h-3.5" />
               </Button>
             </div>
+          </div>
+          <div className="hidden lg:grid grid-cols-4 gap-2 mb-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+            <div className="col-span-2">Hösttermin (LP1–LP2)</div>
+            <div className="col-span-2">Vårtermin (LP3–LP4)</div>
           </div>
           <div className={cn(
             variant === 'fullscreen'
@@ -772,16 +778,15 @@ export const StudyPlanCanvas = ({
           )}>
             {LP_ORDER.map((p) => renderCell(t, p, variant === 'fullscreen'))}
           </div>
+
         </div>
       ))}
       <div className="flex flex-wrap gap-2">
-        <Button variant="outline" size="sm" onClick={addNewTerm}>
-          <Plus className="w-4 h-4 mr-1" /> Lägg till termin ({suggestNextTerm(terms)})
-        </Button>
         <Button variant="outline" size="sm" onClick={addAcademicYear}>
-          <CalendarRange className="w-4 h-4 mr-1" /> Lägg till läsår
+          <CalendarRange className="w-4 h-4 mr-1" /> Lägg till läsår ({termLabel(suggestNextTerm(terms))})
         </Button>
       </div>
+
     </div>
   );
 
@@ -806,7 +811,7 @@ export const StudyPlanCanvas = ({
             return (
               <div key={t} className="space-y-1.5 border-b last:border-b-0 pb-2 last:pb-0">
                 <div className="flex justify-between text-xs">
-                  <span className="font-medium">{t}</span>
+                  <span className="font-medium">{termLabel(t)}</span>
                   <span className="text-muted-foreground">{fmtHp(s.hp)} hp · {s.pct}%</span>
                 </div>
                 <div className="h-2 bg-muted rounded overflow-hidden">
@@ -841,7 +846,7 @@ export const StudyPlanCanvas = ({
           })}
         </div>
         <div className="text-[10px] text-muted-foreground pt-2 border-t">
-          Mål: 30 hp/termin (≈15 hp per LP). Kurser i omtentamensperioder påverkar inte hp-summan eller studietakten.
+          Mål: 30 hp per termin (60 hp per läsår, ≈15 hp per läsperiod). Kurser i omtentamensperioder påverkar inte hp-summan eller studietakten.
         </div>
         {supplements.length > 0 && (
           <div className="text-[10px] text-muted-foreground pt-2 border-t space-y-1">
@@ -849,8 +854,9 @@ export const StudyPlanCanvas = ({
             {terms.map((t) => {
               const n = supplements.filter((s) => s.term === t).length;
               if (n === 0) return null;
-              return <div key={t}>{t}: {n} st ({supplements.filter((s) => s.term === t && s.done).length} klara)</div>;
+              return <div key={t}>{termLabel(t)}: {n} st ({supplements.filter((s) => s.term === t && s.done).length} klara)</div>;
             })}
+
           </div>
         )}
       </CardContent>
@@ -906,7 +912,8 @@ export const StudyPlanCanvas = ({
                 <th className="text-left p-2 font-medium w-40">Typ</th>
                 <th className="text-left p-2 font-medium w-28">Kurskod</th>
                 <th className="text-left p-2 font-medium">Vad saknas</th>
-                <th className="text-left p-2 font-medium w-28">Termin</th>
+                <th className="text-left p-2 font-medium w-40">Läsår</th>
+
                 <th className="text-left p-2 font-medium w-24">Läsperiod</th>
                 <th className="text-left p-2 font-medium w-16">Klar</th>
                 <th className="p-2 w-10"></th>
@@ -930,8 +937,14 @@ export const StudyPlanCanvas = ({
                     <Input value={s.description} onChange={(e) => updateSupplement(s.id, { description: e.target.value })} className="h-7 text-xs" placeholder="t.ex. Labb 3 och inlämning 2" />
                   </td>
                   <td className="p-2">
-                    <Input value={s.term} onChange={(e) => updateSupplement(s.id, { term: e.target.value })} className="h-7 text-xs" />
+                    <Select value={s.term} onValueChange={(v) => updateSupplement(s.id, { term: v })}>
+                      <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+                      <SelectContent className="bg-popover z-50">
+                        {terms.map((t) => <SelectItem key={t} value={t}>{termLabel(t)}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
                   </td>
+
                   <td className="p-2">
                     <Select value={s.placement} onValueChange={(v) => updateSupplement(s.id, { placement: v as SupplementItem['placement'] })}>
                       <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
@@ -991,12 +1004,13 @@ export const StudyPlanCanvas = ({
             )}
           </div>
           <Select value={rowTermFilter} onValueChange={setRowTermFilter}>
-            <SelectTrigger className="h-8 w-32 text-xs"><SelectValue placeholder="Termin" /></SelectTrigger>
+            <SelectTrigger className="h-8 w-40 text-xs"><SelectValue placeholder="Läsår" /></SelectTrigger>
             <SelectContent className="bg-popover z-50">
-              <SelectItem value="all">Alla terminer</SelectItem>
-              {terms.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+              <SelectItem value="all">Alla läsår</SelectItem>
+              {terms.map((t) => <SelectItem key={t} value={t}>{termLabel(t)}</SelectItem>)}
             </SelectContent>
           </Select>
+
           <Select value={rowLpFilter} onValueChange={setRowLpFilter}>
             <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Period" /></SelectTrigger>
             <SelectContent className="bg-popover z-50">
@@ -1017,8 +1031,9 @@ export const StudyPlanCanvas = ({
               <th className="text-left p-2 font-medium">Namn</th>
               <th className="text-left p-2 font-medium w-20">HP</th>
               <th className="text-left p-2 font-medium w-24">Studietakt</th>
+              <th className="text-left p-2 font-medium w-40">Läsår</th>
               <th className="text-left p-2 font-medium w-28">Termin</th>
-              <th className="text-left p-2 font-medium w-32">Period</th>
+              <th className="text-left p-2 font-medium w-32">Läsperiod</th>
               <th className="p-2 w-10"></th>
             </tr>
           </thead>
@@ -1033,19 +1048,29 @@ export const StudyPlanCanvas = ({
                     className="h-7 text-xs" />
                 </td>
                 <td className="p-2">
-                  <Select value={String(it.studyPace ?? 100)} onValueChange={(v) => updateItem(it.id, { studyPace: parseInt(v) as 25 | 50 | 75 | 100 })}>
+                  {isOmt(it.placement) ? (
+                    <span className="text-muted-foreground">-</span>
+                  ) : (
+                    <Select value={String(it.studyPace ?? 100)} onValueChange={(v) => updateItem(it.id, { studyPace: parseInt(v) as 25 | 50 | 75 | 100 })}>
+                      <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+                      <SelectContent className="bg-popover z-50">
+                        <SelectItem value="25">25%</SelectItem>
+                        <SelectItem value="50">50%</SelectItem>
+                        <SelectItem value="75">75%</SelectItem>
+                        <SelectItem value="100">100%</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                </td>
+                <td className="p-2">
+                  <Select value={it.term} onValueChange={(v) => updateItem(it.id, { term: v })}>
                     <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
                     <SelectContent className="bg-popover z-50">
-                      <SelectItem value="25">25%</SelectItem>
-                      <SelectItem value="50">50%</SelectItem>
-                      <SelectItem value="75">75%</SelectItem>
-                      <SelectItem value="100">100%</SelectItem>
+                      {terms.map((t) => <SelectItem key={t} value={t}>{termLabel(t)}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </td>
-                <td className="p-2">
-                  <Input value={it.term} onChange={(e) => updateItem(it.id, { term: e.target.value })} className="h-7 text-xs" />
-                </td>
+                <td className="p-2 text-muted-foreground">{termHalfLabel(it)}</td>
                 <td className="p-2">
                   <Select value={it.placement} onValueChange={(v) => updateItem(it.id, { placement: v as Placement })}>
                     <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
@@ -1056,6 +1081,7 @@ export const StudyPlanCanvas = ({
                     </SelectContent>
                   </Select>
                 </td>
+
                 <td className="p-2 text-right">
                   <button onClick={() => removeItem(it.id)} className="text-muted-foreground hover:text-destructive">
                     <Trash2 className="w-3.5 h-3.5" />
@@ -1081,7 +1107,7 @@ export const StudyPlanCanvas = ({
               <ChevronRight className="w-4 h-4 text-muted-foreground" />
               <Badge variant="secondary" className="text-sm px-3 py-1">{placementLabel(addPlacement)}</Badge>
               <ChevronRight className="w-4 h-4 text-muted-foreground" />
-              <Badge variant="outline">{addTerm}</Badge>
+              <Badge variant="outline">{termLabel(addTerm)}</Badge>
             </DialogTitle>
           </DialogHeader>
 
@@ -1227,9 +1253,15 @@ export const StudyPlanCanvas = ({
               </>
               )}
               <div className="flex items-center gap-2 pt-2 border-t">
-                <Label className="text-xs">Termin</Label>
-                <Input value={addTerm} onChange={(e) => setAddTerm(e.target.value)} className="h-8 text-xs max-w-[160px]" />
+                <Label className="text-xs">Läsår</Label>
+                <Select value={addTerm} onValueChange={setAddTerm}>
+                  <SelectTrigger className="h-8 text-xs max-w-[200px]"><SelectValue /></SelectTrigger>
+                  <SelectContent className="bg-popover z-50">
+                    {terms.map((t) => <SelectItem key={t} value={t}>{termLabel(t)}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
+
             </div>
           </div>
 
@@ -1423,15 +1455,16 @@ export const StudyPlanCanvas = ({
               <div className="space-y-2">
                 <Label className="text-foreground font-medium">Textplanering</Label>
                 <p className="text-xs text-muted-foreground">
-                  Skriv studieplaneringen i fritext. Använd t.ex. rubriker per termin (HT2026, VT2027) och listor per LP.
+                  Skriv studieplaneringen i fritext. Använd t.ex. rubriker per läsår (Läsår 2026/2027) och listor per läsperiod.
                 </p>
                 <Textarea
                   value={studyPlanText}
                   onChange={(e) => setStudyPlanText(e.target.value)}
                   rows={14}
-                  placeholder={'HT2026\n  LP1: ...\n  LP2: ...\n\nVT2027\n  LP3: ...\n  LP4: ...'}
+                  placeholder={'Läsår 2026/2027\n  Hösttermin\n    LP1: ...\n    LP2: ...\n  Vårtermin\n    LP3: ...\n    LP4: ...'}
                   className="font-mono text-sm"
                 />
+
               </div>
             </TabsContent>
           </Tabs>

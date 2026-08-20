@@ -32,9 +32,12 @@ export const exportSectionsAsTxt = (
       lines.push(fmt(sec.columns));
       lines.push(colWidths.map((w) => '-'.repeat(w)).join('-+-'));
       for (const r of sec.rows) lines.push(fmt(r));
+    } else if (sec.type === 'image') {
+      lines.push(`[Bild: ${sec.caption || 'bifogad bild'}]`);
     } else {
       lines.push(sec.body);
     }
+
     lines.push('');
   }
 
@@ -80,6 +83,10 @@ export const exportSectionsAsPdf = (
   };
 
   for (const sec of sections) {
+    if (sec.pageBreak && y > 60) {
+      doc.addPage();
+      y = 56;
+    }
     if (sec.heading) {
       ensureSpace(28);
       doc.setFont('helvetica', 'bold');
@@ -95,12 +102,24 @@ export const exportSectionsAsPdf = (
         head: [sec.columns],
         body: sec.rows,
         margin: { left: marginX, right: marginX },
-        styles: { font: 'helvetica', fontSize: 9, cellPadding: 5, textColor: 30 },
+        styles: { font: 'helvetica', fontSize: 9, cellPadding: 5, textColor: 30, overflow: 'linebreak' },
         headStyles: { fillColor: [230, 235, 245], textColor: [20, 40, 90], fontStyle: 'bold' },
         alternateRowStyles: { fillColor: [248, 249, 251] },
       });
       // @ts-ignore - lastAutoTable is added by jspdf-autotable
       y = (doc as any).lastAutoTable.finalY + 14;
+    } else if (sec.type === 'image') {
+      const maxW = pageWidth - marginX * 2;
+      const maxH = doc.internal.pageSize.getHeight() - y - 60;
+      try {
+        doc.addImage(sec.dataUrl, 'PNG', marginX, y, maxW, Math.min(maxH, maxW * 0.7), undefined, 'FAST');
+        y += Math.min(maxH, maxW * 0.7) + 14;
+      } catch {
+        doc.setFont('helvetica', 'italic');
+        doc.setFontSize(10);
+        doc.text('(Bilden kunde inte bäddas in)', marginX, y);
+        y += 16;
+      }
     } else {
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(11);
@@ -114,6 +133,7 @@ export const exportSectionsAsPdf = (
       y += 6;
     }
   }
+
 
   doc.save(`${fileBaseName}.pdf`);
 };
