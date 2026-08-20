@@ -930,8 +930,14 @@ export const StudyPlanCanvas = ({
                     <Input value={s.description} onChange={(e) => updateSupplement(s.id, { description: e.target.value })} className="h-7 text-xs" placeholder="t.ex. Labb 3 och inlämning 2" />
                   </td>
                   <td className="p-2">
-                    <Input value={s.term} onChange={(e) => updateSupplement(s.id, { term: e.target.value })} className="h-7 text-xs" />
+                    <Select value={s.term} onValueChange={(v) => updateSupplement(s.id, { term: v })}>
+                      <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+                      <SelectContent className="bg-popover z-50">
+                        {terms.map((t) => <SelectItem key={t} value={t}>{termLabel(t)}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
                   </td>
+
                   <td className="p-2">
                     <Select value={s.placement} onValueChange={(v) => updateSupplement(s.id, { placement: v as SupplementItem['placement'] })}>
                       <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
