@@ -16,6 +16,8 @@ import {
   GraduationCap, Home, ListChecks, Info, HelpCircle, FileText, FileType2, FileDown, Wand2, RotateCcw, Trash2, Sparkles, Undo2,
 } from 'lucide-react';
 import { StudyPlanCanvas, ActionPlanItem, SupplementItem } from '@/components/meeting/StudyPlanCanvas';
+import { termLabel, termHalfLabel, placementLabel, isOmtPlacement } from '@/components/meeting/planValidation';
+
 import { ExportPreviewDialog, DocSection } from '@/components/export/ExportPreviewDialog';
 import { StudentOnboarding } from '@/components/student/StudentOnboarding';
 import { StudentAiPanel } from '@/components/student/StudentAiPanel';
