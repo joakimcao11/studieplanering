@@ -1081,7 +1081,7 @@ export const StudyPlanCanvas = ({
               <ChevronRight className="w-4 h-4 text-muted-foreground" />
               <Badge variant="secondary" className="text-sm px-3 py-1">{placementLabel(addPlacement)}</Badge>
               <ChevronRight className="w-4 h-4 text-muted-foreground" />
-              <Badge variant="outline">{addTerm}</Badge>
+              <Badge variant="outline">{termLabel(addTerm)}</Badge>
             </DialogTitle>
           </DialogHeader>
 
