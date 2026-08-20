@@ -507,9 +507,15 @@ export const ExportPreviewDialog = ({
                   ))}
                 </tbody>
               </table>
+            ) : s.type === 'image' ? (
+              <div>
+                <img src={s.dataUrl} alt={s.caption || 'Bilaga'} className="max-h-64 border rounded" />
+                {s.caption && <div className="text-[10px] text-gray-500 mt-1">{s.caption}</div>}
+              </div>
             ) : (
               <pre className="whitespace-pre-wrap font-[inherit]">{s.body}</pre>
             )}
+
           </div>
         ))}
       </div>
