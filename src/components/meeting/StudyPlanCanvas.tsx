@@ -526,8 +526,9 @@ export const StudyPlanCanvas = ({
 
   const addNewTerm = () => {
     const next = suggestNextTerm(terms);
-    setExtraTerms((prev) => [...prev, next]);
+    setExtraTerms((prev) => Array.from(new Set([...prev, next])));
   };
+
   const removeTerm = (t: string) => {
     setExtraTerms((prev) => prev.filter((x) => x !== t));
     setActionPlan((prev) => prev.filter((i) => i.term !== t));
