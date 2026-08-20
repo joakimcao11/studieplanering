@@ -32,9 +32,12 @@ export const exportSectionsAsTxt = (
       lines.push(fmt(sec.columns));
       lines.push(colWidths.map((w) => '-'.repeat(w)).join('-+-'));
       for (const r of sec.rows) lines.push(fmt(r));
+    } else if (sec.type === 'image') {
+      lines.push(`[Bild: ${sec.caption || 'bifogad bild'}]`);
     } else {
       lines.push(sec.body);
     }
+
     lines.push('');
   }
 
