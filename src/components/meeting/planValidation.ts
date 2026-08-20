@@ -130,7 +130,7 @@ export function computePlanValidation(
       warnings.push({
         id: `supterm-${s.id}`,
         level: 'warn',
-        message: `Kompletteringen "${s.description || s.type}" är kopplad till en termin (${s.term || 'saknas'}) som inte finns i planeringen.`,
+        message: `Kompletteringen "${s.description || s.type}" är kopplad till ett läsår (${termLabel(s.term) || 'saknas'}) som inte finns i planeringen.`,
       });
       return;
     }
