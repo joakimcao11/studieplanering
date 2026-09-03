@@ -8,6 +8,7 @@ import Home from "./pages/Home";
 import NotFound from "./pages/NotFound";
 import LiveDemo from "./pages/LiveDemo";
 import StudentPlanning from "./pages/StudentPlanning";
+import CareerProfilePage from "./pages/CareerProfile";
 
 const queryClient = new QueryClient();
 
@@ -22,6 +23,7 @@ const App = () => (
           <Route path="/svl" element={<Index />} />
           <Route path="/demo" element={<LiveDemo />} />
           <Route path="/student" element={<StudentPlanning />} />
+          <Route path="/material" element={<CareerProfilePage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
