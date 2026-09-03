@@ -73,7 +73,18 @@
     --progress-optimal: 142 70% 45%;
     --progress-warning: 45 93% 50%;
     --progress-danger: 0 72% 51%;
+
+    /* Karriärprofil – harmoniska områdesfärger */
+    --career-1: 220 70% 35%;
+    --career-2: 173 58% 33%;
+    --career-3: 262 45% 45%;
+    --career-4: 22 75% 45%;
+    --career-5: 200 70% 38%;
+    --career-6: 340 45% 45%;
+    --career-7: 145 45% 33%;
+    --career-8: 38 70% 40%;
   }
+
 
   .dark {
     --background: 220 60% 8%;
