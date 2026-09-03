@@ -22,7 +22,5 @@ export const careerColor = (index: number, theme: ThemeKey = 'site'): string => 
 };
 
 /** Ljus bakgrundsvariant av områdesfärgen. */
-export const careerColorSoft = (index: number, theme: ThemeKey = 'site'): string => {
-  const c = careerColor(index, theme);
-  return c.replace('hsl(', 'hsla(').replace(')', ' / 0.12)').replace('var(', 'var(');
-};
+export const careerColorSoft = (index: number, theme: ThemeKey = 'site'): string =>
+  `color-mix(in srgb, ${careerColor(index, theme)} 14%, transparent)`;
