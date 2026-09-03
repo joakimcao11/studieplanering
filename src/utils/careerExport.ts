@@ -161,9 +161,9 @@ export const exportPptx = async (profile: CareerProfile, element: HTMLElement) =
   };
 
   const pick = (ids: string[]) =>
-    sections(profile).filter((_, idx) => true).filter((s) =>
-      profile.categories.some((c) => ids.includes(c.id) && c.title === s.title),
-    );
+    profile.categories
+      .filter((c) => ids.includes(c.id) && allItems(c).length > 0)
+      .map((c) => ({ title: c.title, items: allItems(c) }));
 
   bulletSlide('Det här är viktigt för mig', pick(['values', 'drivers', 'needs']));
   bulletSlide('Det här kan jag och tar med mig', pick(['traits', 'personality', 'skills', 'competencies', 'knowledge', 'experience']));
