@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { GraduationCap, ShieldCheck, ArrowRight, Lock, Unlock } from 'lucide-react';
+import { GraduationCap, ShieldCheck, ArrowRight, Lock, Unlock, Compass } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import lthLogo from '@/assets/lth-logo.png';
 
@@ -64,6 +64,24 @@ const Home = () => {
               </div>
             </Link>
           </div>
+
+          <Link to="/material" className="group block mt-6">
+            <div className="border rounded-xl p-8 bg-card hover:border-primary hover:shadow-lg transition-all flex flex-col sm:flex-row sm:items-center gap-5">
+              <div className="w-14 h-14 rounded-full bg-accent/10 flex items-center justify-center shrink-0">
+                <Compass className="w-7 h-7 text-accent" />
+              </div>
+              <div className="flex-1">
+                <h2 className="text-xl font-bold mb-1">Min Karriärprofil</h2>
+                <p className="text-sm text-muted-foreground">
+                  Ett interaktivt verktyg där du sätter ord på vem du är, vad som är viktigt för dig, vad du kan och vad
+                  du är nyfiken på – och sparar resultatet som bild, PDF, Word eller PowerPoint.
+                </p>
+              </div>
+              <Button variant="outline" className="sm:w-auto w-full">
+                Till verktyget <ArrowRight className="w-4 h-4 ml-1" />
+              </Button>
+            </div>
+          </Link>
         </div>
       </main>
 

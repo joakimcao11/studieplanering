@@ -175,10 +175,11 @@ export const MindMapView = ({
       const words = allItems(c);
       const spread = Math.min(words.length, 8);
       words.forEach((label, j) => {
-        const offset = (j - (spread - 1) / 2) * (variant === 'creative' ? 52 : 46);
-        const wr = variant === 'creative' ? 210 : 190;
-        const wx = cx + Math.cos(angle) * wr;
-        const wy = cy + Math.sin(angle) * wr * 0.5 + offset;
+        const offset = (j - (spread - 1) / 2) * (variant === 'creative' ? 54 : 48);
+        const wr = variant === 'creative' ? 250 : 230;
+        const sign = Math.cos(angle) >= 0 ? 1 : -1;
+        const wx = cx + sign * wr;
+        const wy = cy + offset;
         const wid = `w-${c.id}-${j}`;
         nodes.push({
           id: wid,
